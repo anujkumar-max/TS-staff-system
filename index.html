@@ -782,6 +782,33 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
 }
 .search-bar i { color: var(--text3); }
 .search-bar input { flex: 1; border: none; background: none; padding: 10px 0; color: var(--text1); font-size: 13px; outline: none; }
+
+/* App footer */
+.app-footer {
+  text-align: center; font-size: 11px; color: var(--text3);
+  padding: 14px 0 6px; border-top: 1px solid var(--border);
+  margin-top: 24px; letter-spacing: 0.4px;
+}
+
+/* Admin badge */
+.admin-badge {
+  display: none; background: var(--danger); color: #fff;
+  font-size: 10px; font-weight: 700; padding: 3px 9px;
+  border-radius: 6px; letter-spacing: 0.5px;
+}
+
+/* Date filter row */
+.date-filter-row {
+  display: flex; align-items: center; gap: 10px;
+  flex-wrap: wrap; margin-bottom: 12px;
+}
+.date-filter-row label { font-size: 11px; font-weight: 600; color: var(--text2); }
+.date-filter-row input[type="date"] {
+  padding: 7px 10px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--bg);
+  color: var(--text1); font-size: 12px; outline: none;
+}
+.date-filter-row input[type="date"]:focus { border-color: var(--navy); }
 </style>
 </head>
 <body>
@@ -793,24 +820,27 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
   <div class="login-bg-pattern"></div>
   <div class="login-box">
     <div class="login-logo">
-      <div class="logo-placeholder">
+      <img src="logo.png" alt="AP Police" id="loginLogoImg"
+           style="width:80px;height:80px;border-radius:50%;border:3px solid rgba(201,168,76,0.5);background:rgba(255,255,255,0.1);padding:4px;object-fit:cover"
+           onerror="this.style.display='none';document.getElementById('loginLogoFallback').style.display='flex'">
+      <div class="logo-placeholder" id="loginLogoFallback" style="display:none">
         <i class="fa-solid fa-shield-halved"></i>
       </div>
     </div>
     <div class="login-title">AP POLICE — TECHNICAL SERVICES</div>
     <div class="login-sub">Staff Monitoring System &nbsp;|&nbsp; IGP Office, Mangalagiri</div>
     <div class="login-field">
-      <label>Gmail ID</label>
-      <input type="email" id="loginEmail" placeholder="yourname@gmail.com" autocomplete="email">
+      <label>Phone Number / Staff ID</label>
+      <input type="tel" id="loginPhone" placeholder="Enter your phone number" autocomplete="tel">
     </div>
     <div class="login-field">
       <label>Password</label>
       <input type="password" id="loginPass" placeholder="Enter your password" autocomplete="current-password">
     </div>
-    <button class="login-btn" onclick="doLogin()">
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">
       <i class="fa-solid fa-right-to-bracket"></i> &nbsp;SIGN IN
     </button>
-    <div class="login-error" id="loginError">Invalid credentials. Please try again.</div>
+    <div class="login-error" id="loginError">Invalid phone number or password. Default password: 1111</div>
     <div class="login-footer">AP POLICE TECHNICAL SERVICES &nbsp;•&nbsp; MANGALAGIRI, ANDHRA PRADESH</div>
   </div>
 </div>
@@ -825,7 +855,10 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
     <!-- SIDEBAR -->
     <nav class="sidebar" id="sidebar">
       <div class="sidebar-logo">
-        <div class="logo-placeholder-sm"><i class="fa-solid fa-shield-halved"></i></div>
+        <img src="logo.png" alt="AP Police" id="sidebarLogoImg"
+             style="width:38px;height:38px;border-radius:50%;border:2px solid rgba(201,168,76,0.4);flex-shrink:0;object-fit:cover"
+             onerror="this.style.display='none';document.getElementById('sidebarLogoFallback').style.display='flex'">
+        <div class="logo-placeholder-sm" id="sidebarLogoFallback" style="display:none"><i class="fa-solid fa-shield-halved"></i></div>
         <div class="sidebar-brand">
           <h2>AP POLICE TS</h2>
           <p>STAFF MONITOR</p>
@@ -884,6 +917,9 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
         <div class="nav-item" id="adminNavItem" onclick="showScreen('admin')" style="display:none">
           <i class="fa-solid fa-gear"></i><span>Admin Panel</span>
         </div>
+        <div class="nav-item" id="staffMgmtNavItem" onclick="showScreen('staffmgmt')" style="display:none">
+          <i class="fa-solid fa-users-gear"></i><span>Staff Management</span>
+        </div>
         <div class="nav-item" onclick="doLogout()">
           <i class="fa-solid fa-right-from-bracket"></i><span>Logout</span>
         </div>
@@ -909,6 +945,7 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
         </button>
         <div class="topbar-title" id="topbarTitle">Dashboard</div>
         <div class="topbar-actions">
+          <span class="admin-badge" id="adminBadge">ADMIN</span>
           <button class="topbar-btn" onclick="refreshData()" title="Refresh">
             <i class="fa-solid fa-rotate-right"></i>
           </button>
@@ -1124,6 +1161,18 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
             <div class="tab-pill heart-pill" onclick="filterCommand('Pending',this)">Pending</div>
             <div class="tab-pill heart-pill" onclick="filterCommand('In Progress',this)">In Progress</div>
             <div class="tab-pill heart-pill" onclick="filterCommand('Completed',this)">Completed</div>
+          </div>
+          <div class="date-filter-row">
+            <label>From:</label>
+            <input type="date" id="cmdFromDate">
+            <label>To:</label>
+            <input type="date" id="cmdToDate">
+            <button class="btn-primary" style="padding:7px 14px;font-size:12px" onclick="renderCommand()">
+              <i class="fa-solid fa-filter"></i> Filter
+            </button>
+            <button class="btn-secondary" style="padding:7px 14px;font-size:12px" onclick="document.getElementById('cmdFromDate').value='';document.getElementById('cmdToDate').value='';renderCommand()">
+              Clear
+            </button>
           </div>
           <div class="search-bar">
             <i class="fa-solid fa-magnifying-glass"></i>
@@ -1473,6 +1522,78 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
           </div>
         </div>
 
+        <!-- ====== STAFF MANAGEMENT SCREEN ====== -->
+        <div class="screen" id="screen-staffmgmt">
+          <div class="page-header">
+            <h1><i class="fa-solid fa-users-gear" style="color:var(--navy)"></i> Staff Management</h1>
+            <p>Add, edit and manage all TS staff accounts</p>
+          </div>
+
+          <!-- Add / Edit Form -->
+          <div class="card navy-card" id="staffFormCard">
+            <div class="section-title" style="margin-bottom:14px" id="staffFormTitle">
+              <i class="fa-solid fa-user-plus"></i> Add New Staff
+            </div>
+            <input type="hidden" id="staffEditId">
+            <div class="form-grid">
+              <div class="form-group"><label>Full Name *</label><input type="text" id="sfName" placeholder="Full name"></div>
+              <div class="form-group"><label>Rank *</label>
+                <select id="sfRank">
+                  <option value="">— Select Rank —</option>
+                  <option>IGP</option><option>DIG</option><option>SP</option><option>AddSP</option>
+                  <option>DySP</option><option>CI</option><option>SI</option><option>ASI</option>
+                  <option>Inspector</option><option>RSI</option><option>HC</option><option>PC</option>
+                  <option>WPC</option><option>HC(C)</option><option>PC(C)</option><option>WPC(C)</option>
+                </select>
+              </div>
+              <div class="form-group"><label>Phone Number *</label><input type="tel" id="sfPhone" placeholder="10-digit phone (becomes login ID)"></div>
+              <div class="form-group"><label>Gender</label>
+                <select id="sfGender"><option>Male</option><option>Female</option></select>
+              </div>
+              <div class="form-group"><label>Gmail</label><input type="email" id="sfGmail" placeholder="staff@gmail.com"></div>
+              <div class="form-group"><label>Badge Number</label><input type="text" id="sfBadge" placeholder="Badge No."></div>
+              <div class="form-group"><label>Assigned Projects</label><input type="text" id="sfProjects" placeholder="Project names"></div>
+              <div class="form-group"><label>District Assigned</label><input type="text" id="sfDistrict" placeholder="District name"></div>
+              <div class="form-group"><label>Reporting Officer</label><input type="text" id="sfReporting" placeholder="Officer name"></div>
+              <div class="form-group"><label>Status</label>
+                <select id="sfStatus"><option>Active</option><option>Inactive</option></select>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn-primary" onclick="submitStaffForm()"><i class="fa-solid fa-floppy-disk"></i> Save Staff</button>
+              <button class="btn-secondary" onclick="clearStaffForm()">Clear</button>
+            </div>
+          </div>
+
+          <!-- Staff List -->
+          <div class="section-header" style="margin-top:8px">
+            <div class="section-title">All Staff</div>
+            <button class="view-all-btn" onclick="renderStaffMgmt()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+          </div>
+          <div class="search-bar">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" placeholder="Search by name, rank, phone..." id="sfSearch" oninput="renderStaffMgmt()">
+          </div>
+          <div class="card" style="padding:0;overflow:hidden">
+            <div class="table-wrap">
+              <table>
+                <thead><tr>
+                  <th>#</th><th>Name</th><th>Rank</th><th>Phone</th><th>Gender</th>
+                  <th>Gmail</th><th>Badge No</th><th>Projects</th><th>Status</th><th>Actions</th>
+                </tr></thead>
+                <tbody id="staffMgmtBody">
+                  <tr><td colspan="10"><div class="loading"><div class="spinner"></div></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="app-footer">
+          AP Police Technical Services &nbsp;|&nbsp; IGP Office, Mangalagiri &nbsp;|&nbsp; 2026
+        </div>
+
       </div><!-- end content-area -->
     </div><!-- end main-area -->
   </div><!-- end app-layout -->
@@ -1503,6 +1624,7 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
     <div class="modal-body">
       <div class="form-grid">
         <div class="form-group"><label>Task Title *</label><input type="text" id="taskTitle" placeholder="Enter task title"></div>
+        <div class="form-group"><label>Entry Date</label><input type="date" id="taskEntryDate"></div>
         <div class="form-group"><label>Category</label>
           <select id="taskCategory">
             <option value="C1">District Coordination</option>
@@ -1517,7 +1639,9 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
             <option value="C10">eOffice</option>
           </select>
         </div>
-        <div class="form-group"><label>Assigned To *</label><input type="text" id="taskAssignedTo" placeholder="Staff name"></div>
+        <div class="form-group"><label>Assigned To *</label>
+          <select id="taskAssignedTo"><option value="">— Select Staff —</option></select>
+        </div>
         <div class="form-group"><label>Priority</label>
           <select id="taskPriority">
             <option>Very High</option><option>High</option>
@@ -1525,7 +1649,9 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
           </select>
         </div>
         <div class="form-group"><label>Due Date</label><input type="date" id="taskDueDate"></div>
-        <div class="form-group"><label>Assigned By</label><input type="text" id="taskAssignedBy" placeholder="Your name"></div>
+        <div class="form-group"><label>Assigned By</label>
+          <select id="taskAssignedBy"><option value="">— Select Staff —</option></select>
+        </div>
       </div>
       <div class="form-group" style="margin-top:12px"><label>Description / Remarks</label><textarea id="taskDesc" placeholder="Task details..."></textarea></div>
     </div>
@@ -1545,6 +1671,7 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
     </div>
     <div class="modal-body">
       <div class="form-grid">
+        <div class="form-group"><label>Entry Date</label><input type="date" id="corrEntryDate"></div>
         <div class="form-group"><label>Type *</label>
           <select id="corrType">
             <option>Draft</option><option>Letter</option>
@@ -1552,8 +1679,12 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
             <option>eOffice</option><option>Other</option>
           </select>
         </div>
-        <div class="form-group"><label>Allocated To *</label><input type="text" id="corrAllocTo" placeholder="Staff/officer name"></div>
-        <div class="form-group"><label>Allocated By</label><input type="text" id="corrAllocBy" placeholder="Your name"></div>
+        <div class="form-group"><label>Allocated To *</label>
+          <select id="corrAllocTo"><option value="">— Select Staff —</option></select>
+        </div>
+        <div class="form-group"><label>Allocated By</label>
+          <select id="corrAllocBy"><option value="">— Select Staff —</option></select>
+        </div>
         <div class="form-group"><label>Submission Mode</label>
           <select id="corrMode">
             <option>WhatsApp</option><option>Hardcopy</option>
@@ -1580,8 +1711,11 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
     </div>
     <div class="modal-body">
       <div class="form-grid">
+        <div class="form-group"><label>Entry Date</label><input type="date" id="igpEntryDate"></div>
         <div class="form-group"><label>Work Title *</label><input type="text" id="igpTitle" placeholder="Enter work title"></div>
-        <div class="form-group"><label>Assigned To *</label><input type="text" id="igpAssignedTo" placeholder="Staff/officer name"></div>
+        <div class="form-group"><label>Assigned To *</label>
+          <select id="igpAssignedTo"><option value="">— Select Staff —</option></select>
+        </div>
         <div class="form-group"><label>Priority</label>
           <select id="igpPriority"><option>Very High</option><option>High</option><option selected>Medium</option><option>Low</option></select>
         </div>
@@ -1606,16 +1740,19 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
     </div>
     <div class="modal-body">
       <div class="form-grid">
+        <div class="form-group"><label>Entry Date</label><input type="date" id="vcEntryDate"></div>
         <div class="form-group"><label>Subject *</label><input type="text" id="vcSubject" placeholder="VC subject/topic"></div>
-        <div class="form-group"><label>Date *</label><input type="date" id="vcDate"></div>
+        <div class="form-group"><label>VC Date *</label><input type="date" id="vcDate"></div>
         <div class="form-group"><label>Time *</label><input type="time" id="vcTime"></div>
         <div class="form-group"><label>Platform</label>
           <select id="vcPlatform">
-            <option>Zoom</option><option>Teams</option>
+            <option>BharatVC</option><option>Zoom</option><option>Teams</option>
             <option>Google Meet</option><option>Cisco Webex</option><option>Other</option>
           </select>
         </div>
-        <div class="form-group"><label>Speaker</label><input type="text" id="vcSpeaker" placeholder="Assigned speaker name"></div>
+        <div class="form-group"><label>Speaker</label>
+          <select id="vcSpeaker"><option value="">— Select Staff —</option></select>
+        </div>
         <div class="form-group"><label>Organiser</label><input type="text" id="vcOrganiser" placeholder="Organising office/officer"></div>
         <div class="form-group" style="grid-column:1/-1"><label>VC Link</label><input type="text" id="vcLink" placeholder="Paste meeting link here"></div>
         <div class="form-group" style="grid-column:1/-1"><label>Allotted Persons (comma separated)</label><input type="text" id="vcPersons" placeholder="Name1, Name2, Name3..."></div>
@@ -1689,29 +1826,32 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
 // CONFIG
 // ============================================================
 const RELAY_URL = 'https://script.google.com/macros/s/AKfycbx_TbS9YF-XXnm1wOQVFH7_UveazRuzB-i2LKhNcA5Uvs2KTPiMjMTTGmng1axQuuXc1g/exec';
+const ADMIN_PHONE = '9493946020';
+const ADMIN_PASS  = '8421';
+const STAFF_PASS  = '1111';
 
-// Demo users (in production this will come from Staff_Master sheet)
-const DEMO_USERS = {
-  'admin@appolice.gov.in':     { pass:'admin123',  name:'Admin (Anoj Kumar)',  rank:'RSI',    role:'admin' },
-  'bhanuhari.123@gmail.com':   { pass:'pass123',   name:'N. Bhanu Hari',       rank:'PC(C)',  role:'staff' },
-  'aashiqkhaleja1@gmail.com':  { pass:'pass123',   name:'D. Aashik',           rank:'PC',     role:'staff' },
-  'sowmyacctns@gmail.com':     { pass:'pass123',   name:'E. Sai Sowmya',       rank:'WPC(C)', role:'staff' },
-  'suneethacctns@gmail.com':   { pass:'pass123',   name:'M. Suneetha',         rank:'WPC',    role:'staff' },
-  'laljanibasha99@gmail.com':  { pass:'pass123',   name:'Sk. Lal John Basha',  rank:'HC(C)',  role:'staff' },
-  'iampvkprasad@gmail.com':    { pass:'pass123',   name:'PVK. Prasad',         rank:'HC(C)',  role:'staff' },
-};
-
-// Officer ranks (can assign duties)
 const OFFICER_RANKS = ['IGP','DIG','SP','AddSP','DySP','CI','SI','RSI','Inspector'];
 
 let currentUser = null;
 let allData = {};
+let staffListCache = null;
 let currentCmdFilter = 'all';
 let currentCorrFilter = 'all';
 let currentIGPFilter = 'all';
 let currentVCFilter  = 'all';
 let currentProjFilter= 'all';
 let currentNoticeFilter = 'Active';
+
+// Pre-load staff list on page load for fast login
+window.addEventListener('DOMContentLoaded', () => {
+  fetchSheet('Staff_Master').then(data => { staffListCache = data; });
+  // Set today's date as default in all date inputs
+  const today = new Date().toISOString().split('T')[0];
+  ['taskEntryDate','corrEntryDate','igpEntryDate','vcEntryDate'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = today;
+  });
+});
 
 // ============================================================
 // THEME
@@ -1735,26 +1875,75 @@ function toggleTheme() {
 })();
 
 // ============================================================
-// LOGIN
+// LOGIN — PHONE BASED
 // ============================================================
-function doLogin() {
-  const email = document.getElementById('loginEmail').value.trim().toLowerCase();
-  const pass  = document.getElementById('loginPass').value;
-  const user  = DEMO_USERS[email];
-  if (user && user.pass === pass) {
-    currentUser = { email, ...user };
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('appShell').style.display = 'block';
-    initApp();
-  } else {
-    const err = document.getElementById('loginError');
-    err.style.display = 'block';
-    setTimeout(() => err.style.display = 'none', 3000);
+async function doLogin() {
+  const phone = document.getElementById('loginPhone').value.trim();
+  const pass  = document.getElementById('loginPass').value.trim();
+  const btn   = document.getElementById('loginBtn');
+
+  if (!phone || !pass) {
+    showLoginError('Please enter phone number and password.');
+    return;
   }
+
+  // Admin shortcut
+  if (phone === ADMIN_PHONE && pass === ADMIN_PASS) {
+    currentUser = { phone, name: 'Admin (Anoj Kumar)', rank: 'RSI', role: 'admin', email: '' };
+    loginSuccess();
+    return;
+  }
+
+  btn.textContent = 'Verifying...';
+  btn.disabled = true;
+
+  try {
+    const staffList = staffListCache || await fetchSheet('Staff_Master');
+    staffListCache = staffList;
+
+    const staff = staffList.find(s => {
+      const p = String(s.Phone || s.Phone_Number || s['Phone Number'] || '').trim();
+      return p === phone;
+    });
+
+    if (staff && pass === STAFF_PASS) {
+      currentUser = {
+        phone,
+        name: staff.Full_Name || staff.Name || 'Staff',
+        rank: staff.Rank || '',
+        role: (staff.Role || 'staff').toLowerCase(),
+        email: staff.Gmail || '',
+        staffData: staff
+      };
+      loginSuccess();
+    } else {
+      showLoginError('Invalid phone number or password. Default password: 1111');
+    }
+  } catch(e) {
+    showLoginError('Connection error. Please check internet and try again.');
+  }
+
+  btn.textContent = 'SIGN IN';
+  btn.disabled = false;
 }
 
-document.getElementById('loginPass')?.addEventListener('keydown', e => {
-  if (e.key === 'Enter') doLogin();
+function showLoginError(msg) {
+  const err = document.getElementById('loginError');
+  err.textContent = msg;
+  err.style.display = 'block';
+  setTimeout(() => err.style.display = 'none', 4000);
+}
+
+function loginSuccess() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appShell').style.display = 'block';
+  initApp();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('loginPass')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
 });
 
 function doLogout() {
@@ -1762,29 +1951,34 @@ function doLogout() {
   allData = {};
   document.getElementById('appShell').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
-  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginPhone').value = '';
   document.getElementById('loginPass').value  = '';
+  document.getElementById('adminBadge').style.display = 'none';
 }
 
 // ============================================================
 // INIT APP
 // ============================================================
 function initApp() {
-  // User info in sidebar
   document.getElementById('sidebarName').textContent = currentUser.name;
   document.getElementById('sidebarRank').textContent = currentUser.rank;
-  document.getElementById('sidebarAvatar').textContent = currentUser.name[0];
+  document.getElementById('sidebarAvatar').textContent = (currentUser.name || 'A')[0];
 
-  // Show admin nav if admin
   if (currentUser.role === 'admin') {
     document.getElementById('adminNavItem').style.display = 'flex';
+    document.getElementById('staffMgmtNavItem').style.display = 'flex';
+    document.getElementById('adminBadge').style.display = 'inline-block';
   }
 
-  // Start live clock
+  // Set today as default in form date fields
+  const today = new Date().toISOString().split('T')[0];
+  ['taskEntryDate','corrEntryDate','igpEntryDate','vcEntryDate'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && !el.value) el.value = today;
+  });
+
   startClock();
   document.getElementById('punchUserName').textContent = currentUser.name;
-
-  // Load all data
   loadAllData();
   showScreen('dashboard');
 }
@@ -1819,12 +2013,24 @@ async function loadAllData() {
       fetchSheet('Rankings'),
     ]);
     allData = { staff, attendance, command, correspondence, igpworks, vcschedule, leave, notices, projects, rankings };
+    staffListCache = staff;
+    populateStaffDropdowns();
     renderDashboard();
     renderNoticesBanner();
     showToast('Data loaded successfully', 'success');
   } catch(e) {
     showToast('Error loading data. Check connection.', 'error');
   }
+}
+
+function populateStaffDropdowns() {
+  const active = (allData.staff || []).filter(s => (s.Status || 'Active') === 'Active');
+  const opts = '<option value="">— Select Staff —</option>' +
+    active.map(s => `<option value="${s.Full_Name||s.Name||''}">${s.Full_Name||s.Name||'—'} (${s.Rank||''})</option>`).join('');
+  ['taskAssignedTo','taskAssignedBy','corrAllocTo','corrAllocBy','igpAssignedTo','vcSpeaker'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.tagName === 'SELECT') el.innerHTML = opts;
+  });
 }
 
 function refreshData() { loadAllData(); }
@@ -1847,7 +2053,8 @@ function showScreen(name) {
     staff:'Staff Directory', profile:'My Profile',
     projects:'Projects', leave:'Leave Register',
     notices:'Notices', rankings:'Rankings',
-    reports:'Reports & Analytics', admin:'Admin Panel'
+    reports:'Reports & Analytics', admin:'Admin Panel',
+    staffmgmt:'Staff Management'
   };
   document.getElementById('topbarTitle').textContent = titles[name] || name;
 
@@ -1874,6 +2081,7 @@ function showScreen(name) {
   if (name === 'notices') renderNotices();
   if (name === 'rankings') renderRankings();
   if (name === 'reports') renderReports();
+  if (name === 'staffmgmt') renderStaffMgmt();
 }
 
 // ============================================================
@@ -2017,11 +2225,10 @@ function renderAttendance() {
     return d.startsWith(today);
   });
 
-  // WiFi simulation (in production detect actual WiFi)
   const wifiEl = document.getElementById('wifiStatus');
   const wifiTxt = document.getElementById('wifiStatusText');
   wifiEl.className = 'wifi-status connected';
-  wifiTxt.textContent = 'Connected to Office WiFi — Attendance available';
+  wifiTxt.textContent = 'Attendance requires office WiFi — contact admin if unable to punch in';
   document.getElementById('punchInBtn').disabled = false;
 
   const tbody = document.getElementById('attendanceBody');
@@ -2061,6 +2268,18 @@ function doPunchOut() {
 function renderCommand() {
   let data = allData.command || [];
   if (currentCmdFilter !== 'all') data = data.filter(t => t.Status === currentCmdFilter);
+
+  const fromDate = document.getElementById('cmdFromDate')?.value;
+  const toDate   = document.getElementById('cmdToDate')?.value;
+  if (fromDate) data = data.filter(t => {
+    const d = (t.Created_Date || t.Date || '').split('T')[0];
+    return d >= fromDate;
+  });
+  if (toDate) data = data.filter(t => {
+    const d = (t.Created_Date || t.Date || '').split('T')[0];
+    return d <= toDate;
+  });
+
   const search = document.getElementById('cmdSearch')?.value?.toLowerCase() || '';
   if (search) data = data.filter(t => (t.Task_Title||'').toLowerCase().includes(search) || (t.Assigned_To||'').toLowerCase().includes(search));
   const tbody = document.getElementById('commandBody');
@@ -2438,12 +2657,14 @@ function submitTask() {
   const title = document.getElementById('taskTitle').value.trim();
   const to    = document.getElementById('taskAssignedTo').value.trim();
   if (!title || !to) { showToast('Please fill all required fields', 'error'); return; }
+  const entryDate = document.getElementById('taskEntryDate').value || new Date().toISOString().split('T')[0];
   const serial = `${(allData.command||[]).length+1}/2026`;
+  const catEl = document.getElementById('taskCategory');
   const row = [
-    `T${Date.now()}`, serial, new Date().toISOString().split('T')[0],
+    `T${Date.now()}`, serial, entryDate,
     title, document.getElementById('taskDesc').value,
-    document.getElementById('taskCategory').options[document.getElementById('taskCategory').selectedIndex].text,
-    document.getElementById('taskCategory').value,
+    catEl.options[catEl.selectedIndex].text,
+    catEl.value,
     document.getElementById('taskPriority').value, to,
     document.getElementById('taskAssignedBy').value || currentUser.name,
     document.getElementById('taskDueDate').value, 'Pending',
@@ -2455,16 +2676,16 @@ function submitTask() {
   });
   closeModal('addTaskModal');
   document.getElementById('taskTitle').value = '';
-  document.getElementById('taskAssignedTo').value = '';
 }
 
 function submitCorr() {
   const subject = document.getElementById('corrSubject').value.trim();
   const to      = document.getElementById('corrAllocTo').value.trim();
   if (!subject || !to) { showToast('Please fill all required fields', 'error'); return; }
+  const entryDate = document.getElementById('corrEntryDate').value || new Date().toISOString().split('T')[0];
   const serial = `${(allData.correspondence||[]).length+1}/2026`;
   const row = [
-    `C${Date.now()}`, serial, new Date().toISOString().split('T')[0],
+    `C${Date.now()}`, serial, entryDate,
     document.getElementById('corrType').value, subject, to,
     document.getElementById('corrAllocBy').value || currentUser.name,
     'Draft Work Allocated',
@@ -2476,15 +2697,17 @@ function submitCorr() {
     loadAllData();
   });
   closeModal('addCorrModal');
+  document.getElementById('corrSubject').value = '';
 }
 
 function submitIGP() {
   const title = document.getElementById('igpTitle').value.trim();
   const to    = document.getElementById('igpAssignedTo').value.trim();
   if (!title || !to) { showToast('Please fill required fields', 'error'); return; }
+  const entryDate = document.getElementById('igpEntryDate').value || new Date().toISOString().split('T')[0];
   const serial = `${(allData.igpworks||[]).length+1}/2026`;
   const row = [
-    `I${Date.now()}`, serial, new Date().toISOString().split('T')[0],
+    `I${Date.now()}`, serial, entryDate,
     title, document.getElementById('igpDesc').value, to,
     document.getElementById('igpPriority').value, 'Pending',
     document.getElementById('igpDueDate').value, '',
@@ -2495,11 +2718,13 @@ function submitIGP() {
     loadAllData();
   });
   closeModal('addIGPModal');
+  document.getElementById('igpTitle').value = '';
 }
 
 function submitVC() {
   const subject = document.getElementById('vcSubject').value.trim();
   if (!subject) { showToast('Please enter subject', 'error'); return; }
+  const entryDate = document.getElementById('vcEntryDate').value || new Date().toISOString().split('T')[0];
   const serial = `${(allData.vcschedule||[]).length+1}/2026`;
   const row = [
     `V${Date.now()}`, serial, subject,
@@ -2513,13 +2738,14 @@ function submitVC() {
     'Upcoming', '', '',
     currentUser.name,
     document.getElementById('vcRemarks').value,
-    new Date().toISOString()
+    entryDate
   ];
   postToSheet('VC_Schedule', row).then(() => {
     showToast('VC scheduled successfully!', 'success');
     loadAllData();
   });
   closeModal('addVCModal');
+  document.getElementById('vcSubject').value = '';
 }
 
 function submitLeave() {
@@ -2635,6 +2861,98 @@ function loadCorrespondence() { renderCorrespondence(); }
 function loadIGPWorks() { renderIGPWorks(); }
 function loadVC() { renderVC(); }
 function loadLeave() { renderLeave(); }
+
+// ============================================================
+// STAFF MANAGEMENT
+// ============================================================
+function renderStaffMgmt() {
+  const search = (document.getElementById('sfSearch')?.value || '').toLowerCase();
+  let data = allData.staff || [];
+  if (search) data = data.filter(s =>
+    (s.Full_Name||'').toLowerCase().includes(search) ||
+    (s.Rank||'').toLowerCase().includes(search) ||
+    (s.Phone||'').includes(search)
+  );
+  const tbody = document.getElementById('staffMgmtBody');
+  if (!tbody) return;
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><i class="fa-solid fa-users"></i><p>No staff records found</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.map((s, i) => `
+    <tr>
+      <td>${i+1}</td>
+      <td><strong>${s.Full_Name||'—'}</strong></td>
+      <td>${s.Rank||'—'}</td>
+      <td>${s.Phone||s.Phone_Number||'—'}</td>
+      <td>${s.Gender||'—'}</td>
+      <td style="font-size:11px">${s.Gmail||'—'}</td>
+      <td>${s.Badge_No||'—'}</td>
+      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;font-size:11px">${s.Assigned_Projects||'—'}</td>
+      <td>${statusBadge(s.Status||'Active')}</td>
+      <td><button class="action-btn" title="Edit" onclick="loadStaffIntoForm(${i})"><i class="fa-solid fa-pen"></i></button></td>
+    </tr>`).join('');
+}
+
+function loadStaffIntoForm(index) {
+  const s = (allData.staff || [])[index];
+  if (!s) return;
+  document.getElementById('staffEditId').value = s.Staff_ID || s.ID || '';
+  document.getElementById('sfName').value      = s.Full_Name || '';
+  document.getElementById('sfRank').value      = s.Rank || '';
+  document.getElementById('sfPhone').value     = s.Phone || s.Phone_Number || '';
+  document.getElementById('sfGender').value    = s.Gender || 'Male';
+  document.getElementById('sfGmail').value     = s.Gmail || '';
+  document.getElementById('sfBadge').value     = s.Badge_No || '';
+  document.getElementById('sfProjects').value  = s.Assigned_Projects || '';
+  document.getElementById('sfDistrict').value  = s.District_Assigned || '';
+  document.getElementById('sfReporting').value = s.Reporting_Officer || '';
+  document.getElementById('sfStatus').value    = s.Status || 'Active';
+  document.getElementById('staffFormTitle').innerHTML = '<i class="fa-solid fa-pen"></i> Edit Staff — ' + (s.Full_Name || '');
+  document.getElementById('staffFormCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+function clearStaffForm() {
+  ['sfName','sfPhone','sfGmail','sfBadge','sfProjects','sfDistrict','sfReporting'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('staffEditId').value = '';
+  document.getElementById('sfRank').value   = '';
+  document.getElementById('sfGender').value = 'Male';
+  document.getElementById('sfStatus').value = 'Active';
+  document.getElementById('staffFormTitle').innerHTML = '<i class="fa-solid fa-user-plus"></i> Add New Staff';
+}
+
+async function submitStaffForm() {
+  const name  = document.getElementById('sfName').value.trim();
+  const phone = document.getElementById('sfPhone').value.trim();
+  const rank  = document.getElementById('sfRank').value;
+  if (!name || !phone || !rank) { showToast('Name, Phone and Rank are required', 'error'); return; }
+
+  const row = [
+    document.getElementById('staffEditId').value || `S${Date.now()}`,
+    name, rank, phone,
+    document.getElementById('sfGender').value,
+    document.getElementById('sfGmail').value,
+    document.getElementById('sfBadge').value,
+    document.getElementById('sfProjects').value,
+    document.getElementById('sfDistrict').value,
+    document.getElementById('sfReporting').value,
+    document.getElementById('sfStatus').value,
+    new Date().toISOString().split('T')[0]
+  ];
+
+  const ok = await postToSheet('Staff_Master', row);
+  if (ok !== false) {
+    showToast('Staff saved successfully!', 'success');
+    clearStaffForm();
+    await loadAllData();
+    renderStaffMgmt();
+  } else {
+    showToast('Saved. Will sync when online.', 'info');
+  }
+}
 </script>
 
 <script>
