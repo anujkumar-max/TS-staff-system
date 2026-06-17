@@ -1917,7 +1917,7 @@ async function doLogin() {
     return;
   }
 
-  if (phone === '9493946020' && pass === '8421') {
+  if (phone === ADMIN_PHONE && pass === ADMIN_PASS) {
     currentUser = {
       phone,
       name: 'Admin',
@@ -1947,7 +1947,7 @@ function loginWithStaffData(phone, pass) {
     && s.Status === 'Active'
   );
 
-  if (found && pass === '1111') {
+  if (found && pass === STAFF_PASS) {
     currentUser = {
       phone,
       name: found.Full_Name,
@@ -1967,11 +1967,7 @@ function loginWithStaffData(phone, pass) {
 }
 
 function isOfficerRank(rank) {
-  const officers = [
-    'IGP','DIG','SP','AddSP','DySP',
-    'CI','SI','RSI','Inspector'
-  ];
-  return officers.includes(rank);
+  return OFFICER_RANKS.includes(rank);
 }
 
 function showLoginError(msg) {
@@ -2858,6 +2854,20 @@ async function submitTask() {
   document.getElementById('taskTitle').value = '';
   document.querySelector('#addTaskModal .modal-title').textContent = 'Add Task to Command Register';
 
+  if (editContext && editContext.module === 'command') {
+    const idx = editContext.index;
+    if (allData.command && allData.command[idx]) {
+      allData.command[idx].Task_Title = title;
+      allData.command[idx].Created_Date = entryDate;
+      allData.command[idx].Description = document.getElementById('taskDesc').value;
+      allData.command[idx].Category = catEl.options[catEl.selectedIndex].text;
+      allData.command[idx].Priority = document.getElementById('taskPriority').value;
+      allData.command[idx].Assigned_To = to;
+      allData.command[idx].Assigned_By = document.getElementById('taskAssignedBy').value || currentUser.name;
+      allData.command[idx].Due_Date = document.getElementById('taskDueDate').value;
+    }
+  }
+
   // Show immediately in UI
   const localObj = {
     Task_ID: id, Serial_No: serial, Created_Date: entryDate,
@@ -2871,10 +2881,16 @@ async function submitTask() {
   else renderCommand();
 
   showToast('Saved successfully!', 'success');
+  const isEditing = !!editContext;
+  const currentEditContext = editContext;
   editContext = null;
 
   // Background sync to sheet
-  postToSheet('Command_Register', row);
+  if (isEditing) {
+    postAction('Command_Register', 'update', row, currentEditContext.row);
+  } else {
+    postToSheet('Command_Register', row);
+  }
 }
 
 async function submitCorr() {
@@ -2899,6 +2915,19 @@ async function submitCorr() {
   document.getElementById('corrSubject').value = '';
   document.querySelector('#addCorrModal .modal-title').textContent = 'New Correspondence Entry';
 
+  if (editContext && editContext.module === 'corr') {
+    const idx = editContext.index;
+    if (allData.correspondence && allData.correspondence[idx]) {
+      allData.correspondence[idx].Date = entryDate;
+      allData.correspondence[idx].Type = type;
+      allData.correspondence[idx].Subject = subject;
+      allData.correspondence[idx].Allocated_To = to;
+      allData.correspondence[idx].Allocated_By = by;
+      allData.correspondence[idx].Submission_Mode = mode;
+      allData.correspondence[idx].Remarks = remarks;
+    }
+  }
+
   const localObj = {
     Corr_ID: id, Serial_No: serial, Date: entryDate,
     Type: type, Subject: subject, Allocated_To: to, Allocated_By: by,
@@ -2909,8 +2938,15 @@ async function submitCorr() {
   else renderCorrespondence();
 
   showToast('Saved successfully!', 'success');
+  const isEditing = !!editContext;
+  const currentEditContext = editContext;
   editContext = null;
-  postToSheet('Correspondence_Tracker', row);
+
+  if (isEditing) {
+    postAction('Correspondence_Tracker', 'update', row, currentEditContext.row);
+  } else {
+    postToSheet('Correspondence_Tracker', row);
+  }
 }
 
 async function submitIGP() {
@@ -2935,6 +2971,19 @@ async function submitIGP() {
   document.getElementById('igpTitle').value = '';
   document.querySelector('#addIGPModal .modal-title').textContent = 'Add IGP Command Work';
 
+  if (editContext && editContext.module === 'igp') {
+    const idx = editContext.index;
+    if (allData.igpworks && allData.igpworks[idx]) {
+      allData.igpworks[idx].Date = entryDate;
+      allData.igpworks[idx].Work_Title = title;
+      allData.igpworks[idx].Description = desc;
+      allData.igpworks[idx].Assigned_To = to;
+      allData.igpworks[idx].Priority = priority;
+      allData.igpworks[idx].Due_Date = dueDate;
+      allData.igpworks[idx].Remarks = remarks;
+    }
+  }
+
   const localObj = {
     Work_ID: id, Serial_No: serial, Date: entryDate,
     Work_Title: title, Description: desc, Assigned_To: to,
@@ -2945,8 +2994,15 @@ async function submitIGP() {
   else renderIGPWorks();
 
   showToast('Saved successfully!', 'success');
+  const isEditing = !!editContext;
+  const currentEditContext = editContext;
   editContext = null;
-  postToSheet('IGP_Command_Works', row);
+
+  if (isEditing) {
+    postAction('IGP_Command_Works', 'update', row, currentEditContext.row);
+  } else {
+    postToSheet('IGP_Command_Works', row);
+  }
 }
 
 async function submitVC() {
@@ -2974,6 +3030,22 @@ async function submitVC() {
   document.getElementById('vcSubject').value = '';
   document.querySelector('#addVCModal .modal-title').textContent = 'Schedule VC / Meeting';
 
+  if (editContext && editContext.module === 'vc') {
+    const idx = editContext.index;
+    if (allData.vcschedule && allData.vcschedule[idx]) {
+      allData.vcschedule[idx].Subject = subject;
+      allData.vcschedule[idx].Date = vcDate;
+      allData.vcschedule[idx].Time = vcTime;
+      allData.vcschedule[idx].Platform = platform;
+      allData.vcschedule[idx].VC_Link = link;
+      allData.vcschedule[idx].Organiser = organiser;
+      allData.vcschedule[idx].Speaker = speaker;
+      allData.vcschedule[idx].Allotted_Persons = persons;
+      allData.vcschedule[idx].Remarks = remarks;
+      allData.vcschedule[idx].Entry_Date = entryDate;
+    }
+  }
+
   const localObj = {
     VC_ID: id, Serial_No: serial, Subject: subject,
     Date: vcDate, Time: vcTime, Platform: platform,
@@ -2984,8 +3056,15 @@ async function submitVC() {
   else renderVC();
 
   showToast('Saved successfully!', 'success');
+  const isEditing = !!editContext;
+  const currentEditContext = editContext;
   editContext = null;
-  postToSheet('VC_Schedule', row);
+
+  if (isEditing) {
+    postAction('VC_Schedule', 'update', row, currentEditContext.row);
+  } else {
+    postToSheet('VC_Schedule', row);
+  }
 }
 
 async function submitLeave() {
@@ -3147,9 +3226,8 @@ function renderStaffManagement() {
     '<td>' + statusBadge(s.Status) + '</td>' +
     '<td><div class="row-actions">' +
     '<button class="action-btn" ' +
-    'onclick="editStaff(' + i + ',' + 
-    JSON.stringify(s).replace(/'/g,"\'") + 
-    ')" title="Edit">' +
+    'onclick="editStaff(\'' + (s.Staff_ID || '') + '\')"' +
+    ' title="Edit">' +
     '<i class="fa-solid fa-pen"></i>' +
     '</button>' +
     '</div></td>' +
@@ -3188,9 +3266,8 @@ function renderStaffMgmt() {
     '<td>' + statusBadge(s.Status) + '</td>' +
     '<td><div class="row-actions">' +
     '<button class="action-btn" ' +
-    'onclick="editStaff(' + i + ',' + 
-    JSON.stringify(s).replace(/'/g,"\'") + 
-    ')" title="Edit">' +
+    'onclick="editStaff(\'' + (s.Staff_ID || '') + '\')"' +
+    ' title="Edit">' +
     '<i class="fa-solid fa-pen"></i>' +
     '</button>' +
     '</div></td>' +
@@ -3198,7 +3275,14 @@ function renderStaffMgmt() {
   ).join('');
 }
 
-function editStaff(rowIndex, staffObj) {
+function editStaff(staffId) {
+  const staff = allData.staff || [];
+  const staffObj = staff.find(s => s.Staff_ID === staffId);
+  if (!staffObj) return;
+
+  const originalIndex = staff.indexOf(staffObj);
+  const sheetRow = originalIndex !== -1 ? originalIndex + 2 : 2;
+
   document.getElementById('sfName')
     .value = staffObj.Full_Name || '';
   document.getElementById('sfRank')
@@ -3221,7 +3305,7 @@ function editStaff(rowIndex, staffObj) {
     .value = staffObj.Reporting_Officer || '';
 
   const btn = document.getElementById('sfSaveBtn');
-  btn.dataset.editRow = rowIndex + 2;
+  btn.dataset.editRow = sheetRow;
   btn.dataset.staffId = staffObj.Staff_ID || '';
   btn.textContent = 'Update Staff';
   
