@@ -1534,8 +1534,8 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
             <div class="section-title" style="margin-bottom:14px" id="staffFormTitle">
               <i class="fa-solid fa-user-plus"></i> Add New Staff
             </div>
-            <input type="hidden" id="staffEditId">
             <div class="form-grid">
+              <!-- Row 1: Name, Rank, Badge -->
               <div class="form-group"><label>Full Name *</label><input type="text" id="sfName" placeholder="Full name"></div>
               <div class="form-group"><label>Rank *</label>
                 <select id="sfRank">
@@ -1546,29 +1546,41 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
                   <option>WPC</option><option>HC(C)</option><option>PC(C)</option><option>WPC(C)</option>
                 </select>
               </div>
-              <div class="form-group"><label>Phone Number *</label><input type="tel" id="sfPhone" placeholder="10-digit phone (becomes login ID)"></div>
+              <div class="form-group"><label>Badge Number</label><input type="text" id="sfBadge" placeholder="Badge No."></div>
+              <!-- Row 2: Phone, Gender, Status -->
+              <div class="form-group">
+                <label>Phone Number * <span style="font-size:10px;color:var(--text3);font-weight:400">(Login ID)</span></label>
+                <input type="tel" id="sfPhone" placeholder="10-digit phone — this is the login ID">
+                <small style="color:var(--text3);font-size:10px;margin-top:3px">Default password: 1111</small>
+              </div>
               <div class="form-group"><label>Gender</label>
                 <select id="sfGender"><option>Male</option><option>Female</option></select>
               </div>
-              <div class="form-group"><label>Gmail</label><input type="email" id="sfGmail" placeholder="staff@gmail.com"></div>
-              <div class="form-group"><label>Badge Number</label><input type="text" id="sfBadge" placeholder="Badge No."></div>
-              <div class="form-group"><label>Assigned Projects</label><input type="text" id="sfProjects" placeholder="Project names"></div>
-              <div class="form-group"><label>District Assigned</label><input type="text" id="sfDistrict" placeholder="District name"></div>
-              <div class="form-group"><label>Reporting Officer</label><input type="text" id="sfReporting" placeholder="Officer name"></div>
               <div class="form-group"><label>Status</label>
                 <select id="sfStatus"><option>Active</option><option>Inactive</option></select>
               </div>
+              <!-- Row 3: Gmail, Projects, District -->
+              <div class="form-group"><label>Gmail</label><input type="email" id="sfGmail" placeholder="staff@gmail.com"></div>
+              <div class="form-group"><label>Assigned Projects</label><input type="text" id="sfProjects" placeholder="Project names"></div>
+              <div class="form-group"><label>District Assigned</label><input type="text" id="sfDistrict" placeholder="District name"></div>
+              <!-- Row 4: Reporting Officer full width -->
+              <div class="form-group" style="grid-column:1/-1"><label>Reporting Officer</label><input type="text" id="sfReporting" placeholder="Officer name"></div>
             </div>
             <div class="form-actions">
-              <button class="btn-primary" onclick="submitStaffForm()"><i class="fa-solid fa-floppy-disk"></i> Save Staff</button>
-              <button class="btn-secondary" onclick="clearStaffForm()">Clear</button>
+              <button class="btn-primary" id="sfSaveBtn" onclick="submitStaff()"><i class="fa-solid fa-floppy-disk"></i> Save Staff</button>
+              <button class="btn-secondary" id="sfClearBtn" onclick="clearStaffForm()">Clear Form</button>
             </div>
           </div>
 
           <!-- Staff List -->
           <div class="section-header" style="margin-top:8px">
             <div class="section-title">All Staff (loaded from sheet)</div>
-            <button class="view-all-btn" onclick="renderStaffMgmt()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+            <div style="display:flex;gap:8px">
+              <button class="view-all-btn" onclick="renderStaffMgmt()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+              <button onclick="clearAllStaff()" style="background:var(--danger);color:#fff;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;border:none;cursor:pointer">
+                <i class="fa-solid fa-trash"></i> Clear All Staff
+              </button>
+            </div>
           </div>
           <div class="search-bar">
             <i class="fa-solid fa-magnifying-glass"></i>
@@ -1914,20 +1926,21 @@ async function doLogin() {
   btn.disabled = true;
 
   try {
-    const staffList = staffListCache || await fetchSheet('Staff_Master');
-    staffListCache = staffList;
+    const staffList = (allData.staff && allData.staff.length > 0)
+      ? allData.staff
+      : await fetchSheet('Staff_Master');
+    allData.staff = staffList;
 
-    const staff = staffList.find(s => {
-      const p = String(s.Phone || s.Phone_Number || s['Phone Number'] || '').trim();
-      return p === phone;
-    });
+    const staff = staffList.find(s =>
+      String(s.Phone || '').trim() === phone
+    );
 
     if (staff && pass === STAFF_PASS) {
       currentUser = {
         phone,
         name: staff.Full_Name || staff.Name || 'Staff',
         rank: staff.Rank || '',
-        role: (staff.Role || 'staff').toLowerCase(),
+        role: isOfficerRank(staff.Rank) ? 'officer' : 'staff',
         email: staff.Gmail || '',
         staffData: staff
       };
@@ -1941,6 +1954,10 @@ async function doLogin() {
 
   btn.textContent = 'SIGN IN';
   btn.disabled = false;
+}
+
+function isOfficerRank(rank) {
+  return ['IGP','DIG','SP','AddSP','DySP','CI','Inspector','SI','ASI','RSI'].includes(rank || '');
 }
 
 function showLoginError(msg) {
@@ -1960,6 +1977,13 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('loginPass')?.addEventListener('keydown', e => {
     if (e.key === 'Enter') doLogin();
   });
+});
+
+window.addEventListener('load', async () => {
+  try {
+    const staff = await fetchSheet('Staff_Master');
+    allData.staff = staff;
+  } catch(e) { /* continue without pre-load */ }
 });
 
 function doLogout() {
@@ -3080,7 +3104,7 @@ function renderStaffMgmt() {
   if (search) data = data.filter(s =>
     (s.Full_Name || s.Name || '').toLowerCase().includes(search) ||
     (s.Rank || '').toLowerCase().includes(search) ||
-    String(s.Phone || s.Phone_Number || '').includes(search)
+    String(s.Phone || '').includes(search)
   );
   const tbody = document.getElementById('staffMgmtBody');
   if (!tbody) return;
@@ -3088,39 +3112,39 @@ function renderStaffMgmt() {
     tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fa-solid fa-users"></i><p>No staff records found</p></div></td></tr>`;
     return;
   }
-  tbody.innerHTML = data.map((s, i) => `
-    <tr>
+  tbody.innerHTML = data.map((s, i) => {
+    const staffObj = JSON.stringify(s).replace(/'/g, '&#39;');
+    return `<tr>
       <td>${i + 1}</td>
       <td><strong>${s.Full_Name || s.Name || '—'}</strong></td>
       <td>${s.Rank || '—'}</td>
-      <td>${s.Phone || s.Phone_Number || '—'}</td>
+      <td>${s.Phone || '—'}</td>
       <td>${s.Gender || '—'}</td>
       <td>${s.Badge_No || '—'}</td>
       <td>${statusBadge(s.Status || 'Active')}</td>
       <td><div class="row-actions">
-        <button class="action-btn" title="Edit" onclick="loadStaffIntoForm(${i})"><i class="fa-solid fa-pen"></i></button>
+        <button class="action-btn" title="Edit" onclick='editStaff(${i}, ${staffObj})'><i class="fa-solid fa-pen"></i></button>
         <button class="action-btn" title="Toggle Status" onclick="toggleStaffStatus(${i})"><i class="fa-solid fa-toggle-on"></i></button>
       </div></td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
-function loadStaffIntoForm(index) {
-  const s = (allData.staff || [])[index];
-  if (!s) return;
-  const editId = document.getElementById('staffEditId');
-  editId.value = s.Staff_ID || s.ID || '';
-  editId.dataset.row = rowNumber(s, index);
-  editId.dataset.index = index;
+function editStaff(rowIndex, staffObj) {
+  const s = staffObj;
+  const btn = document.getElementById('sfSaveBtn');
+  btn.dataset.editRow = rowIndex + 2;
+  btn.dataset.staffId = s.Staff_ID || s.ID || '';
   document.getElementById('sfName').value      = s.Full_Name || s.Name || '';
   document.getElementById('sfRank').value      = s.Rank || '';
-  document.getElementById('sfPhone').value     = s.Phone || s.Phone_Number || '';
-  document.getElementById('sfGender').value    = s.Gender || 'Male';
-  document.getElementById('sfGmail').value     = s.Gmail || '';
   document.getElementById('sfBadge').value     = s.Badge_No || '';
+  document.getElementById('sfPhone').value     = s.Phone || '';
+  document.getElementById('sfGender').value    = s.Gender || 'Male';
+  document.getElementById('sfStatus').value    = s.Status || 'Active';
+  document.getElementById('sfGmail').value     = s.Gmail || '';
   document.getElementById('sfProjects').value  = s.Assigned_Projects || '';
   document.getElementById('sfDistrict').value  = s.District_Assigned || '';
   document.getElementById('sfReporting').value = s.Reporting_Officer || '';
-  document.getElementById('sfStatus').value    = s.Status || 'Active';
   document.getElementById('staffFormTitle').innerHTML = '<i class="fa-solid fa-pen"></i> Edit Staff';
   document.getElementById('staffFormCard').scrollIntoView({ behavior: 'smooth' });
 }
@@ -3130,68 +3154,104 @@ function clearStaffForm() {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
-  const editId = document.getElementById('staffEditId');
-  editId.value = '';
-  editId.dataset.row = '';
-  editId.dataset.index = '';
   document.getElementById('sfRank').value   = '';
   document.getElementById('sfGender').value = 'Male';
   document.getElementById('sfStatus').value = 'Active';
+  const btn = document.getElementById('sfSaveBtn');
+  btn.dataset.editRow = '';
+  btn.dataset.staffId = '';
   document.getElementById('staffFormTitle').innerHTML = '<i class="fa-solid fa-user-plus"></i> Add New Staff';
 }
 
-async function submitStaffForm() {
-  const name  = document.getElementById('sfName').value.trim();
-  const phone = document.getElementById('sfPhone').value.trim();
-  const rank  = document.getElementById('sfRank').value;
-  if (!name || !phone || !rank) { showToast('Name, Phone and Rank are required', 'error'); return; }
-  const editId = document.getElementById('staffEditId').value;
-  const editRow = Number(document.getElementById('staffEditId').dataset.row || 0);
-  const row = [
-    editId || `S${Date.now()}`,
-    name, rank, phone,
-    document.getElementById('sfGender').value,
-    document.getElementById('sfGmail').value,
-    document.getElementById('sfBadge').value,
-    document.getElementById('sfProjects').value,
-    document.getElementById('sfDistrict').value,
-    document.getElementById('sfReporting').value,
-    document.getElementById('sfStatus').value,
-    new Date().toISOString().split('T')[0]
+async function submitStaff() {
+  const fullName  = document.getElementById('sfName').value.trim();
+  const phone     = document.getElementById('sfPhone').value.trim();
+  const rank      = document.getElementById('sfRank').value;
+  if (!fullName || !phone || !rank) { showToast('Name, Phone and Rank are required', 'error'); return; }
+
+  const btn            = document.getElementById('sfSaveBtn');
+  const editRow        = Number(btn.dataset.editRow || 0);
+  const staffId        = btn.dataset.staffId || `S${Date.now()}`;
+  const badgeNo        = document.getElementById('sfBadge').value.trim();
+  const gender         = document.getElementById('sfGender').value;
+  const status         = document.getElementById('sfStatus').value;
+  const gmail          = document.getElementById('sfGmail').value.trim();
+  const assignedProjects = document.getElementById('sfProjects').value.trim();
+  const districtAssigned = document.getElementById('sfDistrict').value.trim();
+  const reportingOfficer = document.getElementById('sfReporting').value.trim();
+
+  const rowData = [
+    staffId,           // Col A: Staff_ID
+    fullName,          // Col B: Full_Name
+    rank,              // Col C: Rank
+    badgeNo,           // Col D: Badge_No
+    gender,            // Col E: Gender
+    gmail,             // Col F: Gmail
+    phone,             // Col G: Phone
+    '',                // Col H: Date_Joined
+    status,            // Col I: Status
+    '',                // Col J: Profile_Photo_URL
+    assignedProjects,  // Col K: Assigned_Projects
+    districtAssigned,  // Col L: District_Assigned
+    reportingOfficer,  // Col M: Reporting_Officer
+    new Date().toISOString().split('T')[0] // Col N: Created_Date
   ];
-  showToast(editId ? 'Updating staff...' : 'Adding staff...', 'info');
-  const ok = editId ? await postAction('Staff_Master', 'update', row, editRow) : await postToSheet('Staff_Master', row);
-  if (ok !== false) {
-    showToast(editId ? 'Staff updated successfully' : 'Staff added successfully', 'success');
-    clearStaffForm();
+
+  showToast(editRow ? 'Updating staff...' : 'Adding staff...', 'info');
+
+  if (editRow) {
+    await postAction('Staff_Master', 'update', rowData, editRow);
+  } else {
+    await postToSheet('Staff_Master', rowData);
+  }
+
+  showToast(editRow ? 'Staff updated!' : 'Staff added!', 'success');
+  clearStaffForm();
+  setTimeout(async () => {
     await loadAllData();
     renderStaffMgmt();
     updateAllDropdowns();
-  } else {
-    showToast('Could not save staff. Please try again.', 'error');
-  }
+  }, 3000);
+}
+
+async function clearAllStaff() {
+  if (!confirm('Clear ALL staff records? This cannot be undone.')) return;
+  if (currentUser?.role !== 'admin') { showToast('Admin only', 'error'); return; }
+  showToast('Clearing all staff...', 'info');
+  await fetch(RELAY_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sheet: 'Staff_Master', action: 'clearRows' })
+  });
+  allData.staff = [];
+  renderStaffMgmt();
+  updateAllDropdowns();
+  showToast('All staff cleared', 'success');
 }
 
 async function toggleStaffStatus(index) {
   const s = (allData.staff || [])[index];
   if (!s) return;
   const next = (s.Status || 'Active') === 'Active' ? 'Inactive' : 'Active';
-  const row = [
-    s.Staff_ID || s.ID || `S${Date.now()}`,
+  const rowData = [
+    s.Staff_ID || `S${Date.now()}`,
     s.Full_Name || s.Name || '',
     s.Rank || '',
-    s.Phone || s.Phone_Number || '',
+    s.Badge_No || '',
     s.Gender || '',
     s.Gmail || '',
-    s.Badge_No || '',
+    s.Phone || '',
+    s.Date_Joined || '',
+    next,
+    s.Profile_Photo_URL || '',
     s.Assigned_Projects || '',
     s.District_Assigned || '',
     s.Reporting_Officer || '',
-    next,
-    s.Created_Date || s.Date || new Date().toISOString().split('T')[0]
+    s.Created_Date || new Date().toISOString().split('T')[0]
   ];
   showToast('Updating status...', 'info');
-  await postAction('Staff_Master', 'update', row, rowNumber(s, index));
+  await postAction('Staff_Master', 'update', rowData, rowNumber(s, index));
   await loadAllData();
   renderStaffMgmt();
   updateAllDropdowns();
