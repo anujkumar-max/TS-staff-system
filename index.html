@@ -831,7 +831,7 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
     <div class="login-sub">Staff Monitoring System &nbsp;|&nbsp; IGP Office, Mangalagiri</div>
     <div class="login-field">
       <label>Phone Number / Staff ID</label>
-      <input type="tel" id="loginPhone" placeholder="Enter your phone number" autocomplete="tel">
+      <input type="tel" id="loginEmail" placeholder="Enter your phone number" autocomplete="tel">
     </div>
     <div class="login-field">
       <label>Password</label>
@@ -1542,16 +1542,16 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
                   <option value="">— Select Rank —</option>
                   <option>IGP</option><option>DIG</option><option>SP</option><option>AddSP</option>
                   <option>DySP</option><option>CI</option><option>SI</option><option>ASI</option>
-                  <option>Inspector</option><option>RSI</option><option>HC</option><option>PC</option>
-                  <option>WPC</option><option>HC(C)</option><option>PC(C)</option><option>WPC(C)</option>
+                  <option>HC</option><option>PC</option><option>WPC</option><option>Inspector</option>
+                  <option>HC(C)</option><option>PC(C)</option><option>WPC(C)</option><option>RSI</option>
                 </select>
               </div>
               <div class="form-group"><label>Badge Number</label><input type="text" id="sfBadge" placeholder="Badge No."></div>
               <!-- Row 2: Phone, Gender, Status -->
               <div class="form-group">
-                <label>Phone Number * <span style="font-size:10px;color:var(--text3);font-weight:400">(Login ID)</span></label>
-                <input type="tel" id="sfPhone" placeholder="10-digit phone — this is the login ID">
-                <small style="color:var(--text3);font-size:10px;margin-top:3px">Default password: 1111</small>
+                <label>Phone Number (Login ID) *</label>
+                <input type="text" id="sfPhone" placeholder="Enter phone number">
+                <small style="color:var(--text3);font-size:10px;margin-top:3px;display:block">This will be staff login ID</small>
               </div>
               <div class="form-group"><label>Gender</label>
                 <select id="sfGender"><option>Male</option><option>Female</option></select>
@@ -1578,7 +1578,7 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
             <div style="display:flex;gap:8px">
               <button class="view-all-btn" onclick="renderStaffMgmt()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
               <button onclick="clearAllStaff()" style="background:var(--danger);color:#fff;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;border:none;cursor:pointer">
-                <i class="fa-solid fa-trash"></i> Clear All Staff
+                <i class="fa-solid fa-trash"></i> Clear All Staff (Admin Only)
               </button>
             </div>
           </div>
@@ -1906,70 +1906,88 @@ function toggleTheme() {
 // LOGIN — PHONE BASED
 // ============================================================
 async function doLogin() {
-  const phone = document.getElementById('loginPhone').value.trim();
-  const pass  = document.getElementById('loginPass').value.trim();
-  const btn   = document.getElementById('loginBtn');
+  const phone = document
+    .getElementById('loginEmail')
+    .value.trim();
+  const pass = document
+    .getElementById('loginPass').value;
 
   if (!phone || !pass) {
-    showLoginError('Please enter phone number and password.');
+    showLoginError('Enter phone and password');
     return;
   }
 
-  // Admin shortcut
-  if (phone === ADMIN_PHONE && pass === ADMIN_PASS) {
-    currentUser = { phone, name: 'Admin (Anoj Kumar)', rank: 'RSI', role: 'admin', email: '' };
-    loginSuccess();
+  if (phone === '9493946020' && pass === '8421') {
+    currentUser = {
+      phone,
+      name: 'Admin',
+      rank: 'RSI',
+      role: 'admin',
+      email: 'admin@appolice.gov.in'
+    };
+    startApp();
     return;
   }
 
-  btn.textContent = 'Verifying...';
-  btn.disabled = true;
+  if (allData.staff && allData.staff.length > 0) {
+    loginWithStaffData(phone, pass);
+    return;
+  }
 
-  try {
-    const staffList = (allData.staff && allData.staff.length > 0)
-      ? allData.staff
-      : await fetchSheet('Staff_Master');
-    allData.staff = staffList;
+  showToast('Loading staff data...', 'info');
+  const staff = await fetchSheet('Staff_Master');
+  allData.staff = staff;
+  loginWithStaffData(phone, pass);
+}
 
-    const staff = staffList.find(s =>
-      String(s.Phone || '').trim() === phone
+function loginWithStaffData(phone, pass) {
+  const staff = allData.staff || [];
+  const found = staff.find(s => 
+    String(s.Phone).trim() === String(phone).trim()
+    && s.Status === 'Active'
+  );
+
+  if (found && pass === '1111') {
+    currentUser = {
+      phone,
+      name: found.Full_Name,
+      rank: found.Rank,
+      role: isOfficerRank(found.Rank) 
+        ? 'officer' 
+        : 'staff',
+      email: found.Gmail || '',
+      staffData: found
+    };
+    startApp();
+  } else {
+    showLoginError(
+      'Invalid phone number or password'
     );
-
-    if (staff && pass === STAFF_PASS) {
-      currentUser = {
-        phone,
-        name: staff.Full_Name || staff.Name || 'Staff',
-        rank: staff.Rank || '',
-        role: isOfficerRank(staff.Rank) ? 'officer' : 'staff',
-        email: staff.Gmail || '',
-        staffData: staff
-      };
-      loginSuccess();
-    } else {
-      showLoginError('Invalid phone number or password. Default password: 1111');
-    }
-  } catch(e) {
-    showLoginError('Connection error. Please check internet and try again.');
   }
-
-  btn.textContent = 'SIGN IN';
-  btn.disabled = false;
 }
 
 function isOfficerRank(rank) {
-  return ['IGP','DIG','SP','AddSP','DySP','CI','Inspector','SI','ASI','RSI'].includes(rank || '');
+  const officers = [
+    'IGP','DIG','SP','AddSP','DySP',
+    'CI','SI','RSI','Inspector'
+  ];
+  return officers.includes(rank);
 }
 
 function showLoginError(msg) {
   const err = document.getElementById('loginError');
   err.textContent = msg;
   err.style.display = 'block';
-  setTimeout(() => err.style.display = 'none', 4000);
+  setTimeout(() => {
+    err.style.display = 'none';
+  }, 3000);
 }
 
-function loginSuccess() {
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('appShell').style.display = 'block';
+function startApp() {
+  document.getElementById('loginScreen')
+    .style.display = 'none';
+  document.getElementById('appShell')
+    .style.display = 'block';
   initApp();
 }
 
@@ -1983,7 +2001,9 @@ window.addEventListener('load', async () => {
   try {
     const staff = await fetchSheet('Staff_Master');
     allData.staff = staff;
-  } catch(e) { /* continue without pre-load */ }
+  } catch(e) {
+    allData.staff = [];
+  }
 });
 
 function doLogout() {
@@ -1991,7 +2011,7 @@ function doLogout() {
   allData = {};
   document.getElementById('appShell').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
-  document.getElementById('loginPhone').value = '';
+  document.getElementById('loginEmail').value = '';
   document.getElementById('loginPass').value  = '';
   document.getElementById('adminBadge').style.display = 'none';
 }
@@ -3098,10 +3118,53 @@ function loadLeave() { renderLeave(); }
 // ============================================================
 // STAFF MANAGEMENT
 // ============================================================
+function renderStaffManagement() {
+  const staff = allData.staff || [];
+  const tbody = document
+    .getElementById('staffMgmtBody');
+  
+  if (staff.length === 0) {
+    tbody.innerHTML = 
+      '<tr><td colspan="8">' +
+      '<div class="empty-state">' +
+      '<i class="fa-solid fa-users"></i>' +
+      '<p>No staff added yet. ' +
+      'Use form above to add staff.</p>' +
+      '</div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = staff.map((s, i) => 
+    '<tr>' +
+    '<td>' + (i + 1) + '</td>' +
+    '<td><strong>' + 
+      (s.Full_Name || '—') + 
+    '</strong></td>' +
+    '<td>' + (s.Rank || '—') + '</td>' +
+    '<td>' + (s.Phone || '—') + '</td>' +
+    '<td>' + (s.Gender || '—') + '</td>' +
+    '<td>' + (s.Badge_No || '—') + '</td>' +
+    '<td>' + statusBadge(s.Status) + '</td>' +
+    '<td><div class="row-actions">' +
+    '<button class="action-btn" ' +
+    'onclick="editStaff(' + i + ',' + 
+    JSON.stringify(s).replace(/'/g,"\'") + 
+    ')" title="Edit">' +
+    '<i class="fa-solid fa-pen"></i>' +
+    '</button>' +
+    '</div></td>' +
+    '</tr>'
+  ).join('');
+}
+
 function renderStaffMgmt() {
   const search = (document.getElementById('sfSearch')?.value || '').toLowerCase();
+  if (!search) {
+    renderStaffManagement();
+    return;
+  }
   let data = allData.staff || [];
-  if (search) data = data.filter(s =>
+  data = data.filter(s =>
     (s.Full_Name || s.Name || '').toLowerCase().includes(search) ||
     (s.Rank || '').toLowerCase().includes(search) ||
     String(s.Phone || '').includes(search)
@@ -3112,111 +3175,184 @@ function renderStaffMgmt() {
     tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fa-solid fa-users"></i><p>No staff records found</p></div></td></tr>`;
     return;
   }
-  tbody.innerHTML = data.map((s, i) => {
-    const staffObj = JSON.stringify(s).replace(/'/g, '&#39;');
-    return `<tr>
-      <td>${i + 1}</td>
-      <td><strong>${s.Full_Name || s.Name || '—'}</strong></td>
-      <td>${s.Rank || '—'}</td>
-      <td>${s.Phone || '—'}</td>
-      <td>${s.Gender || '—'}</td>
-      <td>${s.Badge_No || '—'}</td>
-      <td>${statusBadge(s.Status || 'Active')}</td>
-      <td><div class="row-actions">
-        <button class="action-btn" title="Edit" onclick='editStaff(${i}, ${staffObj})'><i class="fa-solid fa-pen"></i></button>
-        <button class="action-btn" title="Toggle Status" onclick="toggleStaffStatus(${i})"><i class="fa-solid fa-toggle-on"></i></button>
-      </div></td>
-    </tr>`;
-  }).join('');
+  tbody.innerHTML = data.map((s, i) => 
+    '<tr>' +
+    '<td>' + (i + 1) + '</td>' +
+    '<td><strong>' + 
+      (s.Full_Name || '—') + 
+    '</strong></td>' +
+    '<td>' + (s.Rank || '—') + '</td>' +
+    '<td>' + (s.Phone || '—') + '</td>' +
+    '<td>' + (s.Gender || '—') + '</td>' +
+    '<td>' + (s.Badge_No || '—') + '</td>' +
+    '<td>' + statusBadge(s.Status) + '</td>' +
+    '<td><div class="row-actions">' +
+    '<button class="action-btn" ' +
+    'onclick="editStaff(' + i + ',' + 
+    JSON.stringify(s).replace(/'/g,"\'") + 
+    ')" title="Edit">' +
+    '<i class="fa-solid fa-pen"></i>' +
+    '</button>' +
+    '</div></td>' +
+    '</tr>'
+  ).join('');
 }
 
 function editStaff(rowIndex, staffObj) {
-  const s = staffObj;
+  document.getElementById('sfName')
+    .value = staffObj.Full_Name || '';
+  document.getElementById('sfRank')
+    .value = staffObj.Rank || '';
+  document.getElementById('sfBadge')
+    .value = staffObj.Badge_No || '';
+  document.getElementById('sfPhone')
+    .value = staffObj.Phone || '';
+  document.getElementById('sfGender')
+    .value = staffObj.Gender || 'Male';
+  document.getElementById('sfStatus')
+    .value = staffObj.Status || 'Active';
+  document.getElementById('sfGmail')
+    .value = staffObj.Gmail || '';
+  document.getElementById('sfProjects')
+    .value = staffObj.Assigned_Projects || '';
+  document.getElementById('sfDistrict')
+    .value = staffObj.District_Assigned || '';
+  document.getElementById('sfReporting')
+    .value = staffObj.Reporting_Officer || '';
+
   const btn = document.getElementById('sfSaveBtn');
   btn.dataset.editRow = rowIndex + 2;
-  btn.dataset.staffId = s.Staff_ID || s.ID || '';
-  document.getElementById('sfName').value      = s.Full_Name || s.Name || '';
-  document.getElementById('sfRank').value      = s.Rank || '';
-  document.getElementById('sfBadge').value     = s.Badge_No || '';
-  document.getElementById('sfPhone').value     = s.Phone || '';
-  document.getElementById('sfGender').value    = s.Gender || 'Male';
-  document.getElementById('sfStatus').value    = s.Status || 'Active';
-  document.getElementById('sfGmail').value     = s.Gmail || '';
-  document.getElementById('sfProjects').value  = s.Assigned_Projects || '';
-  document.getElementById('sfDistrict').value  = s.District_Assigned || '';
-  document.getElementById('sfReporting').value = s.Reporting_Officer || '';
-  document.getElementById('staffFormTitle').innerHTML = '<i class="fa-solid fa-pen"></i> Edit Staff';
-  document.getElementById('staffFormCard').scrollIntoView({ behavior: 'smooth' });
+  btn.dataset.staffId = staffObj.Staff_ID || '';
+  btn.textContent = 'Update Staff';
+  
+  document.getElementById('staffFormTitle')
+    .textContent = 'Edit Staff';
+  
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  showToast('Staff loaded for editing', 'info');
 }
 
 function clearStaffForm() {
-  ['sfName','sfPhone','sfGmail','sfBadge','sfProjects','sfDistrict','sfReporting'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-  document.getElementById('sfRank').value   = '';
+  document.getElementById('sfName').value = '';
+  document.getElementById('sfRank').value = '';
+  document.getElementById('sfBadge').value = '';
+  document.getElementById('sfPhone').value = '';
   document.getElementById('sfGender').value = 'Male';
   document.getElementById('sfStatus').value = 'Active';
+  document.getElementById('sfGmail').value = '';
+  document.getElementById('sfProjects').value = '';
+  document.getElementById('sfDistrict').value = '';
+  document.getElementById('sfReporting').value = '';
+  
   const btn = document.getElementById('sfSaveBtn');
   btn.dataset.editRow = '';
   btn.dataset.staffId = '';
-  document.getElementById('staffFormTitle').innerHTML = '<i class="fa-solid fa-user-plus"></i> Add New Staff';
+  btn.textContent = 'Save Staff';
+  
+  document.getElementById('staffFormTitle')
+    .textContent = 'Add New Staff';
 }
 
 async function submitStaff() {
-  const fullName  = document.getElementById('sfName').value.trim();
-  const phone     = document.getElementById('sfPhone').value.trim();
-  const rank      = document.getElementById('sfRank').value;
-  if (!fullName || !phone || !rank) { showToast('Name, Phone and Rank are required', 'error'); return; }
-
-  const btn            = document.getElementById('sfSaveBtn');
-  const editRow        = Number(btn.dataset.editRow || 0);
-  const staffId        = btn.dataset.staffId || `S${Date.now()}`;
-  const badgeNo        = document.getElementById('sfBadge').value.trim();
-  const gender         = document.getElementById('sfGender').value;
-  const status         = document.getElementById('sfStatus').value;
-  const gmail          = document.getElementById('sfGmail').value.trim();
-  const assignedProjects = document.getElementById('sfProjects').value.trim();
-  const districtAssigned = document.getElementById('sfDistrict').value.trim();
-  const reportingOfficer = document.getElementById('sfReporting').value.trim();
-
-  const rowData = [
-    staffId,           // Col A: Staff_ID
-    fullName,          // Col B: Full_Name
-    rank,              // Col C: Rank
-    badgeNo,           // Col D: Badge_No
-    gender,            // Col E: Gender
-    gmail,             // Col F: Gmail
-    phone,             // Col G: Phone
-    '',                // Col H: Date_Joined
-    status,            // Col I: Status
-    '',                // Col J: Profile_Photo_URL
-    assignedProjects,  // Col K: Assigned_Projects
-    districtAssigned,  // Col L: District_Assigned
-    reportingOfficer,  // Col M: Reporting_Officer
-    new Date().toISOString().split('T')[0] // Col N: Created_Date
-  ];
-
-  showToast(editRow ? 'Updating staff...' : 'Adding staff...', 'info');
-
-  if (editRow) {
-    await postAction('Staff_Master', 'update', rowData, editRow);
-  } else {
-    await postToSheet('Staff_Master', rowData);
+  const fullName = document
+    .getElementById('sfName').value.trim();
+  const rank = document
+    .getElementById('sfRank').value;
+  const phone = document
+    .getElementById('sfPhone').value.trim();
+  
+  if (!fullName || !rank || !phone) {
+    showToast(
+      'Name, Rank and Phone are required',
+      'error'
+    );
+    return;
   }
 
-  showToast(editRow ? 'Staff updated!' : 'Staff added!', 'success');
+  const btn = document.getElementById('sfSaveBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  const isEditing = btn.dataset.editRow;
+  const staffId = isEditing 
+    ? btn.dataset.staffId 
+    : 'S' + Date.now();
+
+  const rowData = [
+    staffId,
+    fullName,
+    rank,
+    document.getElementById('sfBadge')
+      .value.trim(),
+    document.getElementById('sfGender').value,
+    document.getElementById('sfGmail')
+      .value.trim(),
+    phone,
+    '',
+    document.getElementById('sfStatus').value,
+    '',
+    document.getElementById('sfProjects')
+      .value.trim(),
+    document.getElementById('sfDistrict')
+      .value.trim(),
+    document.getElementById('sfReporting')
+      .value.trim(),
+    new Date().toISOString().split('T')[0]
+  ];
+
+  if (isEditing) {
+    await fetch(RELAY_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 
+        'Content-Type': 'application/json' 
+      },
+      body: JSON.stringify({
+        sheet: 'Staff_Master',
+        action: 'update',
+        row: parseInt(btn.dataset.editRow),
+        col: 1,
+        data: rowData
+      })
+    });
+    showToast('Updating...', 'info');
+  } else {
+    await fetch(RELAY_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 
+        'Content-Type': 'application/json' 
+      },
+      body: JSON.stringify({
+        sheet: 'Staff_Master',
+        action: 'append',
+        data: rowData
+      })
+    });
+    showToast('Saving...', 'info');
+  }
+
+  await new Promise(r => setTimeout(r, 3000));
+  await loadAllData();
+  
+  renderStaffManagement();
+  updateAllDropdowns();
+  
   clearStaffForm();
-  setTimeout(async () => {
-    await loadAllData();
-    renderStaffMgmt();
-    updateAllDropdowns();
-  }, 3000);
+  
+  btn.disabled = false;
+  btn.textContent = 'Save Staff';
+  
+  showToast(
+    isEditing 
+      ? 'Staff updated successfully!' 
+      : 'Staff added successfully!',
+    'success'
+  );
 }
 
 async function clearAllStaff() {
-  if (!confirm('Clear ALL staff records? This cannot be undone.')) return;
-  if (currentUser?.role !== 'admin') { showToast('Admin only', 'error'); return; }
+  if (!confirm('This will delete ALL staff records. Are you sure?')) return;
   showToast('Clearing all staff...', 'info');
   await fetch(RELAY_URL, {
     method: 'POST',
@@ -3225,9 +3361,9 @@ async function clearAllStaff() {
     body: JSON.stringify({ sheet: 'Staff_Master', action: 'clearRows' })
   });
   allData.staff = [];
-  renderStaffMgmt();
+  renderStaffManagement();
   updateAllDropdowns();
-  showToast('All staff cleared', 'success');
+  showToast('All staff cleared. Please add staff again.', 'success');
 }
 
 async function toggleStaffStatus(index) {
