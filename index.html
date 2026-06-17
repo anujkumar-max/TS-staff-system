@@ -3226,8 +3226,9 @@ function renderStaffManagement() {
     '<td>' + statusBadge(s.Status) + '</td>' +
     '<td><div class="row-actions">' +
     '<button class="action-btn" ' +
-    'onclick="editStaff(\'' + (s.Staff_ID || '') + '\')"' +
-    ' title="Edit">' +
+    'onclick="editStaff(' + i + ',' + 
+    JSON.stringify(s).replace(/"/g, '&quot;').replace(/'/g,"\\'") + 
+    ')" title="Edit">' +
     '<i class="fa-solid fa-pen"></i>' +
     '</button>' +
     '</div></td>' +
@@ -3253,36 +3254,31 @@ function renderStaffMgmt() {
     tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fa-solid fa-users"></i><p>No staff records found</p></div></td></tr>`;
     return;
   }
-  tbody.innerHTML = data.map((s, i) => 
-    '<tr>' +
-    '<td>' + (i + 1) + '</td>' +
-    '<td><strong>' + 
-      (s.Full_Name || '—') + 
-    '</strong></td>' +
-    '<td>' + (s.Rank || '—') + '</td>' +
-    '<td>' + (s.Phone || '—') + '</td>' +
-    '<td>' + (s.Gender || '—') + '</td>' +
-    '<td>' + (s.Badge_No || '—') + '</td>' +
-    '<td>' + statusBadge(s.Status) + '</td>' +
-    '<td><div class="row-actions">' +
-    '<button class="action-btn" ' +
-    'onclick="editStaff(\'' + (s.Staff_ID || '') + '\')"' +
-    ' title="Edit">' +
-    '<i class="fa-solid fa-pen"></i>' +
-    '</button>' +
-    '</div></td>' +
-    '</tr>'
-  ).join('');
+  tbody.innerHTML = data.map((s, i) => {
+    const realIndex = (allData.staff || []).indexOf(s);
+    return '<tr>' +
+      '<td>' + (i + 1) + '</td>' +
+      '<td><strong>' + 
+        (s.Full_Name || '—') + 
+      '</strong></td>' +
+      '<td>' + (s.Rank || '—') + '</td>' +
+      '<td>' + (s.Phone || '—') + '</td>' +
+      '<td>' + (s.Gender || '—') + '</td>' +
+      '<td>' + (s.Badge_No || '—') + '</td>' +
+      '<td>' + statusBadge(s.Status) + '</td>' +
+      '<td><div class="row-actions">' +
+      '<button class="action-btn" ' +
+      'onclick="editStaff(' + (realIndex !== -1 ? realIndex : i) + ',' + 
+      JSON.stringify(s).replace(/"/g, '&quot;').replace(/'/g,"\\'") + 
+      ')" title="Edit">' +
+      '<i class="fa-solid fa-pen"></i>' +
+      '</button>' +
+      '</div></td>' +
+      '</tr>';
+  }).join('');
 }
 
-function editStaff(staffId) {
-  const staff = allData.staff || [];
-  const staffObj = staff.find(s => s.Staff_ID === staffId);
-  if (!staffObj) return;
-
-  const originalIndex = staff.indexOf(staffObj);
-  const sheetRow = originalIndex !== -1 ? originalIndex + 2 : 2;
-
+function editStaff(rowIndex, staffObj) {
   document.getElementById('sfName')
     .value = staffObj.Full_Name || '';
   document.getElementById('sfRank')
@@ -3305,7 +3301,7 @@ function editStaff(staffId) {
     .value = staffObj.Reporting_Officer || '';
 
   const btn = document.getElementById('sfSaveBtn');
-  btn.dataset.editRow = sheetRow;
+  btn.dataset.editRow = rowIndex + 2;
   btn.dataset.staffId = staffObj.Staff_ID || '';
   btn.textContent = 'Update Staff';
   
