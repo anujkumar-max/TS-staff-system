@@ -1,0 +1,28 @@
+{
+  "name": "AP Police TS — Staff Monitoring System",
+  "short_name": "AP Police TS",
+  "description": "AP Police Technical Services Staff Monitoring System — IGP Office, Mangalagiri, Andhra Pradesh",
+  "start_url": "index.html",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#0d3b7a",
+  "background_color": "#0d3b7a",
+  "lang": "en",
+  "scope": "./",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "government"],
+  "screenshots": []
+}
