@@ -1152,8 +1152,8 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
             <button class="btn-heart" onclick="openModal('addTaskModal')">
               <i class="fa-solid fa-plus"></i> Add Task
             </button>
-            <button class="btn-secondary" onclick="loadCommand()">
-              <i class="fa-solid fa-rotate-right"></i> Refresh
+            <button onclick="refreshAll()" style="background:var(--navy);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;border:none;cursor:pointer">
+              <i class="fa-solid fa-rotate-right"></i> Refresh Data
             </button>
           </div>
           <div class="tab-pills">
@@ -1204,8 +1204,8 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
             <button class="btn-heart" onclick="openModal('addCorrModal')">
               <i class="fa-solid fa-plus"></i> New Correspondence
             </button>
-            <button class="btn-secondary" onclick="loadCorrespondence()">
-              <i class="fa-solid fa-rotate-right"></i> Refresh
+            <button onclick="refreshAll()" style="background:var(--navy);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;border:none;cursor:pointer">
+              <i class="fa-solid fa-rotate-right"></i> Refresh Data
             </button>
           </div>
           <div class="tab-pills">
@@ -1247,8 +1247,8 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
             <button class="btn-heart" id="addIGPBtn" onclick="openModal('addIGPModal')">
               <i class="fa-solid fa-plus"></i> Add IGP Work
             </button>
-            <button class="btn-secondary" onclick="loadIGPWorks()">
-              <i class="fa-solid fa-rotate-right"></i> Refresh
+            <button onclick="refreshAll()" style="background:var(--navy);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;border:none;cursor:pointer">
+              <i class="fa-solid fa-rotate-right"></i> Refresh Data
             </button>
           </div>
           <div class="tab-pills">
@@ -1283,8 +1283,8 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
             <button class="btn-heart" onclick="openModal('addVCModal')">
               <i class="fa-solid fa-plus"></i> Schedule VC/Meeting
             </button>
-            <button class="btn-secondary" onclick="loadVC()">
-              <i class="fa-solid fa-rotate-right"></i> Refresh
+            <button onclick="refreshAll()" style="background:var(--navy);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;border:none;cursor:pointer">
+              <i class="fa-solid fa-rotate-right"></i> Refresh Data
             </button>
           </div>
           <div class="tab-pills">
@@ -1781,7 +1781,7 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
         </div>
         <div class="form-group"><label>From Date *</label><input type="date" id="leaveFrom"></div>
         <div class="form-group"><label>To Date *</label><input type="date" id="leaveTo"></div>
-        <div class="form-group" style="grid-column:1/-1"><label>Incharge Person (who will look after duties) *</label><input type="text" id="leaveIncharge" placeholder="Name of person covering your duties"></div>
+        <div class="form-group" style="grid-column:1/-1"><label>Incharge Person (who will look after duties) *</label><select id="leaveIncharge"><option value="">-- Select --</option></select></div>
       </div>
       <div class="form-group" style="margin-top:12px"><label>Reason</label><textarea id="leaveReason" placeholder="Reason for leave..."></textarea></div>
     </div>
@@ -1988,19 +1988,24 @@ function initApp() {
 // ============================================================
 async function fetchSheet(sheetName) {
   try {
-    const res = await fetch(`${RELAY_URL}?sheet=${encodeURIComponent(sheetName)}`);
+    const url = RELAY_URL
+      + '?sheet=' + encodeURIComponent(sheetName)
+      + '&t=' + Date.now();
+    const res = await fetch(url);
     const json = await res.json();
     return json.data || [];
-  } catch(e) {
-    console.warn('Fetch error for', sheetName, e);
+  } catch(err) {
+    console.error('fetchSheet error:', sheetName, err);
     return [];
   }
 }
 
 async function loadAllData() {
-  showToast('Loading data from server...', 'info');
   try {
-    const [staff, attendance, command, correspondence, igpworks, vcschedule, leave, notices, projects, rankings] = await Promise.all([
+    const [
+      staff, attendance, command, correspondence,
+      igpworks, vcschedule, leave, notices, projects, rankings
+    ] = await Promise.all([
       fetchSheet('Staff_Master'),
       fetchSheet('Attendance'),
       fetchSheet('Command_Register'),
@@ -2010,30 +2015,50 @@ async function loadAllData() {
       fetchSheet('Leave_Register'),
       fetchSheet('Notices'),
       fetchSheet('Projects'),
-      fetchSheet('Rankings'),
+      fetchSheet('Rankings')
     ]);
     allData = { staff, attendance, command, correspondence, igpworks, vcschedule, leave, notices, projects, rankings };
     staffListCache = staff;
-    populateStaffDropdowns();
     renderDashboard();
     renderNoticesBanner();
-    showToast('Data loaded successfully', 'success');
-  } catch(e) {
-    showToast('Error loading data. Check connection.', 'error');
+    updateAllDropdowns();
+    return true;
+  } catch(err) {
+    console.error('loadAllData error:', err);
+    showToast('Error loading data', 'error');
+    return false;
   }
 }
 
-function populateStaffDropdowns() {
-  const active = (allData.staff || []).filter(s => (s.Status || 'Active') === 'Active');
-  const opts = '<option value="">— Select Staff —</option>' +
-    active.map(s => `<option value="${s.Full_Name||s.Name||''}">${s.Full_Name||s.Name||'—'} (${s.Rank||''})</option>`).join('');
-  ['taskAssignedTo','taskAssignedBy','corrAllocTo','corrAllocBy','igpAssignedTo','vcSpeaker'].forEach(id => {
+function updateAllDropdowns() {
+  const staff = (allData.staff || []).filter(s => (s.Status || 'Active') === 'Active');
+  const options = staff.map(s =>
+    `<option value="${s.Full_Name||s.Name||''}">${s.Full_Name||s.Name||'—'} (${s.Rank||''})</option>`
+  ).join('');
+  const dropdownIds = [
+    'taskAssignedTo','taskAssignedBy',
+    'corrAllocTo','corrAllocBy',
+    'igpAssignedTo','vcSpeaker','leaveIncharge'
+  ];
+  dropdownIds.forEach(id => {
     const el = document.getElementById(id);
-    if (el && el.tagName === 'SELECT') el.innerHTML = opts;
+    if (el && el.tagName === 'SELECT') {
+      el.innerHTML = '<option value="">-- Select --</option>' + options;
+    }
   });
 }
 
 function refreshData() { loadAllData(); }
+
+async function refreshAll() {
+  showToast('Refreshing...', 'info');
+  await loadAllData();
+  renderCommand();
+  renderCorrespondence();
+  renderIGPWorks();
+  renderVC();
+  showToast('Data refreshed!', 'success');
+}
 
 // ============================================================
 // NAVIGATION
@@ -2644,41 +2669,47 @@ function downloadReport(type) { showToast(`Preparing ${type} report for download
 // ============================================================
 async function postToSheet(sheetName, rowData) {
   try {
-    const res = await fetch(RELAY_URL, {
+    await fetch(RELAY_URL, {
       method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sheet: sheetName, action: 'append', data: rowData })
     });
-    const json = await res.json();
-    return json.success;
-  } catch(e) { return false; }
+    await new Promise(r => setTimeout(r, 3000));
+    return true;
+  } catch(err) {
+    console.error('postToSheet error:', err);
+    return false;
+  }
 }
 
-function submitTask() {
+async function submitTask() {
   const title = document.getElementById('taskTitle').value.trim();
   const to    = document.getElementById('taskAssignedTo').value.trim();
   if (!title || !to) { showToast('Please fill all required fields', 'error'); return; }
   const entryDate = document.getElementById('taskEntryDate').value || new Date().toISOString().split('T')[0];
   const serial = `${(allData.command||[]).length+1}/2026`;
-  const catEl = document.getElementById('taskCategory');
+  const catEl  = document.getElementById('taskCategory');
   const row = [
     `T${Date.now()}`, serial, entryDate,
     title, document.getElementById('taskDesc').value,
-    catEl.options[catEl.selectedIndex].text,
-    catEl.value,
+    catEl.options[catEl.selectedIndex].text, catEl.value,
     document.getElementById('taskPriority').value, to,
     document.getElementById('taskAssignedBy').value || currentUser.name,
     document.getElementById('taskDueDate').value, 'Pending',
-    '','','', 0, '', 'No Risk', new Date().toISOString()
+    '', '', '', 0, '', 'No Risk', new Date().toISOString()
   ];
-  postToSheet('Command_Register', row).then(ok => {
-    if (ok) { showToast('Task added successfully!', 'success'); loadAllData(); }
-    else showToast('Saved locally. Will sync when online.', 'info');
-  });
   closeModal('addTaskModal');
   document.getElementById('taskTitle').value = '';
+  showToast('Saving...', 'info');
+  await postToSheet('Command_Register', row);
+  showToast('Saved! Loading data...', 'info');
+  await loadAllData();
+  renderCommand();
+  showToast('Done! Task added.', 'success');
 }
 
-function submitCorr() {
+async function submitCorr() {
   const subject = document.getElementById('corrSubject').value.trim();
   const to      = document.getElementById('corrAllocTo').value.trim();
   if (!subject || !to) { showToast('Please fill all required fields', 'error'); return; }
@@ -2692,15 +2723,17 @@ function submitCorr() {
     document.getElementById('corrMode').value, '',
     'Active', document.getElementById('corrRemarks').value, new Date().toISOString()
   ];
-  postToSheet('Correspondence_Tracker', row).then(() => {
-    showToast('Correspondence entry added!', 'success');
-    loadAllData();
-  });
   closeModal('addCorrModal');
   document.getElementById('corrSubject').value = '';
+  showToast('Saving...', 'info');
+  await postToSheet('Correspondence_Tracker', row);
+  showToast('Saved! Loading data...', 'info');
+  await loadAllData();
+  renderCorrespondence();
+  showToast('Done! Entry added.', 'success');
 }
 
-function submitIGP() {
+async function submitIGP() {
   const title = document.getElementById('igpTitle').value.trim();
   const to    = document.getElementById('igpAssignedTo').value.trim();
   if (!title || !to) { showToast('Please fill required fields', 'error'); return; }
@@ -2713,15 +2746,17 @@ function submitIGP() {
     document.getElementById('igpDueDate').value, '',
     document.getElementById('igpRemarks').value, '', new Date().toISOString()
   ];
-  postToSheet('IGP_Command_Works', row).then(() => {
-    showToast('IGP work added!', 'success');
-    loadAllData();
-  });
   closeModal('addIGPModal');
   document.getElementById('igpTitle').value = '';
+  showToast('Saving...', 'info');
+  await postToSheet('IGP_Command_Works', row);
+  showToast('Saved! Loading data...', 'info');
+  await loadAllData();
+  renderIGPWorks();
+  showToast('Done! Entry added.', 'success');
 }
 
-function submitVC() {
+async function submitVC() {
   const subject = document.getElementById('vcSubject').value.trim();
   if (!subject) { showToast('Please enter subject', 'error'); return; }
   const entryDate = document.getElementById('vcEntryDate').value || new Date().toISOString().split('T')[0];
@@ -2735,26 +2770,26 @@ function submitVC() {
     document.getElementById('vcOrganiser').value,
     document.getElementById('vcSpeaker').value,
     document.getElementById('vcPersons').value,
-    'Upcoming', '', '',
-    currentUser.name,
-    document.getElementById('vcRemarks').value,
-    entryDate
+    'Upcoming', '', '', currentUser.name,
+    document.getElementById('vcRemarks').value, entryDate
   ];
-  postToSheet('VC_Schedule', row).then(() => {
-    showToast('VC scheduled successfully!', 'success');
-    loadAllData();
-  });
   closeModal('addVCModal');
   document.getElementById('vcSubject').value = '';
+  showToast('Saving...', 'info');
+  await postToSheet('VC_Schedule', row);
+  showToast('Saved! Loading data...', 'info');
+  await loadAllData();
+  renderVC();
+  showToast('Done! VC scheduled.', 'success');
 }
 
-function submitLeave() {
-  const staff   = document.getElementById('leaveStaff').value.trim();
-  const incharge= document.getElementById('leaveIncharge').value.trim();
-  const from    = document.getElementById('leaveFrom').value;
-  const to      = document.getElementById('leaveTo').value;
-  if (!staff||!incharge||!from||!to) { showToast('Please fill all required fields', 'error'); return; }
-  const days = Math.ceil((new Date(to)-new Date(from))/(1000*60*60*24))+1;
+async function submitLeave() {
+  const staff    = document.getElementById('leaveStaff').value.trim();
+  const incharge = document.getElementById('leaveIncharge').value.trim();
+  const from     = document.getElementById('leaveFrom').value;
+  const to       = document.getElementById('leaveTo').value;
+  if (!staff || !incharge || !from || !to) { showToast('Please fill all required fields', 'error'); return; }
+  const days = Math.ceil((new Date(to) - new Date(from)) / (1000*60*60*24)) + 1;
   const row = [
     `L${Date.now()}`, '', staff,
     document.getElementById('leaveType').value,
@@ -2762,27 +2797,31 @@ function submitLeave() {
     document.getElementById('leaveReason').value,
     'Active', currentUser.name, new Date().toISOString().split('T')[0], ''
   ];
-  postToSheet('Leave_Register', row).then(() => {
-    showToast('Leave uploaded! Substitute will be notified.', 'success');
-    loadAllData();
-  });
   closeModal('addLeaveModal');
+  showToast('Saving...', 'info');
+  await postToSheet('Leave_Register', row);
+  showToast('Saved! Loading data...', 'info');
+  await loadAllData();
+  renderLeave();
+  showToast('Done! Leave submitted.', 'success');
 }
 
-function submitNotice() {
+async function submitNotice() {
   const title = document.getElementById('noticeTitle').value.trim();
   const body  = document.getElementById('noticeBody').value.trim();
-  if (!title||!body) { showToast('Please fill all fields', 'error'); return; }
+  if (!title || !body) { showToast('Please fill all fields', 'error'); return; }
   const row = [
     `N${Date.now()}`, title, body,
     document.getElementById('noticePriority').value,
     currentUser.name, new Date().toISOString().split('T')[0], 'Active', ''
   ];
-  postToSheet('Notices', row).then(() => {
-    showToast('Notice posted!', 'success');
-    loadAllData();
-  });
   closeModal('addNoticeModal');
+  showToast('Saving...', 'info');
+  await postToSheet('Notices', row);
+  showToast('Saved! Loading data...', 'info');
+  await loadAllData();
+  renderNotices();
+  showToast('Done! Notice posted.', 'success');
 }
 
 // ============================================================
