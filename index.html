@@ -2772,7 +2772,6 @@ async function postToSheet(sheetName, rowData) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sheet: sheetName, action: 'append', data: rowData })
     });
-    await new Promise(r => setTimeout(r, 3000));
     return true;
   } catch(err) {
     console.error('postToSheet error:', err);
@@ -2780,34 +2779,58 @@ async function postToSheet(sheetName, rowData) {
   }
 }
 
+// Immediately add a record to local allData so it shows without waiting for sheet
+function optimisticAdd(sheetKey, obj, renderFn) {
+  if (!allData[sheetKey]) allData[sheetKey] = [];
+  allData[sheetKey].push(obj);
+  renderFn();
+  // Background server refresh after 8 seconds to sync real sheet data
+  setTimeout(async () => {
+    await loadAllData();
+    renderFn();
+  }, 8000);
+}
+
 async function submitTask() {
   const title = document.getElementById('taskTitle').value.trim();
   const to    = document.getElementById('taskAssignedTo').value.trim();
   if (!title || !to) { showToast('Please fill all required fields', 'error'); return; }
   const entryDate = document.getElementById('taskEntryDate').value || new Date().toISOString().split('T')[0];
-  const existing = editContext?.module === 'command' ? (allData.command || [])[editContext.index] || {} : {};
-  const serial = existing.Serial_No || `${(allData.command||[]).length+1}/2026`;
-  const catEl  = document.getElementById('taskCategory');
+  const existing  = editContext?.module === 'command' ? (allData.command || [])[editContext.index] || {} : {};
+  const serial    = existing.Serial_No || `${(allData.command||[]).length+1}/2026`;
+  const catEl     = document.getElementById('taskCategory');
+  const id        = editContext?.id || existing.Task_ID || `T${Date.now()}`;
   const row = [
-    editContext?.id || existing.Task_ID || `T${Date.now()}`, serial, entryDate,
+    id, serial, entryDate,
     title, document.getElementById('taskDesc').value,
     catEl.options[catEl.selectedIndex].text, catEl.value,
     document.getElementById('taskPriority').value, to,
     document.getElementById('taskAssignedBy').value || currentUser.name,
     document.getElementById('taskDueDate').value, existing.Status || 'Pending',
-    existing.Officer_Remarks || '', existing.Staff_Remarks || '', existing.Points_Awarded || 0, existing.Approved_By || '', existing.Risk_Status || 'No Risk', existing.Timestamp || new Date().toISOString()
+    existing.Officer_Remarks || '', existing.Staff_Remarks || '', existing.Points_Awarded || 0,
+    existing.Approved_By || '', existing.Risk_Status || 'No Risk', existing.Timestamp || new Date().toISOString()
   ];
   closeModal('addTaskModal');
   document.getElementById('taskTitle').value = '';
-  showToast('Saving...', 'info');
-  if (editContext?.module === 'command') await postAction('Command_Register', 'update', row, editContext.row);
-  else await postToSheet('Command_Register', row);
-  editContext = null;
   document.querySelector('#addTaskModal .modal-title').textContent = 'Add Task to Command Register';
-  showToast('Saved! Loading data...', 'info');
-  await loadAllData();
-  renderCommand();
-  showToast('Done! Task saved.', 'success');
+
+  // Show immediately in UI
+  const localObj = {
+    Task_ID: id, Serial_No: serial, Created_Date: entryDate,
+    Task_Title: title, Description: document.getElementById('taskDesc')?.value || '',
+    Category: catEl.options[catEl.selectedIndex].text,
+    Priority: document.getElementById('taskPriority').value,
+    Assigned_To: to, Assigned_By: document.getElementById('taskAssignedBy').value || currentUser.name,
+    Due_Date: document.getElementById('taskDueDate').value, Status: existing.Status || 'Pending'
+  };
+  if (!editContext) optimisticAdd('command', localObj, renderCommand);
+  else renderCommand();
+
+  showToast('Saved successfully!', 'success');
+  editContext = null;
+
+  // Background sync to sheet
+  postToSheet('Command_Register', row);
 }
 
 async function submitCorr() {
@@ -2815,85 +2838,110 @@ async function submitCorr() {
   const to      = document.getElementById('corrAllocTo').value.trim();
   if (!subject || !to) { showToast('Please fill all required fields', 'error'); return; }
   const entryDate = document.getElementById('corrEntryDate').value || new Date().toISOString().split('T')[0];
-  const existing = editContext?.module === 'corr' ? (allData.correspondence || [])[editContext.index] || {} : {};
-  const serial = existing.Serial_No || `${(allData.correspondence||[]).length+1}/2026`;
+  const existing  = editContext?.module === 'corr' ? (allData.correspondence || [])[editContext.index] || {} : {};
+  const serial    = existing.Serial_No || `${(allData.correspondence||[]).length+1}/2026`;
+  const id        = editContext?.id || existing.Corr_ID || `C${Date.now()}`;
+  const type      = document.getElementById('corrType').value;
+  const by        = document.getElementById('corrAllocBy').value || currentUser.name;
+  const mode      = document.getElementById('corrMode').value;
+  const remarks   = document.getElementById('corrRemarks').value;
   const row = [
-    editContext?.id || existing.Corr_ID || `C${Date.now()}`, serial, entryDate,
-    document.getElementById('corrType').value, subject, to,
-    document.getElementById('corrAllocBy').value || currentUser.name,
+    id, serial, entryDate, type, subject, to, by,
     existing.Current_Stage || 'Draft Work Allocated',
-    document.getElementById('corrMode').value, '',
-    existing.Status || 'Active', document.getElementById('corrRemarks').value, existing.Timestamp || new Date().toISOString()
+    mode, '', existing.Status || 'Active', remarks,
+    existing.Timestamp || new Date().toISOString()
   ];
   closeModal('addCorrModal');
   document.getElementById('corrSubject').value = '';
-  showToast('Saving...', 'info');
-  if (editContext?.module === 'corr') await postAction('Correspondence_Tracker', 'update', row, editContext.row);
-  else await postToSheet('Correspondence_Tracker', row);
-  editContext = null;
   document.querySelector('#addCorrModal .modal-title').textContent = 'New Correspondence Entry';
-  showToast('Saved! Loading data...', 'info');
-  await loadAllData();
-  renderCorrespondence();
-  showToast('Done! Entry saved.', 'success');
+
+  const localObj = {
+    Corr_ID: id, Serial_No: serial, Date: entryDate,
+    Type: type, Subject: subject, Allocated_To: to, Allocated_By: by,
+    Current_Stage: existing.Current_Stage || 'Draft Work Allocated',
+    Submission_Mode: mode, Status: existing.Status || 'Active'
+  };
+  if (!editContext) optimisticAdd('correspondence', localObj, renderCorrespondence);
+  else renderCorrespondence();
+
+  showToast('Saved successfully!', 'success');
+  editContext = null;
+  postToSheet('Correspondence_Tracker', row);
 }
 
 async function submitIGP() {
   const title = document.getElementById('igpTitle').value.trim();
   const to    = document.getElementById('igpAssignedTo').value.trim();
   if (!title || !to) { showToast('Please fill required fields', 'error'); return; }
-  const entryDate = document.getElementById('igpEntryDate').value || new Date().toISOString().split('T')[0];
-  const existing = editContext?.module === 'igp' ? (allData.igpworks || [])[editContext.index] || {} : {};
-  const serial = existing.Serial_No || `${(allData.igpworks||[]).length+1}/2026`;
+  const entryDate  = document.getElementById('igpEntryDate').value || new Date().toISOString().split('T')[0];
+  const existing   = editContext?.module === 'igp' ? (allData.igpworks || [])[editContext.index] || {} : {};
+  const serial     = existing.Serial_No || `${(allData.igpworks||[]).length+1}/2026`;
+  const id         = editContext?.id || existing.Work_ID || `I${Date.now()}`;
+  const priority   = document.getElementById('igpPriority').value;
+  const dueDate    = document.getElementById('igpDueDate').value;
+  const remarks    = document.getElementById('igpRemarks').value;
+  const desc       = document.getElementById('igpDesc').value;
   const row = [
-    editContext?.id || existing.Work_ID || `I${Date.now()}`, serial, entryDate,
-    title, document.getElementById('igpDesc').value, to,
-    document.getElementById('igpPriority').value, existing.Status || 'Pending',
-    document.getElementById('igpDueDate').value, existing.Completed_Date || '',
-    document.getElementById('igpRemarks').value, existing.Approved_By || '', existing.Timestamp || new Date().toISOString()
+    id, serial, entryDate, title, desc, to,
+    priority, existing.Status || 'Pending', dueDate,
+    existing.Completed_Date || '', remarks,
+    existing.Approved_By || '', existing.Timestamp || new Date().toISOString()
   ];
   closeModal('addIGPModal');
   document.getElementById('igpTitle').value = '';
-  showToast('Saving...', 'info');
-  if (editContext?.module === 'igp') await postAction('IGP_Command_Works', 'update', row, editContext.row);
-  else await postToSheet('IGP_Command_Works', row);
-  editContext = null;
   document.querySelector('#addIGPModal .modal-title').textContent = 'Add IGP Command Work';
-  showToast('Saved! Loading data...', 'info');
-  await loadAllData();
-  renderIGPWorks();
-  showToast('Done! Entry saved.', 'success');
+
+  const localObj = {
+    Work_ID: id, Serial_No: serial, Date: entryDate,
+    Work_Title: title, Description: desc, Assigned_To: to,
+    Priority: priority, Status: existing.Status || 'Pending',
+    Due_Date: dueDate, Remarks: remarks
+  };
+  if (!editContext) optimisticAdd('igpworks', localObj, renderIGPWorks);
+  else renderIGPWorks();
+
+  showToast('Saved successfully!', 'success');
+  editContext = null;
+  postToSheet('IGP_Command_Works', row);
 }
 
 async function submitVC() {
   const subject = document.getElementById('vcSubject').value.trim();
   if (!subject) { showToast('Please enter subject', 'error'); return; }
-  const entryDate = document.getElementById('vcEntryDate').value || new Date().toISOString().split('T')[0];
-  const existing = editContext?.module === 'vc' ? (allData.vcschedule || [])[editContext.index] || {} : {};
-  const serial = existing.Serial_No || `${(allData.vcschedule||[]).length+1}/2026`;
+  const entryDate  = document.getElementById('vcEntryDate').value || new Date().toISOString().split('T')[0];
+  const existing   = editContext?.module === 'vc' ? (allData.vcschedule || [])[editContext.index] || {} : {};
+  const serial     = existing.Serial_No || `${(allData.vcschedule||[]).length+1}/2026`;
+  const id         = editContext?.id || existing.VC_ID || `V${Date.now()}`;
+  const vcDate     = document.getElementById('vcDate').value;
+  const vcTime     = document.getElementById('vcTime').value;
+  const platform   = document.getElementById('vcPlatform').value;
+  const link       = document.getElementById('vcLink').value;
+  const organiser  = document.getElementById('vcOrganiser').value;
+  const speaker    = document.getElementById('vcSpeaker').value;
+  const persons    = document.getElementById('vcPersons').value;
+  const remarks    = document.getElementById('vcRemarks').value;
   const row = [
-    editContext?.id || existing.VC_ID || `V${Date.now()}`, serial, subject,
-    document.getElementById('vcDate').value,
-    document.getElementById('vcTime').value,
-    document.getElementById('vcPlatform').value,
-    document.getElementById('vcLink').value,
-    document.getElementById('vcOrganiser').value,
-    document.getElementById('vcSpeaker').value,
-    document.getElementById('vcPersons').value,
-    existing.Status || 'Upcoming', existing.Linked_Postponed_ID || '', existing.Postpone_Reason || '', existing.Created_By || currentUser.name,
-    document.getElementById('vcRemarks').value, entryDate
+    id, serial, subject, vcDate, vcTime, platform, link, organiser, speaker, persons,
+    existing.Status || 'Upcoming', existing.Linked_Postponed_ID || '',
+    existing.Postpone_Reason || '', existing.Created_By || currentUser.name,
+    remarks, entryDate
   ];
   closeModal('addVCModal');
   document.getElementById('vcSubject').value = '';
-  showToast('Saving...', 'info');
-  if (editContext?.module === 'vc') await postAction('VC_Schedule', 'update', row, editContext.row);
-  else await postToSheet('VC_Schedule', row);
-  editContext = null;
   document.querySelector('#addVCModal .modal-title').textContent = 'Schedule VC / Meeting';
-  showToast('Saved! Loading data...', 'info');
-  await loadAllData();
-  renderVC();
-  showToast('Done! VC saved.', 'success');
+
+  const localObj = {
+    VC_ID: id, Serial_No: serial, Subject: subject,
+    Date: vcDate, Time: vcTime, Platform: platform,
+    VC_Link: link, Organiser: organiser, Speaker: speaker,
+    Allotted_Persons: persons, Status: existing.Status || 'Upcoming'
+  };
+  if (!editContext) optimisticAdd('vcschedule', localObj, renderVC);
+  else renderVC();
+
+  showToast('Saved successfully!', 'success');
+  editContext = null;
+  postToSheet('VC_Schedule', row);
 }
 
 async function submitLeave() {
@@ -2902,38 +2950,46 @@ async function submitLeave() {
   const from     = document.getElementById('leaveFrom').value;
   const to       = document.getElementById('leaveTo').value;
   if (!staff || !incharge || !from || !to) { showToast('Please fill all required fields', 'error'); return; }
-  const days = Math.ceil((new Date(to) - new Date(from)) / (1000*60*60*24)) + 1;
-  const row = [
-    `L${Date.now()}`, '', staff,
-    document.getElementById('leaveType').value,
-    from, to, days, incharge,
-    document.getElementById('leaveReason').value,
-    'Active', currentUser.name, new Date().toISOString().split('T')[0], ''
-  ];
+  const leaveType = document.getElementById('leaveType').value;
+  const reason    = document.getElementById('leaveReason').value;
+  const days      = Math.ceil((new Date(to) - new Date(from)) / (1000*60*60*24)) + 1;
+  const id        = `L${Date.now()}`;
+  const today     = new Date().toISOString().split('T')[0];
+  const row = [ id, '', staff, leaveType, from, to, days, incharge, reason, 'Active', currentUser.name, today, '' ];
   closeModal('addLeaveModal');
-  showToast('Saving...', 'info');
-  await postToSheet('Leave_Register', row);
-  showToast('Saved! Loading data...', 'info');
-  await loadAllData();
-  renderLeave();
-  showToast('Done! Leave submitted.', 'success');
+
+  const localObj = {
+    Leave_ID: id, Staff_Name: staff, Leave_Type: leaveType,
+    From_Date: from, To_Date: to, Total_Days: days,
+    Incharge_Person: incharge, Reason: reason, Status: 'Active'
+  };
+  optimisticAdd('leave', localObj, renderLeave);
+
+  showToast('Saved successfully!', 'success');
+  postToSheet('Leave_Register', row);
 }
 
 async function submitNotice() {
-  const title = document.getElementById('noticeTitle').value.trim();
-  const body  = document.getElementById('noticeBody').value.trim();
+  const title    = document.getElementById('noticeTitle').value.trim();
+  const body     = document.getElementById('noticeBody').value.trim();
   if (!title || !body) { showToast('Please fill all fields', 'error'); return; }
-  const row = [
-    `N${Date.now()}`, title, body,
-    document.getElementById('noticePriority').value,
-    currentUser.name, new Date().toISOString().split('T')[0], 'Active', ''
-  ];
+  const priority = document.getElementById('noticePriority').value;
+  const today    = new Date().toISOString().split('T')[0];
+  const id       = `N${Date.now()}`;
+  const row      = [ id, title, body, priority, currentUser.name, today, 'Active', '' ];
   closeModal('addNoticeModal');
-  showToast('Saving...', 'info');
-  await postToSheet('Notices', row);
-  showToast('Saved! Loading data...', 'info');
-  await loadAllData();
-  renderNotices();
+  document.getElementById('noticeTitle').value = '';
+  document.getElementById('noticeBody').value  = '';
+
+  const localObj = {
+    Notice_ID: id, Title: title, Body: body,
+    Priority: priority, Posted_By: currentUser.name,
+    Posted_Date: today, Status: 'Active'
+  };
+  optimisticAdd('notices', localObj, renderNotices);
+
+  showToast('Saved successfully!', 'success');
+  postToSheet('Notices', row);
   showToast('Done! Notice posted.', 'success');
 }
 
