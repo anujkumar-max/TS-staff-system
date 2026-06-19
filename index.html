@@ -502,8 +502,52 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
 .badge-approval { background: rgba(183,119,13,0.12); color: var(--warning); }
 .badge-dispatched { background: rgba(26,122,74,0.12); color: var(--success); }
 .badge-irregular { background: rgba(139,0,0,0.12); color: var(--heart); }
+.badge-pending-approval {
+  background: rgba(201,168,76,0.15);
+  color: #8B6914;
+}
+.badge-with-officer {
+  background: rgba(26,96,128,0.15);
+  color: #1a6080;
+}
+.badge-returned {
+  background: rgba(163,45,45,0.15);
+  color: #a32d2d;
+}
+.badge-on-hold {
+  background: rgba(100,100,100,0.15);
+  color: #555;
+}
+.badge-cancelled {
+  background: rgba(50,50,50,0.15);
+  color: #444;
+}
+.badge-escalated {
+  background: rgba(139,0,0,0.15);
+  color: #8b0000;
+}
 
-
+select[multiple] {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text1);
+  width: 100%;
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+}
+select[multiple] option {
+  padding: 6px 8px;
+  border-radius: 4px;
+  margin: 2px 0;
+}
+select[multiple] option:checked,
+select[multiple] option:selected {
+  background: var(--navy);
+  color: #fff;
+}
 /* ============================================================
    FORMS
    ============================================================ */
@@ -910,24 +954,6 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
             </div>
           </div>
           
-          <!-- Pending Approvals Section -->
-          <div id="pendingApprovalsSection" style="display:none;margin-bottom:20px;">
-            <div class="section-header">
-              <div class="section-title"><i class="fa-solid fa-clock-rotate-left" style="color:var(--warning)"></i> Pending Your Approval <span class="nav-badge" id="approvalCountBadge">0</span></div>
-            </div>
-            <div class="card heart-card" style="padding:16px;background:var(--bg2)">
-              <div class="table-wrap">
-                <table>
-                  <thead class="heart-thead"><tr>
-                    <th>Module</th><th>Date</th><th>Project</th><th>Title/Subject</th><th>Assigned/Allocated To</th><th>Current Status/Stage</th><th>Actions</th>
-                  </tr></thead>
-                  <tbody id="pendingApprovalsBody">
-                    <tr><td colspan="7" style="text-align:center;color:var(--text3)">No pending approvals</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
 
           <!-- Heart Modules -->
           <div class="section-header">
@@ -992,6 +1018,27 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
             </div>
           </div>
 
+          <!-- Pending Approvals Card -->
+          <div class="card" 
+            style="border:2px solid var(--gold);
+            background:linear-gradient(135deg,
+            rgba(201,168,76,0.08),
+            rgba(201,168,76,0.03));
+            margin-bottom:20px;">
+            <div style="display:flex;
+            align-items:center;justify-content:
+            space-between;margin-bottom:14px">
+              <div class="section-title" style="margin-bottom:0">
+                ⏳ Pending Your Approval
+              </div>
+              <span id="pendingApprovalCount"
+                class="badge badge-urgent">0</span>
+            </div>
+            <div id="pendingApprovalList">
+              Loading...
+            </div>
+          </div>
+
           <!-- Recent Activity -->
           <div class="section-header">
             <div class="section-title">Recent Tasks</div>
@@ -1024,12 +1071,52 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
             <button onclick="refreshAll()" style="background:var(--navy);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;border:none;cursor:pointer">
               <i class="fa-solid fa-rotate-right"></i> Refresh Data
             </button>
+            <button onclick="exportData('command')"
+              style="background:var(--success);
+              color:#fff;padding:8px 16px;
+              border-radius:8px;font-size:12px;
+              font-weight:600;border:none;
+              cursor:pointer;display:flex;
+              align-items:center;gap:6px">
+              <i class="fa-solid fa-download"></i>
+              Export
+            </button>
           </div>
           <div class="tab-pills">
             <div class="tab-pill heart-pill active" onclick="filterCommand('all',this)">All</div>
             <div class="tab-pill heart-pill" onclick="filterCommand('Pending',this)">Pending</div>
             <div class="tab-pill heart-pill" onclick="filterCommand('In Progress',this)">In Progress</div>
             <div class="tab-pill heart-pill" onclick="filterCommand('Completed',this)">Completed</div>
+          </div>
+          <div class="project-filter-bar" 
+            style="display:flex;gap:6px;
+            flex-wrap:wrap;margin-bottom:12px;
+            align-items:center">
+            <span style="font-size:11px;
+            font-weight:600;color:var(--text3)">
+            PROJECT:
+            </span>
+            <select id="commandProjectFilter"
+              onchange="filterByProject('command', this.value)"
+              style="padding:6px 10px;
+              border-radius:8px;
+              border:1px solid var(--border);
+              background:var(--bg);
+              color:var(--text1);
+              font-size:12px;
+              font-weight:500">
+              <option value="all">All Projects</option>
+            </select>
+            <button onclick="clearProjectFilter('command')"
+              style="padding:6px 12px;
+              border-radius:8px;
+              background:var(--bg3);
+              color:var(--text2);
+              font-size:11px;
+              font-weight:600;
+              border:1px solid var(--border)">
+              Clear Filter
+            </button>
           </div>
           <div class="date-filter-row">
             <label>From:</label>
@@ -1051,7 +1138,7 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
             <div class="table-wrap">
               <table>
                 <thead class="heart-thead"><tr>
-                  <th>S.No</th><th>Date</th><th>Task Title</th><th>Category</th>
+                  <th>S.No</th><th>Date</th><th>Task Title</th><th>Project</th><th>Category</th>
                   <th>Assigned To</th><th>Assigned By</th><th>Priority</th>
                   <th>Status</th><th>Due Date</th><th>Actions</th>
                 </tr></thead>
@@ -1076,6 +1163,16 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
             <button onclick="refreshAll()" style="background:var(--navy);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;border:none;cursor:pointer">
               <i class="fa-solid fa-rotate-right"></i> Refresh Data
             </button>
+            <button onclick="exportData('correspondence')"
+              style="background:var(--success);
+              color:#fff;padding:8px 16px;
+              border-radius:8px;font-size:12px;
+              font-weight:600;border:none;
+              cursor:pointer;display:flex;
+              align-items:center;gap:6px">
+              <i class="fa-solid fa-download"></i>
+              Export
+            </button>
           </div>
           <div class="tab-pills">
             <div class="tab-pill heart-pill active" onclick="filterCorr('all',this)">All</div>
@@ -1086,6 +1183,36 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
             <div class="tab-pill heart-pill" onclick="filterCorr('Note File',this)">Note Files</div>
             <div class="tab-pill heart-pill" onclick="filterCorr('Radio Message',this)">Radio Messages</div>
           </div>
+          <div class="project-filter-bar" 
+            style="display:flex;gap:6px;
+            flex-wrap:wrap;margin-bottom:12px;
+            align-items:center">
+            <span style="font-size:11px;
+            font-weight:600;color:var(--text3)">
+            PROJECT:
+            </span>
+            <select id="correspondenceProjectFilter"
+              onchange="filterByProject('correspondence', this.value)"
+              style="padding:6px 10px;
+              border-radius:8px;
+              border:1px solid var(--border);
+              background:var(--bg);
+              color:var(--text1);
+              font-size:12px;
+              font-weight:500">
+              <option value="all">All Projects</option>
+            </select>
+            <button onclick="clearProjectFilter('correspondence')"
+              style="padding:6px 12px;
+              border-radius:8px;
+              background:var(--bg3);
+              color:var(--text2);
+              font-size:11px;
+              font-weight:600;
+              border:1px solid var(--border)">
+              Clear Filter
+            </button>
+          </div>
           <div class="search-bar">
             <i class="fa-solid fa-magnifying-glass"></i>
             <input type="text" placeholder="Search by subject, serial no, allocated to..." id="corrSearch" oninput="searchCorr()">
@@ -1094,9 +1221,8 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
             <div class="table-wrap">
               <table>
                 <thead class="heart-thead"><tr>
-                  <th>S.No</th><th>Date</th><th>Type</th><th>Subject</th>
-                  <th>Allocated To</th><th>Current Stage</th>
-                  <th>Mode</th><th>Status</th><th>Actions</th>
+                  <th>S.No</th><th>Date</th><th>Type</th><th>Subject</th><th>Project</th>
+                  <th>Allocated To</th><th>Current Stage</th><th>Status</th><th>Actions</th>
                 </tr></thead>
                 <tbody id="corrBody">
                   <tr><td colspan="9"><div class="loading"><div class="spinner"></div></div></td></tr>
@@ -1112,12 +1238,22 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
             <h1><i class="fa-solid fa-star" style="color:var(--gold)"></i> IGP Command Works</h1>
             <p>❤ Heart Module — Works directly allotted by IGP Sir</p>
           </div>
-          <div style="display:flex;gap:10px;margin-bottom:16px;">
+          <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
             <button class="btn-heart" id="addIGPBtn" onclick="openModal('addIGPModal')">
               <i class="fa-solid fa-plus"></i> Add IGP Work
             </button>
             <button onclick="refreshAll()" style="background:var(--navy);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;border:none;cursor:pointer">
               <i class="fa-solid fa-rotate-right"></i> Refresh Data
+            </button>
+            <button onclick="exportData('igp')"
+              style="background:var(--success);
+              color:#fff;padding:8px 16px;
+              border-radius:8px;font-size:12px;
+              font-weight:600;border:none;
+              cursor:pointer;display:flex;
+              align-items:center;gap:6px">
+              <i class="fa-solid fa-download"></i>
+              Export
             </button>
           </div>
           <div class="tab-pills">
@@ -1127,11 +1263,45 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
             <div class="tab-pill heart-pill" onclick="filterIGP('Completed',this)">Completed</div>
             <div class="tab-pill heart-pill" onclick="filterIGP('Escalated',this)">Escalated</div>
           </div>
+          <div class="project-filter-bar" 
+            style="display:flex;gap:6px;
+            flex-wrap:wrap;margin-bottom:12px;
+            align-items:center">
+            <span style="font-size:11px;
+            font-weight:600;color:var(--text3)">
+            PROJECT:
+            </span>
+            <select id="igpProjectFilter"
+              onchange="filterByProject('igp', this.value)"
+              style="padding:6px 10px;
+              border-radius:8px;
+              border:1px solid var(--border);
+              background:var(--bg);
+              color:var(--text1);
+              font-size:12px;
+              font-weight:500">
+              <option value="all">All Projects</option>
+            </select>
+            <button onclick="clearProjectFilter('igp')"
+              style="padding:6px 12px;
+              border-radius:8px;
+              background:var(--bg3);
+              color:var(--text2);
+              font-size:11px;
+              font-weight:600;
+              border:1px solid var(--border)">
+              Clear Filter
+            </button>
+          </div>
+          <div class="search-bar">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" placeholder="Search by title, assigned to..." id="igpSearch" oninput="renderIGPWorks()">
+          </div>
           <div class="card" style="padding:0;overflow:hidden">
             <div class="table-wrap">
               <table>
                 <thead style="background:linear-gradient(90deg,#7b0d0d,#c0392b)"><tr style="background:none">
-                  <th>S.No</th><th>Date</th><th>Work Title</th><th>Assigned To</th>
+                  <th>S.No</th><th>Date</th><th>Work Title</th><th>Project</th><th>Assigned To</th>
                   <th>Priority</th><th>Status</th><th>Due Date</th><th>Remarks</th><th>Actions</th>
                 </tr></thead>
                 <tbody id="igpBody">
@@ -1148,12 +1318,22 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
             <h1><i class="fa-solid fa-video" style="color:var(--heart)"></i> Conference & Meetings Hub</h1>
             <p>❤ Heart Module — VC Schedule, Speakers, History</p>
           </div>
-          <div style="display:flex;gap:10px;margin-bottom:16px;">
+          <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
             <button class="btn-heart" onclick="openModal('addVCModal')">
               <i class="fa-solid fa-plus"></i> Schedule VC/Meeting
             </button>
             <button onclick="refreshAll()" style="background:var(--navy);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;border:none;cursor:pointer">
               <i class="fa-solid fa-rotate-right"></i> Refresh Data
+            </button>
+            <button onclick="exportData('vc')"
+              style="background:var(--success);
+              color:#fff;padding:8px 16px;
+              border-radius:8px;font-size:12px;
+              font-weight:600;border:none;
+              cursor:pointer;display:flex;
+              align-items:center;gap:6px">
+              <i class="fa-solid fa-download"></i>
+              Export
             </button>
           </div>
           <div class="tab-pills">
@@ -1162,12 +1342,46 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
             <div class="tab-pill heart-pill" onclick="filterVC('Completed',this)">Completed</div>
             <div class="tab-pill heart-pill" onclick="filterVC('Postponed',this)">Postponed</div>
           </div>
+          <div class="project-filter-bar" 
+            style="display:flex;gap:6px;
+            flex-wrap:wrap;margin-bottom:12px;
+            align-items:center">
+            <span style="font-size:11px;
+            font-weight:600;color:var(--text3)">
+            PROJECT:
+            </span>
+            <select id="vcProjectFilter"
+              onchange="filterByProject('vc', this.value)"
+              style="padding:6px 10px;
+              border-radius:8px;
+              border:1px solid var(--border);
+              background:var(--bg);
+              color:var(--text1);
+              font-size:12px;
+              font-weight:500">
+              <option value="all">All Projects</option>
+            </select>
+            <button onclick="clearProjectFilter('vc')"
+              style="padding:6px 12px;
+              border-radius:8px;
+              background:var(--bg3);
+              color:var(--text2);
+              font-size:11px;
+              font-weight:600;
+              border:1px solid var(--border)">
+              Clear Filter
+            </button>
+          </div>
+          <div class="search-bar">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" placeholder="Search by subject, speaker..." id="vcSearch" oninput="renderVC()">
+          </div>
           <div class="card" style="padding:0;overflow:hidden">
             <div class="table-wrap">
               <table>
                 <thead class="heart-thead"><tr>
-                  <th>S.No</th><th>Subject</th><th>Date & Time</th><th>Platform</th>
-                  <th>Speaker</th><th>Organiser</th><th>Status</th><th>VC Link</th><th>Actions</th>
+                  <th>S.No</th><th>Subject</th><th>Date & Time</th><th>Platform</th><th>Project</th>
+                  <th>Speaker</th><th>Persons</th><th>Status</th><th>Actions</th>
                 </tr></thead>
                 <tbody id="vcBody">
                   <tr><td colspan="9"><div class="loading"><div class="spinner"></div></div></td></tr>
@@ -1399,8 +1613,8 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
             <option value="C10">eOffice</option>
           </select>
         </div>
-        <div class="form-group"><label>Assigned To *</label>
-          <select id="taskAssignedTo"><option value="">— Select Staff —</option></select>
+        <div class="form-group"><label>Project Name</label>
+          <select id="taskProject"></select>
         </div>
         <div class="form-group"><label>Priority</label>
           <select id="taskPriority">
@@ -1410,7 +1624,30 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
         </div>
         <div class="form-group"><label>Due Date</label><input type="date" id="taskDueDate"></div>
         <div class="form-group"><label>Assigned By</label>
-          <select id="taskAssignedBy"><option value="">— Select Staff —</option></select>
+          <select id="taskAssignedBy"></select>
+        </div>
+        <div class="form-group"><label>Status</label>
+          <select id="taskStatus">
+            <option>Pending</option>
+            <option>In Progress</option>
+            <option>Pending for Approval</option>
+            <option>Currently With Officer</option>
+            <option>Returned for Correction</option>
+            <option>On Hold</option>
+            <option>Completed</option>
+            <option>Cancelled</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Assigned To *
+            <small style="color:var(--text3)">
+            (Hold Ctrl to select 2 members)
+            </small>
+          </label>
+          <select id="taskAssignedTo" 
+            multiple size="6"
+            style="height:130px">
+          </select>
         </div>
       </div>
       <div class="form-group" style="margin-top:12px"><label>Description / Remarks</label><textarea id="taskDesc" placeholder="Task details..."></textarea></div>
@@ -1439,16 +1676,45 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
             <option>eOffice</option><option>Other</option>
           </select>
         </div>
-        <div class="form-group"><label>Allocated To *</label>
-          <select id="corrAllocTo"><option value="">— Select Staff —</option></select>
+        <div class="form-group"><label>Project Name</label>
+          <select id="corrProject"></select>
         </div>
         <div class="form-group"><label>Allocated By</label>
-          <select id="corrAllocBy"><option value="">— Select Staff —</option></select>
+          <select id="corrAllocBy"></select>
         </div>
         <div class="form-group"><label>Submission Mode</label>
           <select id="corrMode">
             <option>WhatsApp</option><option>Hardcopy</option>
             <option>eOffice</option><option>Email</option><option>Other</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Current Stage</label>
+          <select id="corrStage">
+            <option>Draft Work Allocated</option>
+            <option>Draft Preparation In Progress</option>
+            <option>Draft Prepared - Sent For Approval</option>
+            <option>Currently With Officer</option>
+            <option>Pending for Approval</option>
+            <option>Draft Approved</option>
+            <option>Returned for Correction</option>
+            <option>Draft Dispatched</option>
+            <option>Draft Filing - Hardcopy/eOffice</option>
+            <option>Reply Required - Awaiting Reply</option>
+            <option>Draft Reply Received</option>
+            <option>On Hold</option>
+            <option>Cancelled</option>
+            <option>Work Completed</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Allocated To *
+            <small style="color:var(--text3)">
+            (Hold Ctrl to select 2 members)
+            </small>
+          </label>
+          <select id="corrAllocTo" 
+            multiple size="6"
+            style="height:130px">
           </select>
         </div>
       </div>
@@ -1473,13 +1739,40 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
       <div class="form-grid">
         <div class="form-group"><label>Entry Date</label><input type="date" id="igpEntryDate"></div>
         <div class="form-group"><label>Work Title *</label><input type="text" id="igpTitle" placeholder="Enter work title"></div>
-        <div class="form-group"><label>Assigned To *</label>
-          <select id="igpAssignedTo"><option value="">— Select Staff —</option></select>
+        <div class="form-group"><label>Project Name</label>
+          <select id="igpProject"></select>
+        </div>
+        <div class="form-group"><label>Assigned By</label>
+          <select id="igpAssignedBy"></select>
         </div>
         <div class="form-group"><label>Priority</label>
           <select id="igpPriority"><option>Very High</option><option>High</option><option selected>Medium</option><option>Low</option></select>
         </div>
         <div class="form-group"><label>Due Date</label><input type="date" id="igpDueDate"></div>
+        <div class="form-group"><label>Status</label>
+          <select id="igpStatus">
+            <option>Pending</option>
+            <option>In Progress</option>
+            <option>Currently With Officer</option>
+            <option>Pending for Approval</option>
+            <option>Returned for Correction</option>
+            <option>On Hold</option>
+            <option>Completed</option>
+            <option>Escalated</option>
+            <option>Cancelled</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Assigned To *
+            <small style="color:var(--text3)">
+            (Hold Ctrl to select 2 members)
+            </small>
+          </label>
+          <select id="igpAssignedTo" 
+            multiple size="6"
+            style="height:130px">
+          </select>
+        </div>
       </div>
       <div class="form-group" style="margin-top:12px"><label>Work Description</label><textarea id="igpDesc" placeholder="Describe the work..."></textarea></div>
       <div class="form-group" style="margin-top:12px"><label>Remarks</label><textarea id="igpRemarks" placeholder="Additional remarks..."></textarea></div>
@@ -1511,11 +1804,21 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
           </select>
         </div>
         <div class="form-group"><label>Speaker</label>
-          <select id="vcSpeaker"><option value="">— Select Staff —</option></select>
+          <select id="vcSpeaker"></select>
         </div>
-        <div class="form-group"><label>Organiser</label><input type="text" id="vcOrganiser" placeholder="Organising office/officer"></div>
+        <div class="form-group"><label>Organiser</label>
+          <select id="vcOrganiser"></select>
+        </div>
+        <div class="form-group"><label>Project Name</label>
+          <select id="vcProject"></select>
+        </div>
         <div class="form-group" style="grid-column:1/-1"><label>VC Link</label><input type="text" id="vcLink" placeholder="Paste meeting link here"></div>
-        <div class="form-group" style="grid-column:1/-1"><label>Allotted Persons (comma separated)</label><input type="text" id="vcPersons" placeholder="Name1, Name2, Name3..."></div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Allotted Persons
+            <small style="color:var(--text3)">(Hold Ctrl to select multiple)</small>
+          </label>
+          <select id="vcPersons" multiple size="8" style="height:180px"></select>
+        </div>
       </div>
       <div class="form-group" style="margin-top:12px"><label>Remarks</label><textarea id="vcRemarks" placeholder="Additional remarks..."></textarea></div>
     </div>
@@ -1550,6 +1853,10 @@ let currentCmdFilter = 'all';
 let currentCorrFilter = 'all';
 let currentIGPFilter = 'all';
 let currentVCFilter  = 'all';
+let currentCmdProject = 'all';
+let currentCorrProject = 'all';
+let currentIGPProject = 'all';
+let currentVCProject = 'all';
 let editContext = null;
 let stageContext = null;
 let postponeContext = null;
@@ -1743,6 +2050,7 @@ function initApp() {
 
   startClock();
   document.getElementById('punchUserName').textContent = currentUser.name;
+  loadStaffList();
   loadAllData();
   showScreen('dashboard');
 }
@@ -1819,6 +2127,7 @@ async function loadAllData() {
     renderDashboard();
     renderNoticesBanner();
     updateAllDropdowns();
+    updateApprovalBadges();
     renderAdminCredentials();
     return true;
   } catch(err) {
@@ -1828,20 +2137,139 @@ async function loadAllData() {
   }
 }
 
+async function loadStaffList() {
+  const staff = await fetchSheet('Staff_Master');
+  allData.staff = mergeStaffData(staff);
+  updateAllDropdowns();
+}
+
+function buildStaffOptions(multiSelect) {
+  const staff = (allData.staff || [])
+    .filter(s => s.Status === 'Active')
+    .sort((a,b) => 
+      (a.Full_Name||'').localeCompare(b.Full_Name||'')
+    );
+  if (multiSelect) {
+    return staff.map(s =>
+      '<option value="' + s.Full_Name + '">' +
+      s.Full_Name + ' (' + s.Rank + ')' +
+      '</option>'
+    ).join('');
+  }
+  return '<option value="">-- Select Staff --</option>' +
+    staff.map(s =>
+      '<option value="' + s.Full_Name + '">' +
+      s.Full_Name + ' (' + s.Rank + ')' +
+      '</option>'
+    ).join('');
+}
+
+const PROJECTS = [
+  'MedLEaPR',
+  'NATGRID',
+  'CCTNS',
+  'Citizen Portal',
+  'eSakshya',
+  'eSummons',
+  'CriMAC',
+  'CEIR',
+  'ICJS',
+  'eOffice',
+  'APOLIS',
+  'Drone',
+  'Dial112',
+  'CCTV360AI',
+  'News360AI',
+  'General/Other'
+];
+
+const PROJECT_COLORS = {
+  'MedLEaPR':       '#0d3b7a',
+  'NATGRID':        '#7b0d0d',
+  'CCTNS':          '#1a5276',
+  'Citizen Portal': '#145a32',
+  'eSakshya':       '#6e2fa0',
+  'eSummons':       '#784212',
+  'CriMAC':         '#922b21',
+  'CEIR':           '#1a5276',
+  'ICJS':           '#0e6655',
+  'eOffice':        '#b7770d',
+  'APOLIS':         '#1f618d',
+  'Drone':          '#117a65',
+  'Dial112':        '#c0392b',
+  'CCTV360AI':      '#616a6b',
+  'News360AI':      '#2e4057',
+  'General/Other':  '#555555'
+};
+
+function projectBadge(projectName) {
+  if (!projectName) return '—';
+  const color = PROJECT_COLORS[projectName] 
+    || '#0d3b7a';
+  return '<span style="background:' + color + 
+    ';color:#fff;padding:2px 8px;' +
+    'border-radius:12px;font-size:10px;' +
+    'font-weight:600;white-space:nowrap">' +
+    projectName + '</span>';
+}
+
+function buildProjectOptions() {
+  return '<option value="">-- Select Project --</option>' +
+    PROJECTS.map(p =>
+      '<option value="' + p + '">' + p + '</option>'
+    ).join('');
+}
+
 function updateAllDropdowns() {
-  const staff = (allData.staff || []).filter(s => (s.Status || 'Active') === 'Active');
-  const options = staff.map(s =>
-    `<option value="${s.Full_Name||s.Name||''}">${s.Full_Name||s.Name||'—'} (${s.Rank||''})</option>`
-  ).join('');
-  const dropdownIds = [
-    'taskAssignedTo','taskAssignedBy',
-    'corrAllocTo','corrAllocBy',
-    'igpAssignedTo','vcSpeaker'
+  const singleIds = [
+    'taskAssignedBy',
+    'corrAllocBy',
+    'igpAssignedBy',
+    'vcSpeaker',
+    'vcOrganiser'
   ];
-  dropdownIds.forEach(id => {
+  const multiIds = [
+    'taskAssignedTo',
+    'corrAllocTo',
+    'igpAssignedTo',
+    'vcPersons'
+  ];
+  const projectIds = [
+    'taskProject',
+    'corrProject',
+    'igpProject',
+    'vcProject',
+    'commandProjectFilter',
+    'correspondenceProjectFilter',
+    'igpProjectFilter',
+    'vcProjectFilter'
+  ];
+  singleIds.forEach(id => {
     const el = document.getElementById(id);
-    if (el && el.tagName === 'SELECT') {
-      el.innerHTML = '<option value="">-- Select --</option>' + options;
+    if (el) {
+      el.innerHTML = buildStaffOptions(false);
+      if (id.includes('By') || 
+          id === 'vcOrganiser') {
+        Array.from(el.options).forEach(opt => {
+          if (opt.value === currentUser?.name)
+            opt.selected = true;
+        });
+      }
+    }
+  });
+  multiIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = buildStaffOptions(true);
+  });
+  projectIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      if (id.includes('ProjectFilter')) {
+        el.innerHTML = '<option value="all">All Projects</option>' +
+          PROJECTS.map(p => '<option value="' + p + '">' + p + '</option>').join('');
+      } else {
+        el.innerHTML = buildProjectOptions();
+      }
     }
   });
 }
@@ -2055,167 +2483,196 @@ function renderDashboard() {
 }
 
 function renderPendingApprovals() {
-  const section = document.getElementById('pendingApprovalsSection');
-  const tbody = document.getElementById('pendingApprovalsBody');
-  if (!section || !tbody) return;
+  const allTasks = [
+    ...(allData.command || []).map(t => ({
+      ...t, 
+      module: 'Command Register',
+      moduleScreen: 'command'
+    })),
+    ...(allData.igpworks || []).map(w => ({
+      ...w,
+      Task_Title: w.Work_Title,
+      Assigned_By: w.Assigned_By,
+      module: 'IGP Command Works',
+      moduleScreen: 'igpworks'
+    }))
+  ];
 
-  if (!isOfficer()) {
-    section.style.display = 'none';
+  const pending = allTasks.filter(t =>
+    t.Status === 'Pending for Approval' &&
+    (t.Assigned_By === currentUser.name ||
+     currentUser.role === 'admin')
+  );
+
+  const countEl = document
+    .getElementById('pendingApprovalCount');
+  if (countEl) countEl.textContent = 
+    pending.length;
+
+  const listEl = document
+    .getElementById('pendingApprovalList');
+  if (!listEl) return;
+
+  if (pending.length === 0) {
+    listEl.innerHTML = 
+      '<div style="text-align:center;' +
+      'padding:16px;color:var(--text3);' +
+      'font-size:13px">' +
+      '✅ No pending approvals</div>';
     return;
   }
 
-  let pendingList = [];
-
-  // Command Register
-  (allData.command || []).forEach((t, idx) => {
-    if (t.Status === 'Pending for Approval' || t.Status === 'Pending Approval') {
-      pendingList.push({
-        id: t.Task_ID || t.ID,
-        module: 'command',
-        moduleLabel: 'Command Register',
-        date: t.Created_Date || t.Date,
-        project: t.Project_Name,
-        title: t.Task_Title,
-        to: t.Assigned_To,
-        status: t.Status,
-        row: rowNumber(t, idx),
-        raw: t
-      });
-    }
-  });
-
-  // Correspondence
-  (allData.correspondence || []).forEach((c, idx) => {
-    if (c.Current_Stage === 'Pending for Approval' || c.Current_Stage === 'Pending Approval' || c.Status === 'Pending Approval') {
-      pendingList.push({
-        id: c.Corr_ID || c.ID,
-        module: 'correspondence',
-        moduleLabel: 'Correspondence',
-        date: c.Date,
-        project: c.Project_Name,
-        title: c.Subject,
-        to: c.Allocated_To,
-        status: c.Current_Stage || c.Status,
-        row: rowNumber(c, idx),
-        raw: c
-      });
-    }
-  });
-
-  // IGP Command Works
-  (allData.igpworks || []).forEach((w, idx) => {
-    if (w.Status === 'Pending for Approval' || w.Status === 'Pending Approval') {
-      pendingList.push({
-        id: w.Work_ID || w.ID,
-        module: 'igp',
-        moduleLabel: 'IGP Works',
-        date: w.Date,
-        project: w.Project_Name,
-        title: w.Work_Title,
-        to: w.Assigned_To,
-        status: w.Status,
-        row: rowNumber(w, idx),
-        raw: w
-      });
-    }
-  });
-
-  const count = pendingList.length;
-  const countBadge = document.getElementById('approvalCountBadge');
-  if (countBadge) countBadge.textContent = count;
-
-  if (count === 0) {
-    section.style.display = 'none';
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text3)">No pending approvals</td></tr>';
-    return;
-  }
-
-  section.style.display = 'block';
-
-  tbody.innerHTML = pendingList.map(item => `
-    <tr>
-      <td><span class="badge badge-info">${item.moduleLabel}</span></td>
-      <td>${formatDate(item.date)}</td>
-      <td>${projectBadge(item.project)}</td>
-      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${item.title}">${item.title}</td>
-      <td>${item.to}</td>
-      <td>${statusBadge(item.status)}</td>
-      <td>
-        <div class="row-actions">
-          <button class="action-btn" title="Approve" onclick="approveTask('${item.id}', '${item.module}', ${item.row})" style="color:var(--success);background:rgba(26,122,74,0.1)"><i class="fa-solid fa-circle-check"></i></button>
-          <button class="action-btn" title="Return/Reject" onclick="rejectTask('${item.id}', '${item.module}', ${item.row})" style="color:var(--danger);background:rgba(163,45,45,0.1)"><i class="fa-solid fa-circle-xmark"></i></button>
-        </div>
-      </td>
-    </tr>
-  `).join('');
+  listEl.innerHTML = pending.map(t =>
+    '<div style="display:flex;' +
+    'align-items:center;gap:10px;' +
+    'padding:10px 12px;' +
+    'background:var(--bg3);' +
+    'border-radius:8px;margin-bottom:8px;' +
+    'border-left:3px solid var(--gold)">' +
+    '<div style="flex:1">' +
+    '<div style="font-weight:600;' +
+    'font-size:13px;color:var(--text1)">' +
+    (t.Task_Title || '—') + '</div>' +
+    '<div style="font-size:11px;' +
+    'color:var(--text3);margin-top:2px">' +
+    t.module + ' • ' +
+    'Assigned to: ' + 
+    (t.Assigned_To || '—') + '</div>' +
+    '</div>' +
+    projectBadge(t.Project_Name || '') +
+    '<button onclick="approveTask(\'' +
+    (t.Task_ID || t.Work_ID) + '\',\'' +
+    t.moduleScreen + '\')" ' +
+    'style="background:var(--gold);' +
+    'color:#0d1b2a;padding:6px 14px;' +
+    'border-radius:6px;font-size:11px;' +
+    'font-weight:700;border:none;' +
+    'cursor:pointer;margin-left:6px">APPROVE</button>' +
+    '<button onclick="rejectTask(\'' +
+    (t.Task_ID || t.Work_ID) + '\',\'' +
+    t.moduleScreen + '\')" ' +
+    'style="background:var(--bg);' +
+    'color:var(--danger);padding:6px 14px;' +
+    'border-radius:6px;font-size:11px;' +
+    'font-weight:600;' +
+    'border:1px solid var(--danger);' +
+    'cursor:pointer;margin-left:6px">RETURN</button>' +
+    '</div>'
+  ).join('');
 }
 
-async function approveTask(id, module, rowNum) {
-  if (!confirm('Approve this request?')) return;
+async function approveTask(taskId, module) {
+  const confirmed = confirm(
+    'Approve completion of this task?'
+  );
+  if (!confirmed) return;
+
+  const sheetName = module === 'igpworks'
+    ? 'IGP_Command_Works'
+    : 'Command_Register';
+
+  const data = allData[
+    module === 'igpworks' 
+      ? 'igpworks' 
+      : 'command'
+  ] || [];
+
+  const taskIndex = data.findIndex(t =>
+    (t.Task_ID || t.Work_ID) === taskId
+  );
+
+  if (taskIndex === -1) {
+    showToast('Task not found', 'error');
+    return;
+  }
+
   showToast('Approving...', 'info');
-  if (module === 'command') {
-    const t = allData.command.find(x => (x.Task_ID || x.ID) === id);
-    if (t) {
-      t.Status = 'Completed';
-      t.Approved_By = currentUser.name;
-      t.Officer_Remarks = 'Approved';
-      t.Completion_Date = new Date().toISOString().split('T')[0];
-      await postAction('Command_Register', 'update', commandRow(t), rowNum);
-    }
-  } else if (module === 'correspondence') {
-    const c = allData.correspondence.find(x => (x.Corr_ID || x.ID) === id);
-    if (c) {
-      c.Current_Stage = 'Approved by Officer';
-      c.Status = 'Active';
-      c.Remarks = 'Approved by ' + currentUser.name;
-      await postAction('Correspondence_Tracker', 'update', corrRow(c), rowNum);
-      await postAction('Correspondence_Timeline', 'append', [id, c.Serial_No, new Date().toISOString().split('T')[0], 'Approved by Officer', currentUser.name, 'Approved', c.Submission_Mode || 'Other', new Date().toISOString()]);
-    }
-  } else if (module === 'igp') {
-    const w = allData.igpworks.find(x => (x.Work_ID || x.ID) === id);
-    if (w) {
-      w.Status = 'Completed';
-      w.Approved_By = currentUser.name;
-      w.Remarks = 'Approved';
-      w.Completed_Date = new Date().toISOString().split('T')[0];
-      await postAction('IGP_Command_Works', 'update', igpRow(w), rowNum);
-    }
-  }
-  showToast('Approved successfully!', 'success');
+
+  await fetch(RELAY_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 
+      'Content-Type': 'application/json' 
+    },
+    body: JSON.stringify({
+      sheet: sheetName,
+      action: 'updateField',
+      taskId: taskId,
+      fields: {
+        Status: 'Completed',
+        Approved_By: currentUser.name,
+        Completion_Date: new Date()
+          .toISOString().split('T')[0],
+        Last_Updated: new Date().toISOString()
+      }
+    })
+  });
+
+  await new Promise(r => setTimeout(r, 2500));
   await loadAllData();
   renderDashboard();
+  showToast('Task approved and completed!',
+    'success');
 }
 
-async function rejectTask(id, module, rowNum) {
-  const remarks = prompt('Enter reason for returning/rejection:');
-  if (remarks === null) return;
-  showToast('Returning request...', 'info');
-  if (module === 'command') {
-    const t = allData.command.find(x => (x.Task_ID || x.ID) === id);
-    if (t) {
-      t.Status = 'Returned for Correction';
-      t.Officer_Remarks = remarks;
-      await postAction('Command_Register', 'update', commandRow(t), rowNum);
-    }
-  } else if (module === 'correspondence') {
-    const c = allData.correspondence.find(x => (x.Corr_ID || x.ID) === id);
-    if (c) {
-      c.Current_Stage = 'Returned for Correction';
-      c.Remarks = remarks;
-      await postAction('Correspondence_Tracker', 'update', corrRow(c), rowNum);
-      await postAction('Correspondence_Timeline', 'append', [id, c.Serial_No, new Date().toISOString().split('T')[0], 'Returned for Correction', currentUser.name, remarks, c.Submission_Mode || 'Other', new Date().toISOString()]);
-    }
-  } else if (module === 'igp') {
-    const w = allData.igpworks.find(x => (x.Work_ID || x.ID) === id);
-    if (w) {
-      w.Status = 'Returned for Correction';
-      w.Remarks = remarks;
-      await postAction('IGP_Command_Works', 'update', igpRow(w), rowNum);
-    }
-  }
-  showToast('Returned for correction successfully!', 'success');
+async function rejectTask(taskId, module) {
+  const reason = prompt(
+    'Reason for returning this task:'
+  );
+  if (reason === null) return;
+
+  const sheetName = module === 'igpworks'
+    ? 'IGP_Command_Works'
+    : 'Command_Register';
+
+  showToast('Returning task...', 'info');
+
+  await fetch(RELAY_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 
+      'Content-Type': 'application/json' 
+    },
+    body: JSON.stringify({
+      sheet: sheetName,
+      action: 'updateField',
+      taskId: taskId,
+      fields: {
+        Status: 'Returned for Correction',
+        Officer_Remarks: reason,
+        Last_Updated: new Date().toISOString()
+      }
+    })
+  });
+
+  await new Promise(r => setTimeout(r, 2500));
   await loadAllData();
   renderDashboard();
+  showToast('Task returned for correction',
+    'info');
+}
+
+function updateApprovalBadges() {
+  const pending = [
+    ...(allData.command || []),
+    ...(allData.igpworks || [])
+  ].filter(t =>
+    t.Status === 'Pending for Approval' &&
+    (t.Assigned_By === currentUser?.name ||
+     currentUser?.role === 'admin')
+  ).length;
+
+  const badge = document
+    .getElementById('cmdBadge');
+  if (badge) badge.textContent = 
+    pending > 0 ? pending : '';
+
+  document.querySelectorAll(
+    '.notif-dot'
+  ).forEach(dot => {
+    dot.style.display = 
+      pending > 0 ? 'block' : 'none';
+  });
 }
 
 // ============================================================
@@ -2267,6 +2724,32 @@ function filterCommand(f, el) {
 }
 function searchCommand() { renderCommand(); }
 
+function filterByProject(module, project) {
+  if (module === 'command') {
+    currentCmdProject = project;
+    renderCommand();
+  }
+  if (module === 'correspondence') {
+    currentCorrProject = project;
+    renderCorrespondence();
+  }
+  if (module === 'igp') {
+    currentIGPProject = project;
+    renderIGPWorks();
+  }
+  if (module === 'vc') {
+    currentVCProject = project;
+    renderVC();
+  }
+}
+
+function clearProjectFilter(module) {
+  document.getElementById(
+    module + 'ProjectFilter'
+  ).value = 'all';
+  filterByProject(module, 'all');
+}
+
 // ============================================================
 // CORRESPONDENCE TRACKER
 // ============================================================
@@ -2287,19 +2770,18 @@ function renderCorrespondence() {
   );
   const tbody = document.getElementById('corrBody');
   if (data.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><i class="fa-solid fa-envelope"></i><p>No correspondence entries yet. Click New Correspondence to add.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><i class="fa-solid fa-envelope"></i><p>No correspondence entries yet. Click New Correspondence to add.</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = data.map((c, i) => `
     <tr>
       <td><strong>${c.Serial_No||'—'}</strong></td>
       <td>${formatDate(c.Date)}</td>
-      <td>${projectBadge(c.Project_Name)}</td>
       <td>${corrTypeBadge(c.Type)}</td>
       <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${c.Subject||''}">${c.Subject||'—'}</td>
+      <td>${projectBadge(c.Project_Name)}</td>
       <td>${c.Allocated_To||'—'}</td>
       <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${c.Current_Stage||''}">${stageBadge(c.Current_Stage)}</td>
-      <td>${c.Submission_Mode||'—'}</td>
       <td>${statusBadge(c.Status)}</td>
       <td>${renderCorrActions(i)}</td>
     </tr>`).join('');
@@ -2320,22 +2802,27 @@ function renderIGPWorks() {
   if (currentIGPFilter !== 'all') data = data.filter(w => w.Status === currentIGPFilter);
   if (currentIGPProject !== 'all') data = data.filter(w => w.Project_Name === currentIGPProject);
 
+  const search = document.getElementById('igpSearch')?.value?.toLowerCase() || '';
+  if (search) data = data.filter(w =>
+    (w.Work_Title||'').toLowerCase().includes(search) ||
+    (w.Assigned_To||'').toLowerCase().includes(search)
+  );
+
   const tbody = document.getElementById('igpBody');
   if (data.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><i class="fa-solid fa-star"></i><p>No IGP command works yet. Click Add IGP Work to add.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><i class="fa-solid fa-star"></i><p>No IGP command works yet. Click Add IGP Work to add.</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = data.map((w, i) => `
     <tr>
       <td><strong>${w.Serial_No||'—'}</strong></td>
       <td>${formatDate(w.Date)}</td>
-      <td>${projectBadge(w.Project_Name)}</td>
       <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${w.Work_Title||''}">${w.Work_Title||'—'}</td>
+      <td>${projectBadge(w.Project_Name)}</td>
       <td>${w.Assigned_To||'—'}</td>
       <td>${priorityBadge(w.Priority)}</td>
       <td>${statusBadge(w.Status)}</td>
       <td>${formatDate(w.Due_Date)}</td>
-      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${w.Remarks||'—'}</td>
       <td>${renderIGPActions(i)}</td>
     </tr>`).join('');
 }
@@ -2354,24 +2841,33 @@ function renderVC() {
   if (currentVCFilter !== 'all') data = data.filter(v => v.Status === currentVCFilter);
   if (currentVCProject !== 'all') data = data.filter(v => v.Project_Name === currentVCProject);
 
+  const search = document.getElementById('vcSearch')?.value?.toLowerCase() || '';
+  if (search) data = data.filter(v =>
+    (v.Subject||'').toLowerCase().includes(search) ||
+    (v.Speaker||'').toLowerCase().includes(search) ||
+    (v.Organiser||'').toLowerCase().includes(search)
+  );
+
   const tbody = document.getElementById('vcBody');
   if (data.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><i class="fa-solid fa-video"></i><p>No VC schedules yet. Click Schedule VC to add.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><i class="fa-solid fa-video"></i><p>No VC schedules yet. Click Schedule VC to add.</p></div></td></tr>`;
     return;
   }
-  tbody.innerHTML = data.map((v, i) => `
-    <tr>
-      <td><strong>${v.Serial_No||'—'}</strong></td>
-      <td>${projectBadge(v.Project_Name)}</td>
-      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${v.Subject||''}">${v.Subject||'—'}</td>
-      <td>${formatDate(v.Date)} ${v.Time||''}</td>
-      <td><span class="badge badge-info">${v.Platform||'—'}</span></td>
-      <td>${v.Speaker||'—'}</td>
-      <td>${v.Organiser||'—'}</td>
-      <td>${vcStatusBadge(v.Status)}</td>
-      <td>${v.VC_Link ? `<a href="${v.VC_Link}" target="_blank" style="color:var(--navy);font-weight:600;font-size:11px"><i class="fa-solid fa-link"></i> Join</a>` : '—'}</td>
-      <td>${renderVCActions(i)}</td>
-    </tr>`).join('');
+  tbody.innerHTML = data.map((v, i) => {
+    const personsCount = (v.Allotted_Persons || '').split(',').map(n => n.trim()).filter(Boolean).length;
+    return `
+      <tr>
+        <td><strong>${v.Serial_No||'—'}</strong></td>
+        <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${v.Subject||''}">${v.Subject||'—'}</td>
+        <td>${formatDate(v.Date)} ${v.Time||''}</td>
+        <td><span class="badge badge-info">${v.Platform||'—'}</span></td>
+        <td>${projectBadge(v.Project_Name)}</td>
+        <td>${v.Speaker||'—'}</td>
+        <td><span class="badge badge-present">${personsCount} Members</span></td>
+        <td>${vcStatusBadge(v.Status)}</td>
+        <td>${renderVCActions(i)}</td>
+      </tr>`;
+  }).join('');
 }
 function filterVC(f, el) {
   currentVCFilter = f;
@@ -2635,10 +3131,10 @@ function showDetails(title, html) {
   modal.querySelector('.modal-footer').innerHTML = `<button class="btn-secondary" onclick="closeModal('detailsModal')">Close</button>`;
   openModal('detailsModal');
 }
-function commandRow(t) { return [field(t,['Task_ID','ID'],`T${Date.now()}`),field(t,['Serial_No']),field(t,['Created_Date','Date']),field(t,['Task_Title']),field(t,['Description','Task_Description','Remarks']),field(t,['Category']),field(t,['Category_Code']),field(t,['Priority']),field(t,['Assigned_To']),field(t,['Assigned_By']),field(t,['Due_Date']),field(t,['Status'],'Pending'),field(t,['Officer_Remarks']),field(t,['Staff_Remarks']),field(t,['Points_Awarded'],0),field(t,['Approved_By']),field(t,['Risk_Status'],'No Risk'),field(t,['Timestamp'],new Date().toISOString())]; }
-function corrRow(c) { return [field(c,['Corr_ID','ID'],`C${Date.now()}`),field(c,['Serial_No']),field(c,['Date','Created_Date']),field(c,['Type']),field(c,['Subject']),field(c,['Allocated_To']),field(c,['Allocated_By']),field(c,['Current_Stage'],'Draft Work Allocated'),field(c,['Submission_Mode']),field(c,['Reference_No']),field(c,['Status'],'Active'),field(c,['Remarks']),field(c,['Timestamp'],new Date().toISOString())]; }
-function igpRow(w) { return [field(w,['Work_ID','ID'],`I${Date.now()}`),field(w,['Serial_No']),field(w,['Date','Created_Date']),field(w,['Work_Title']),field(w,['Description','Work_Description']),field(w,['Assigned_To']),field(w,['Priority']),field(w,['Status'],'Pending'),field(w,['Due_Date']),field(w,['Completed_Date']),field(w,['Remarks']),field(w,['Approved_By']),field(w,['Timestamp'],new Date().toISOString())]; }
-function vcRow(v) { return [field(v,['VC_ID','ID'],`V${Date.now()}`),field(v,['Serial_No']),field(v,['Subject']),field(v,['Date']),field(v,['Time']),field(v,['Platform']),field(v,['VC_Link']),field(v,['Organiser']),field(v,['Speaker']),field(v,['Allotted_Persons']),field(v,['Status'],'Upcoming'),field(v,['Linked_Postponed_ID']),field(v,['Postpone_Reason']),field(v,['Created_By'],currentUser?.name),field(v,['Remarks']),field(v,['Entry_Date','Timestamp'],new Date().toISOString())]; }
+function commandRow(t) { return [field(t,['Task_ID','ID'],`T${Date.now()}`),field(t,['Serial_No']),field(t,['Created_Date','Date']),field(t,['Task_Title']),field(t,['Description','Task_Description','Remarks']),field(t,['Category']),field(t,['Category_Code','Category_ID']),field(t,['Project_Name']),field(t,['Priority']),field(t,['Assigned_To']),field(t,['Assigned_By']),field(t,['Due_Date']),field(t,['Status'],'Pending'),field(t,['Completion_Date']),field(t,['Officer_Remarks']),field(t,['Staff_Remarks']),field(t,['Points_Awarded'],0),field(t,['Approved_By']),field(t,['Risk_Level','Risk_Status'],'No Risk'),field(t,['Last_Updated','Timestamp'],new Date().toISOString())]; }
+function corrRow(c) { return [field(c,['Corr_ID','ID'],`C${Date.now()}`),field(c,['Serial_No']),field(c,['Date','Created_Date']),field(c,['Type']),field(c,['Subject']),field(c,['Allocated_To']),field(c,['Allocated_By']),field(c,['Current_Stage'],'Draft Work Allocated'),field(c,['Submission_Mode']),field(c,['Reference_No']),field(c,['Status'],'Active'),field(c,['Remarks']),field(c,['Project_Name']),field(c,['Timestamp'],new Date().toISOString())]; }
+function igpRow(w) { return [field(w,['Work_ID','ID'],`I${Date.now()}`),field(w,['Serial_No']),field(w,['Date','Created_Date']),field(w,['Work_Title']),field(w,['Project_Name']),field(w,['Description','Work_Description']),field(w,['Assigned_To']),field(w,['Priority']),field(w,['Status'],'Pending'),field(w,['Due_Date']),field(w,['Completed_Date']),field(w,['Remarks']),field(w,['Approved_By']),field(w,['Timestamp'],new Date().toISOString())]; }
+function vcRow(v) { return [field(v,['VC_ID','ID'],`V${Date.now()}`),field(v,['Serial_No']),field(v,['Subject']),field(v,['Date']),field(v,['Time']),field(v,['Platform']),field(v,['Project_Name']),field(v,['VC_Link']),field(v,['Organiser']),field(v,['Speaker']),field(v,['Allotted_Persons']),field(v,['Status'],'Upcoming'),field(v,['Linked_Postponed_ID']),field(v,['Postpone_Reason']),field(v,['Created_By'],currentUser?.name),field(v,['Remarks']),field(v,['Entry_Date','Timestamp'],new Date().toISOString())]; }
 function formatPersonBadges(str) {
   return (str || '').split(',').map(n => n.trim()).filter(Boolean).map(n => `<span class="badge" style="background:var(--navy);color:#fff;margin:2px;font-size:10px">${n}</span>`).join('') || '—';
 }
@@ -2924,23 +3420,42 @@ function optimisticAdd(sheetKey, obj, renderFn) {
 
 async function submitTask() {
   const title = document.getElementById('taskTitle').value.trim();
-  const to    = document.getElementById('taskAssignedTo').value.trim();
-  if (!title || !to) { showToast('Please fill all required fields', 'error'); return; }
+  const selectedTo = Array.from(document.getElementById('taskAssignedTo').selectedOptions).map(o => o.value);
+  if (!title || selectedTo.length === 0) { showToast('Please fill all required fields', 'error'); return; }
+  if (selectedTo.length > 2) { showToast('You can select a maximum of 2 members', 'error'); return; }
+  const to = selectedTo.join(', ');
+
   const entryDate = document.getElementById('taskEntryDate').value || new Date().toISOString().split('T')[0];
   const existing  = editContext?.module === 'command' ? (allData.command || [])[editContext.index] || {} : {};
   const serial    = existing.Serial_No || `${(allData.command||[]).length+1}/2026`;
   const catEl     = document.getElementById('taskCategory');
   const id        = editContext?.id || existing.Task_ID || `T${Date.now()}`;
+  const proj      = document.getElementById('taskProject').value;
+  const status    = document.getElementById('taskStatus').value || existing.Status || 'Pending';
+
   const row = [
-    id, serial, entryDate,
-    title, document.getElementById('taskDesc').value,
-    catEl.options[catEl.selectedIndex].text, catEl.value,
-    document.getElementById('taskPriority').value, to,
+    id,
+    serial,
+    entryDate,
+    title,
+    document.getElementById('taskDesc').value,
+    catEl.options[catEl.selectedIndex].text,
+    catEl.value,
+    proj,
+    document.getElementById('taskPriority').value,
+    to,
     document.getElementById('taskAssignedBy').value || currentUser.name,
-    document.getElementById('taskDueDate').value, existing.Status || 'Pending',
-    existing.Officer_Remarks || '', existing.Staff_Remarks || '', existing.Points_Awarded || 0,
-    existing.Approved_By || '', existing.Risk_Status || 'No Risk', existing.Timestamp || new Date().toISOString()
+    document.getElementById('taskDueDate').value,
+    status,
+    existing.Completion_Date || '',
+    existing.Officer_Remarks || '',
+    existing.Staff_Remarks || '',
+    existing.Points_Awarded || 0,
+    existing.Approved_By || '',
+    existing.Risk_Level || existing.Risk_Status || 'No Risk',
+    new Date().toISOString()
   ];
+
   closeModal('addTaskModal');
   document.getElementById('taskTitle').value = '';
   document.querySelector('#addTaskModal .modal-title').textContent = 'Add Task to Command Register';
@@ -2952,10 +3467,14 @@ async function submitTask() {
       allData.command[idx].Created_Date = entryDate;
       allData.command[idx].Description = document.getElementById('taskDesc').value;
       allData.command[idx].Category = catEl.options[catEl.selectedIndex].text;
+      allData.command[idx].Category_ID = catEl.value;
+      allData.command[idx].Project_Name = proj;
       allData.command[idx].Priority = document.getElementById('taskPriority').value;
       allData.command[idx].Assigned_To = to;
       allData.command[idx].Assigned_By = document.getElementById('taskAssignedBy').value || currentUser.name;
       allData.command[idx].Due_Date = document.getElementById('taskDueDate').value;
+      allData.command[idx].Status = status;
+      allData.command[idx].Last_Updated = new Date().toISOString();
     }
   }
 
@@ -2963,10 +3482,12 @@ async function submitTask() {
   const localObj = {
     Task_ID: id, Serial_No: serial, Created_Date: entryDate,
     Task_Title: title, Description: document.getElementById('taskDesc')?.value || '',
-    Category: catEl.options[catEl.selectedIndex].text,
+    Category: catEl.options[catEl.selectedIndex].text, Category_ID: catEl.value,
+    Project_Name: proj,
     Priority: document.getElementById('taskPriority').value,
     Assigned_To: to, Assigned_By: document.getElementById('taskAssignedBy').value || currentUser.name,
-    Due_Date: document.getElementById('taskDueDate').value, Status: existing.Status || 'Pending'
+    Due_Date: document.getElementById('taskDueDate').value, Status: status,
+    Last_Updated: new Date().toISOString()
   };
   if (!editContext) optimisticAdd('command', localObj, renderCommand);
   else renderCommand();
@@ -2986,8 +3507,11 @@ async function submitTask() {
 
 async function submitCorr() {
   const subject = document.getElementById('corrSubject').value.trim();
-  const to      = document.getElementById('corrAllocTo').value.trim();
-  if (!subject || !to) { showToast('Please fill all required fields', 'error'); return; }
+  const selectedTo = Array.from(document.getElementById('corrAllocTo').selectedOptions).map(o => o.value);
+  if (!subject || selectedTo.length === 0) { showToast('Please fill all required fields', 'error'); return; }
+  if (selectedTo.length > 2) { showToast('You can select a maximum of 2 members', 'error'); return; }
+  const to = selectedTo.join(', ');
+
   const entryDate = document.getElementById('corrEntryDate').value || new Date().toISOString().split('T')[0];
   const existing  = editContext?.module === 'corr' ? (allData.correspondence || [])[editContext.index] || {} : {};
   const serial    = existing.Serial_No || `${(allData.correspondence||[]).length+1}/2026`;
@@ -2995,13 +3519,18 @@ async function submitCorr() {
   const type      = document.getElementById('corrType').value;
   const by        = document.getElementById('corrAllocBy').value || currentUser.name;
   const mode      = document.getElementById('corrMode').value;
+  const stage     = document.getElementById('corrStage').value || existing.Current_Stage || 'Draft Work Allocated';
   const remarks   = document.getElementById('corrRemarks').value;
+  const proj      = document.getElementById('corrProject').value;
+
   const row = [
     id, serial, entryDate, type, subject, to, by,
-    existing.Current_Stage || 'Draft Work Allocated',
+    stage,
     mode, '', existing.Status || 'Active', remarks,
-    existing.Timestamp || new Date().toISOString()
+    proj,
+    new Date().toISOString()
   ];
+
   closeModal('addCorrModal');
   document.getElementById('corrSubject').value = '';
   document.querySelector('#addCorrModal .modal-title').textContent = 'New Correspondence Entry';
@@ -3015,15 +3544,18 @@ async function submitCorr() {
       allData.correspondence[idx].Allocated_To = to;
       allData.correspondence[idx].Allocated_By = by;
       allData.correspondence[idx].Submission_Mode = mode;
+      allData.correspondence[idx].Current_Stage = stage;
       allData.correspondence[idx].Remarks = remarks;
+      allData.correspondence[idx].Project_Name = proj;
+      allData.correspondence[idx].Last_Updated = new Date().toISOString();
     }
   }
 
   const localObj = {
     Corr_ID: id, Serial_No: serial, Date: entryDate,
     Type: type, Subject: subject, Allocated_To: to, Allocated_By: by,
-    Current_Stage: existing.Current_Stage || 'Draft Work Allocated',
-    Submission_Mode: mode, Status: existing.Status || 'Active'
+    Current_Stage: stage, Submission_Mode: mode, Status: existing.Status || 'Active',
+    Remarks: remarks, Project_Name: proj, Last_Updated: new Date().toISOString()
   };
   if (!editContext) optimisticAdd('correspondence', localObj, renderCorrespondence);
   else renderCorrespondence();
@@ -3042,8 +3574,11 @@ async function submitCorr() {
 
 async function submitIGP() {
   const title = document.getElementById('igpTitle').value.trim();
-  const to    = document.getElementById('igpAssignedTo').value.trim();
-  if (!title || !to) { showToast('Please fill required fields', 'error'); return; }
+  const selectedTo = Array.from(document.getElementById('igpAssignedTo').selectedOptions).map(o => o.value);
+  if (!title || selectedTo.length === 0) { showToast('Please fill required fields', 'error'); return; }
+  if (selectedTo.length > 2) { showToast('You can select a maximum of 2 members', 'error'); return; }
+  const to = selectedTo.join(', ');
+
   const entryDate  = document.getElementById('igpEntryDate').value || new Date().toISOString().split('T')[0];
   const existing   = editContext?.module === 'igp' ? (allData.igpworks || [])[editContext.index] || {} : {};
   const serial     = existing.Serial_No || `${(allData.igpworks||[]).length+1}/2026`;
@@ -3052,12 +3587,17 @@ async function submitIGP() {
   const dueDate    = document.getElementById('igpDueDate').value;
   const remarks    = document.getElementById('igpRemarks').value;
   const desc       = document.getElementById('igpDesc').value;
+  const proj       = document.getElementById('igpProject').value;
+  const by         = document.getElementById('igpAssignedBy').value || currentUser.name;
+  const status     = document.getElementById('igpStatus').value || existing.Status || 'Pending';
+
   const row = [
-    id, serial, entryDate, title, desc, to,
-    priority, existing.Status || 'Pending', dueDate,
+    id, serial, entryDate, title, proj, desc, to, by,
+    priority, status, dueDate,
     existing.Completed_Date || '', remarks,
-    existing.Approved_By || '', existing.Timestamp || new Date().toISOString()
+    existing.Approved_By || '', new Date().toISOString()
   ];
+
   closeModal('addIGPModal');
   document.getElementById('igpTitle').value = '';
   document.querySelector('#addIGPModal .modal-title').textContent = 'Add IGP Command Work';
@@ -3067,19 +3607,23 @@ async function submitIGP() {
     if (allData.igpworks && allData.igpworks[idx]) {
       allData.igpworks[idx].Date = entryDate;
       allData.igpworks[idx].Work_Title = title;
+      allData.igpworks[idx].Project_Name = proj;
       allData.igpworks[idx].Description = desc;
       allData.igpworks[idx].Assigned_To = to;
+      allData.igpworks[idx].Assigned_By = by;
       allData.igpworks[idx].Priority = priority;
+      allData.igpworks[idx].Status = status;
       allData.igpworks[idx].Due_Date = dueDate;
       allData.igpworks[idx].Remarks = remarks;
+      allData.igpworks[idx].Last_Updated = new Date().toISOString();
     }
   }
 
   const localObj = {
     Work_ID: id, Serial_No: serial, Date: entryDate,
-    Work_Title: title, Description: desc, Assigned_To: to,
-    Priority: priority, Status: existing.Status || 'Pending',
-    Due_Date: dueDate, Remarks: remarks
+    Work_Title: title, Project_Name: proj, Description: desc, Assigned_To: to, Assigned_By: by,
+    Priority: priority, Status: status,
+    Due_Date: dueDate, Remarks: remarks, Last_Updated: new Date().toISOString()
   };
   if (!editContext) optimisticAdd('igpworks', localObj, renderIGPWorks);
   else renderIGPWorks();
@@ -3109,14 +3653,18 @@ async function submitVC() {
   const link       = document.getElementById('vcLink').value;
   const organiser  = document.getElementById('vcOrganiser').value;
   const speaker    = document.getElementById('vcSpeaker').value;
-  const persons    = document.getElementById('vcPersons').value;
+  const selectedPersons = Array.from(document.getElementById('vcPersons').selectedOptions).map(o => o.value);
+  const persons    = selectedPersons.join(', ');
   const remarks    = document.getElementById('vcRemarks').value;
+  const proj       = document.getElementById('vcProject').value;
+
   const row = [
-    id, serial, subject, vcDate, vcTime, platform, link, organiser, speaker, persons,
+    id, serial, subject, vcDate, vcTime, platform, proj, link, organiser, speaker, persons,
     existing.Status || 'Upcoming', existing.Linked_Postponed_ID || '',
     existing.Postpone_Reason || '', existing.Created_By || currentUser.name,
     remarks, entryDate
   ];
+
   closeModal('addVCModal');
   document.getElementById('vcSubject').value = '';
   document.querySelector('#addVCModal .modal-title').textContent = 'Schedule VC / Meeting';
@@ -3128,20 +3676,23 @@ async function submitVC() {
       allData.vcschedule[idx].Date = vcDate;
       allData.vcschedule[idx].Time = vcTime;
       allData.vcschedule[idx].Platform = platform;
+      allData.vcschedule[idx].Project_Name = proj;
       allData.vcschedule[idx].VC_Link = link;
       allData.vcschedule[idx].Organiser = organiser;
       allData.vcschedule[idx].Speaker = speaker;
       allData.vcschedule[idx].Allotted_Persons = persons;
       allData.vcschedule[idx].Remarks = remarks;
       allData.vcschedule[idx].Entry_Date = entryDate;
+      allData.vcschedule[idx].Last_Updated = new Date().toISOString();
     }
   }
 
   const localObj = {
     VC_ID: id, Serial_No: serial, Subject: subject,
-    Date: vcDate, Time: vcTime, Platform: platform,
+    Date: vcDate, Time: vcTime, Platform: platform, Project_Name: proj,
     VC_Link: link, Organiser: organiser, Speaker: speaker,
-    Allotted_Persons: persons, Status: existing.Status || 'Upcoming'
+    Allotted_Persons: persons, Status: existing.Status || 'Upcoming',
+    Remarks: remarks, Last_Updated: new Date().toISOString()
   };
   if (!editContext) optimisticAdd('vcschedule', localObj, renderVC);
   else renderVC();
@@ -3189,8 +3740,13 @@ function statusBadge(s) {
     'Irregular':'badge-irregular','Pending':'badge-pending',
     'In Progress':'badge-progress','Completed':'badge-completed',
     'Active':'badge-active','Archived':'badge-absent',
-    'Upcoming':'badge-upcoming','Postponed':'badge-postponed','Cancelled':'badge-absent',
-    'Escalated':'badge-urgent', 'Other':'badge-pending'
+    'Upcoming':'badge-upcoming','Postponed':'badge-postponed',
+    'Cancelled':'badge-cancelled',
+    'Escalated':'badge-escalated', 'Other':'badge-pending',
+    'Pending for Approval':'badge-pending-approval',
+    'Currently With Officer':'badge-with-officer',
+    'Returned for Correction':'badge-returned',
+    'On Hold':'badge-on-hold'
   };
   return `<span class="badge ${map[s]||'badge-pending'}">${s||'—'}</span>`;
 }
@@ -3433,6 +3989,7 @@ async function submitStaff() {
   }
 
   await new Promise(r => setTimeout(r, 3000));
+  await loadStaffList();
   await loadAllData();
   
   renderStaffMgmt();
@@ -3810,7 +4367,7 @@ async function clearAllStaff() {
   });
   allData.staff = [];
   renderStaffManagement();
-  updateAllDropdowns();
+  await loadStaffList();
   showToast('All staff cleared. Please add staff again.', 'success');
 }
 
@@ -3829,9 +4386,9 @@ async function deleteStaff(rowIndex, staffName) {
       body: JSON.stringify({ sheet: 'Staff_Master', action: 'delete', row: rowIndex + 2 })
     });
     await new Promise(r => setTimeout(r, 3000));
+    await loadStaffList();
     await loadAllData();
     renderStaffManagement();
-    updateAllDropdowns();
     showToast(staffName + ' deleted successfully!', 'success');
   } catch(err) {
     showToast('Delete failed. Try again.', 'error');
@@ -3860,9 +4417,9 @@ async function toggleStaffStatus(index) {
   ];
   showToast('Updating status...', 'info');
   await postAction('Staff_Master', 'update', rowData, rowNumber(s, index));
+  await loadStaffList();
   await loadAllData();
   renderStaffMgmt();
-  updateAllDropdowns();
   showToast('Status updated', 'success');
 }
 </script>
