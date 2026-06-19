@@ -503,65 +503,6 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
 .badge-dispatched { background: rgba(26,122,74,0.12); color: var(--success); }
 .badge-irregular { background: rgba(139,0,0,0.12); color: var(--heart); }
 
-/* ============================================================
-   RANKINGS SCROLL
-   ============================================================ */
-.ranking-scroll-bar {
-  background: linear-gradient(90deg, var(--navy-dark) 0%, var(--navy) 100%);
-  border-radius: 10px; padding: 10px 16px;
-  display: flex; align-items: center; gap: 12px;
-  margin-bottom: 16px; overflow: hidden;
-}
-.ranking-scroll-bar .label {
-  font-size: 10px; font-weight: 700; color: var(--gold);
-  letter-spacing: 1px; text-transform: uppercase;
-  white-space: nowrap; flex-shrink: 0;
-}
-.ranking-scroll-wrap { flex: 1; overflow: hidden; }
-.ranking-scroll-inner {
-  display: flex; gap: 24px;
-  animation: scroll-rank 20s linear infinite;
-  white-space: nowrap;
-}
-@keyframes scroll-rank { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
-.rank-item { display: inline-flex; align-items: center; gap: 8px; }
-.rank-medal { font-size: 16px; }
-.rank-name { font-size: 12px; font-weight: 600; color: #fff; }
-.rank-pts { font-size: 11px; color: var(--gold-light); }
-.rank-sep { color: rgba(255,255,255,0.2); font-size: 16px; }
-
-/* ============================================================
-   ATTENDANCE PUNCH
-   ============================================================ */
-.punch-card {
-  background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy) 100%);
-  border-radius: 16px; padding: 24px;
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 20px; color: #fff;
-  box-shadow: 0 8px 24px rgba(13,59,122,0.3);
-}
-.punch-info h3 { font-family: 'Rajdhani', sans-serif; font-size: 20px; font-weight: 700; }
-.punch-info p { font-size: 12px; opacity: 0.7; margin-top: 4px; }
-.punch-time { font-family: 'Rajdhani', sans-serif; font-size: 32px; font-weight: 700; text-align: right; line-height: 1; }
-.punch-date { font-size: 11px; opacity: 0.6; text-align: right; margin-top: 4px; }
-.punch-btn-group { display: flex; gap: 12px; margin-bottom: 20px; }
-.punch-in-btn, .punch-out-btn {
-  flex: 1; padding: 14px;
-  border-radius: 12px; font-size: 15px; font-weight: 700;
-  font-family: 'Rajdhani', sans-serif; letter-spacing: 0.5px;
-  transition: opacity 0.2s, transform 0.1s;
-}
-.punch-in-btn { background: var(--success); color: #fff; }
-.punch-out-btn { background: var(--danger); color: #fff; }
-.punch-in-btn:hover, .punch-out-btn:hover { opacity: 0.9; transform: translateY(-1px); }
-.punch-in-btn:disabled, .punch-out-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-.wifi-status {
-  display: flex; align-items: center; gap: 8px;
-  padding: 10px 14px; border-radius: 10px;
-  font-size: 12px; font-weight: 500; margin-bottom: 16px;
-}
-.wifi-status.connected { background: rgba(26,122,74,0.1); color: var(--success); border: 1px solid rgba(26,122,74,0.2); }
-.wifi-status.disconnected { background: rgba(163,45,45,0.1); color: var(--danger); border: 1px solid rgba(163,45,45,0.2); }
 
 /* ============================================================
    FORMS
@@ -727,8 +668,7 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
   .content-area { padding: 14px 14px 70px; }
   .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .heart-grid { grid-template-columns: 1fr; }
-  .punch-card { flex-direction: column; align-items: flex-start; gap: 12px; }
-  .form-grid { grid-template-columns: 1fr; }
+.form-grid { grid-template-columns: 1fr; }
   .topbar-title { font-size: 15px; }
 }
 @media (min-width: 769px) {
@@ -870,14 +810,8 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
         <div class="nav-item active" onclick="showScreen('dashboard')">
           <i class="fa-solid fa-gauge-high"></i><span>Dashboard</span>
         </div>
-        <div class="nav-item" onclick="showScreen('attendance')">
-          <i class="fa-solid fa-calendar-check"></i><span>Attendance</span>
-        </div>
         <div class="nav-item" onclick="showScreen('staff')">
           <i class="fa-solid fa-users"></i><span>Staff Directory</span>
-        </div>
-        <div class="nav-item" onclick="showScreen('profile')">
-          <i class="fa-solid fa-circle-user"></i><span>My Profile</span>
         </div>
 
         <div class="nav-section-label" style="margin-top:8px">❤ Command Centre</div>
@@ -894,23 +828,6 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
         </div>
         <div class="nav-item heart-item" onclick="showScreen('vc')">
           <i class="fa-solid fa-video"></i><span>Conf & Meetings</span>
-        </div>
-
-        <div class="nav-section-label" style="margin-top:8px">Operations</div>
-        <div class="nav-item" onclick="showScreen('projects')">
-          <i class="fa-solid fa-diagram-project"></i><span>Projects</span>
-        </div>
-        <div class="nav-item" onclick="showScreen('leave')">
-          <i class="fa-solid fa-plane-departure"></i><span>Leave Register</span>
-        </div>
-        <div class="nav-item" onclick="showScreen('notices')">
-          <i class="fa-solid fa-bullhorn"></i><span>Notices</span>
-        </div>
-        <div class="nav-item" onclick="showScreen('rankings')">
-          <i class="fa-solid fa-trophy"></i><span>Rankings</span>
-        </div>
-        <div class="nav-item" onclick="showScreen('reports')">
-          <i class="fa-solid fa-chart-bar"></i><span>Reports</span>
         </div>
 
         <div class="nav-section-label" style="margin-top:8px">Admin</div>
@@ -976,25 +893,15 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
 
         <!-- ====== DASHBOARD SCREEN ====== -->
         <div class="screen active" id="screen-dashboard">
-          <!-- Rankings scroll -->
-          <div class="ranking-scroll-bar">
-            <div class="label">🏆 TOP PERFORMERS</div>
-            <div class="ranking-scroll-wrap">
-              <div class="ranking-scroll-inner" id="rankingScroll">
-                <span class="rank-item"><span class="rank-medal">🥇</span><span class="rank-name">Loading...</span><span class="rank-pts">0 pts</span></span>
-              </div>
-            </div>
-          </div>
-
           <!-- Stats Grid -->
           <div class="stats-grid" id="dashStats">
-            <div class="stat-card" onclick="showScreen('attendance')">
-              <div class="stat-icon blue"><i class="fa-solid fa-users"></i></div>
-              <div><div class="stat-value" id="statPresent">—</div><div class="stat-label">Present Today</div></div>
+            <div class="stat-card" onclick="showScreen('staff')">
+              <div class="stat-icon success"><i class="fa-solid fa-id-badge"></i></div>
+              <div><div class="stat-value" id="statStaff">—</div><div class="stat-label">Total Staff</div></div>
             </div>
             <div class="stat-card" onclick="showScreen('command')">
               <div class="stat-icon heart"><i class="fa-solid fa-clipboard-list"></i></div>
-              <div><div class="stat-value" id="statPending">—</div><div class="stat-label">Pending Tasks</div></div>
+              <div><div class="stat-value" id="statPending">—</div><div class="stat-label">Active Tasks</div></div>
             </div>
             <div class="stat-card" onclick="showScreen('correspondence')">
               <div class="stat-icon gold"><i class="fa-solid fa-envelope-open-text"></i></div>
@@ -1003,14 +910,6 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
             <div class="stat-card" onclick="showScreen('vc')">
               <div class="stat-icon info"><i class="fa-solid fa-video"></i></div>
               <div><div class="stat-value" id="statVC">—</div><div class="stat-label">Upcoming VCs</div></div>
-            </div>
-            <div class="stat-card" onclick="showScreen('staff')">
-              <div class="stat-icon success"><i class="fa-solid fa-id-badge"></i></div>
-              <div><div class="stat-value" id="statStaff">—</div><div class="stat-label">Total Staff</div></div>
-            </div>
-            <div class="stat-card" onclick="showScreen('leave')">
-              <div class="stat-icon warning"><i class="fa-solid fa-plane-departure"></i></div>
-              <div><div class="stat-value" id="statLeave">—</div><div class="stat-label">On Leave Today</div></div>
             </div>
           </div>
 
@@ -1090,52 +989,6 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
                 </tr></thead>
                 <tbody id="recentTasksBody">
                   <tr><td colspan="6"><div class="loading"><div class="spinner"></div></div></td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- ====== ATTENDANCE SCREEN ====== -->
-        <div class="screen" id="screen-attendance">
-          <div class="page-header">
-            <h1><i class="fa-solid fa-calendar-check" style="color:var(--navy)"></i> Attendance</h1>
-            <p>Daily punch-in/out — Office WiFi required for attendance marking</p>
-          </div>
-          <div class="punch-card">
-            <div class="punch-info">
-              <h3 id="punchGreeting">Good Morning</h3>
-              <p id="punchUserName">Loading...</p>
-            </div>
-            <div>
-              <div class="punch-time" id="liveTime">00:00:00</div>
-              <div class="punch-date" id="liveDate">—</div>
-            </div>
-          </div>
-          <div class="wifi-status" id="wifiStatus">
-            <i class="fa-solid fa-wifi"></i>
-            <span id="wifiStatusText">Checking WiFi...</span>
-          </div>
-          <div class="punch-btn-group">
-            <button class="punch-in-btn" id="punchInBtn" onclick="doPunchIn()">
-              <i class="fa-solid fa-right-to-bracket"></i> PUNCH IN
-            </button>
-            <button class="punch-out-btn" id="punchOutBtn" onclick="doPunchOut()" disabled>
-              <i class="fa-solid fa-right-from-bracket"></i> PUNCH OUT
-            </button>
-          </div>
-          <div class="section-header">
-            <div class="section-title">Today's Attendance</div>
-            <button class="view-all-btn" onclick="loadAttendance()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
-          </div>
-          <div class="card">
-            <div class="table-wrap">
-              <table>
-                <thead><tr>
-                  <th>#</th><th>Name</th><th>Rank</th><th>Punch In</th><th>Punch Out</th><th>Status</th><th>Hours</th>
-                </tr></thead>
-                <tbody id="attendanceBody">
-                  <tr><td colspan="7"><div class="loading"><div class="spinner"></div></div></td></tr>
                 </tbody>
               </table>
             </div>
@@ -1323,165 +1176,6 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
           </div>
         </div>
 
-        <!-- ====== MY PROFILE ====== -->
-        <div class="screen" id="screen-profile">
-          <div id="profileContent">
-            <div class="loading"><div class="spinner"></div></div>
-          </div>
-        </div>
-
-        <!-- ====== PROJECTS ====== -->
-        <div class="screen" id="screen-projects">
-          <div class="page-header">
-            <h1><i class="fa-solid fa-diagram-project" style="color:var(--navy)"></i> Projects</h1>
-            <p>Smart Policing Projects and all work categories</p>
-          </div>
-          <div class="tab-pills">
-            <div class="tab-pill active" onclick="filterProjects('all',this)">All</div>
-            <div class="tab-pill" onclick="filterProjects('Smart Policing',this)">Smart Policing (21)</div>
-            <div class="tab-pill" onclick="filterProjects('Maintenance',this)">Maintenance</div>
-            <div class="tab-pill" onclick="filterProjects('Training',this)">Training</div>
-            <div class="tab-pill" onclick="filterProjects('Coordination',this)">Coordination</div>
-            <div class="tab-pill" onclick="filterProjects('Administration',this)">Administration</div>
-          </div>
-          <div id="projectsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
-            <div class="loading"><div class="spinner"></div></div>
-          </div>
-        </div>
-
-        <!-- ====== LEAVE REGISTER ====== -->
-        <div class="screen" id="screen-leave">
-          <div class="page-header">
-            <h1><i class="fa-solid fa-plane-departure" style="color:var(--navy)"></i> Leave Register</h1>
-            <p>Upload leave details and track leave balances</p>
-          </div>
-          <div style="display:flex;gap:10px;margin-bottom:16px;">
-            <button class="btn-primary" onclick="openModal('addLeaveModal')">
-              <i class="fa-solid fa-plus"></i> Upload Leave
-            </button>
-            <button class="btn-secondary" onclick="loadLeave()">
-              <i class="fa-solid fa-rotate-right"></i> Refresh
-            </button>
-          </div>
-          <div class="card" style="padding:0;overflow:hidden">
-            <div class="table-wrap">
-              <table>
-                <thead><tr>
-                  <th>#</th><th>Staff Name</th><th>Leave Type</th><th>From</th><th>To</th>
-                  <th>Days</th><th>Incharge Person</th><th>Status</th>
-                </tr></thead>
-                <tbody id="leaveBody">
-                  <tr><td colspan="8"><div class="loading"><div class="spinner"></div></div></td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- ====== NOTICES ====== -->
-        <div class="screen" id="screen-notices">
-          <div class="page-header">
-            <h1><i class="fa-solid fa-bullhorn" style="color:var(--navy)"></i> Notices</h1>
-            <p>Active notices and archived notice board</p>
-          </div>
-          <div style="display:flex;gap:10px;margin-bottom:16px;">
-            <button class="btn-primary" id="addNoticeBtn" onclick="openModal('addNoticeModal')">
-              <i class="fa-solid fa-plus"></i> Post Notice
-            </button>
-          </div>
-          <div class="tab-pills">
-            <div class="tab-pill active" onclick="filterNotices('Active',this)">Active</div>
-            <div class="tab-pill" onclick="filterNotices('Archived',this)">Archive</div>
-          </div>
-          <div id="noticesGrid" style="display:flex;flex-direction:column;gap:12px">
-            <div class="loading"><div class="spinner"></div></div>
-          </div>
-        </div>
-
-        <!-- ====== RANKINGS ====== -->
-        <div class="screen" id="screen-rankings">
-          <div class="page-header">
-            <h1><i class="fa-solid fa-trophy" style="color:var(--gold)"></i> Rankings</h1>
-            <p>Weekly top performers and monthly leaderboard</p>
-          </div>
-          <div class="card gold-card">
-            <div class="section-title" style="margin-bottom:14px">🏆 Weekly Top 3</div>
-            <div id="top3Grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px">
-              <div class="loading"><div class="spinner"></div></div>
-            </div>
-          </div>
-          <div class="section-header" style="margin-top:8px">
-            <div class="section-title">Monthly Leaderboard</div>
-          </div>
-          <div class="card" style="padding:0;overflow:hidden">
-            <div class="table-wrap">
-              <table>
-                <thead><tr>
-                  <th>Position</th><th>Name</th><th>Rank</th><th>Monthly Points</th><th>Total Points</th>
-                </tr></thead>
-                <tbody id="rankingsBody">
-                  <tr><td colspan="5"><div class="loading"><div class="spinner"></div></div></td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- ====== REPORTS ====== -->
-        <div class="screen" id="screen-reports">
-          <div class="page-header">
-            <h1><i class="fa-solid fa-chart-bar" style="color:var(--navy)"></i> Reports & Analytics</h1>
-            <p>View and download attendance, task, and performance reports</p>
-          </div>
-          <div class="stats-grid">
-            <div class="stat-card"><div class="stat-icon blue"><i class="fa-solid fa-calendar-day"></i></div><div><div class="stat-value" id="rptPresent">—</div><div class="stat-label">My Present Days</div></div></div>
-            <div class="stat-card"><div class="stat-icon heart"><i class="fa-solid fa-clock"></i></div><div><div class="stat-value" id="rptLate">—</div><div class="stat-label">Late Arrivals</div></div></div>
-            <div class="stat-card"><div class="stat-icon gold"><i class="fa-solid fa-star"></i></div><div><div class="stat-value" id="rptPoints">—</div><div class="stat-label">Total Points</div></div></div>
-            <div class="stat-card"><div class="stat-icon success"><i class="fa-solid fa-check-circle"></i></div><div><div class="stat-value" id="rptCompleted">—</div><div class="stat-label">Tasks Completed</div></div></div>
-          </div>
-          <div class="section-header">
-            <div class="section-title">Download Reports</div>
-          </div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">
-            <div class="card navy-card" style="cursor:pointer" onclick="downloadReport('attendance')">
-              <div style="font-size:24px;margin-bottom:8px">📅</div>
-              <div style="font-weight:600;color:var(--text1)">Attendance Report</div>
-              <div style="font-size:11px;color:var(--text3);margin-top:4px">Monthly attendance data</div>
-              <div style="margin-top:12px;display:flex;gap:6px">
-                <button class="btn-primary" style="padding:6px 12px;font-size:11px" onclick="downloadReport('attendance-pdf');event.stopPropagation()">PDF</button>
-                <button class="btn-secondary" style="padding:6px 12px;font-size:11px" onclick="downloadReport('attendance-excel');event.stopPropagation()">Excel</button>
-              </div>
-            </div>
-            <div class="card navy-card" style="cursor:pointer">
-              <div style="font-size:24px;margin-bottom:8px">📋</div>
-              <div style="font-weight:600;color:var(--text1)">Task Report</div>
-              <div style="font-size:11px;color:var(--text3);margin-top:4px">Work completion analytics</div>
-              <div style="margin-top:12px;display:flex;gap:6px">
-                <button class="btn-primary" style="padding:6px 12px;font-size:11px">PDF</button>
-                <button class="btn-secondary" style="padding:6px 12px;font-size:11px">Excel</button>
-              </div>
-            </div>
-            <div class="card navy-card" style="cursor:pointer">
-              <div style="font-size:24px;margin-bottom:8px">🏆</div>
-              <div style="font-weight:600;color:var(--text1)">Performance Report</div>
-              <div style="font-size:11px;color:var(--text3);margin-top:4px">Points & rankings data</div>
-              <div style="margin-top:12px;display:flex;gap:6px">
-                <button class="btn-primary" style="padding:6px 12px;font-size:11px">PDF</button>
-                <button class="btn-secondary" style="padding:6px 12px;font-size:11px">Excel</button>
-              </div>
-            </div>
-            <div class="card navy-card" style="cursor:pointer">
-              <div style="font-size:24px;margin-bottom:8px">✉️</div>
-              <div style="font-weight:600;color:var(--text1)">Correspondence Report</div>
-              <div style="font-size:11px;color:var(--text3);margin-top:4px">All file movement data</div>
-              <div style="margin-top:12px;display:flex;gap:6px">
-                <button class="btn-primary" style="padding:6px 12px;font-size:11px">PDF</button>
-                <button class="btn-secondary" style="padding:6px 12px;font-size:11px">Excel</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <!-- ====== ADMIN PANEL ====== -->
         <div class="screen" id="screen-admin">
           <div class="page-header">
@@ -1495,30 +1189,15 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
               <div style="font-size:12px;color:var(--text3);margin-top:4px">Add, edit, manage staff accounts</div>
             </div>
             <div class="card navy-card" style="cursor:pointer">
-              <div style="font-size:28px;margin-bottom:10px">⚖️</div>
-              <div style="font-weight:700;font-size:15px;color:var(--text1)">Points Configuration</div>
-              <div style="font-size:12px;color:var(--text3);margin-top:4px">Set task category weightages</div>
-            </div>
-            <div class="card navy-card" style="cursor:pointer">
-              <div style="font-size:28px;margin-bottom:10px">📅</div>
-              <div style="font-weight:700;font-size:15px;color:var(--text1)">Holiday Calendar</div>
-              <div style="font-size:12px;color:var(--text3);margin-top:4px">Manage 2026 holiday schedule</div>
-            </div>
-            <div class="card navy-card" style="cursor:pointer">
-              <div style="font-size:28px;margin-bottom:10px">🔧</div>
-              <div style="font-weight:700;font-size:15px;color:var(--text1)">Attendance Correction</div>
-              <div style="font-size:12px;color:var(--text3);margin-top:4px">Edit past attendance records</div>
-            </div>
-            <div class="card navy-card" style="cursor:pointer">
-              <div style="font-size:28px;margin-bottom:10px">📊</div>
-              <div style="font-weight:700;font-size:15px;color:var(--text1)">Login Analytics</div>
-              <div style="font-size:12px;color:var(--text3);margin-top:4px">View all login activity</div>
-            </div>
-            <div class="card navy-card" style="cursor:pointer">
               <div style="font-size:28px;margin-bottom:10px">➕</div>
               <div style="font-weight:700;font-size:15px;color:var(--text1)">Custom Stages</div>
               <div style="font-size:12px;color:var(--text3);margin-top:4px">Add correspondence stages</div>
             </div>
+          </div>
+          <div class="card navy-card" style="margin-top:12px">
+            <div style="font-weight:700;margin-bottom:8px"><i class="fa-solid fa-broom"></i> Sheet Cleanup</div>
+            <p style="font-size:12px;color:var(--text3);margin-bottom:12px">Clear data from unused sheets (Attendance, Leave, Rankings, Points_Log, Turn_Duties, Login_Log, Chat_Messages). Headers are kept.</p>
+            <button onclick="cleanUpUnusedSheets()" style="background:var(--danger);color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer"><i class="fa-solid fa-trash-can"></i> Clean Up Unused Sheets</button>
           </div>
         </div>
 
@@ -1614,10 +1293,10 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
   <div class="bottom-nav">
     <div class="bottom-nav-items">
       <button class="bottom-nav-item active" onclick="showScreen('dashboard')"><i class="fa-solid fa-gauge-high"></i><span>Home</span></button>
-      <button class="bottom-nav-item" onclick="showScreen('attendance')"><i class="fa-solid fa-calendar-check"></i><span>Attendance</span></button>
-      <button class="bottom-nav-item" onclick="showScreen('command')"><i class="fa-solid fa-clipboard-list"></i><span>Duties</span></button>
-      <button class="bottom-nav-item" onclick="showScreen('leave')"><i class="fa-solid fa-plane-departure"></i><span>Leave</span></button>
-      <button class="bottom-nav-item" onclick="showScreen('profile')"><i class="fa-solid fa-circle-user"></i><span>Profile</span></button>
+      <button class="bottom-nav-item" onclick="showScreen('command')"><i class="fa-solid fa-clipboard-list"></i><span>Commands</span></button>
+      <button class="bottom-nav-item" onclick="showScreen('correspondence')"><i class="fa-solid fa-envelope-open-text"></i><span>Corr</span></button>
+      <button class="bottom-nav-item" onclick="showScreen('vc')"><i class="fa-solid fa-video"></i><span>VC</span></button>
+      <button class="bottom-nav-item" onclick="showScreen('staff')"><i class="fa-solid fa-users"></i><span>Staff</span></button>
     </div>
   </div>
 </div>
@@ -1778,55 +1457,6 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
   </div>
 </div>
 
-<!-- Add Leave Modal -->
-<div class="modal-overlay" id="addLeaveModal">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">Upload Leave Details</div>
-      <button class="modal-close" onclick="closeModal('addLeaveModal')"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-group"><label>Staff Name *</label><input type="text" id="leaveStaff" placeholder="Your name"></div>
-        <div class="form-group"><label>Leave Type *</label>
-          <select id="leaveType"><option>CL</option><option>EL</option><option>PL</option><option>ML</option><option>OH</option></select>
-        </div>
-        <div class="form-group"><label>From Date *</label><input type="date" id="leaveFrom"></div>
-        <div class="form-group"><label>To Date *</label><input type="date" id="leaveTo"></div>
-        <div class="form-group" style="grid-column:1/-1"><label>Incharge Person (who will look after duties) *</label><select id="leaveIncharge"><option value="">-- Select --</option></select></div>
-      </div>
-      <div class="form-group" style="margin-top:12px"><label>Reason</label><textarea id="leaveReason" placeholder="Reason for leave..."></textarea></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-secondary" onclick="closeModal('addLeaveModal')">Cancel</button>
-      <button class="btn-primary" onclick="submitLeave()">Submit Leave</button>
-    </div>
-  </div>
-</div>
-
-<!-- Add Notice Modal -->
-<div class="modal-overlay" id="addNoticeModal">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">Post Notice</div>
-      <button class="modal-close" onclick="closeModal('addNoticeModal')"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-group"><label>Title *</label><input type="text" id="noticeTitle" placeholder="Notice title"></div>
-        <div class="form-group"><label>Priority</label>
-          <select id="noticePriority"><option>Urgent</option><option selected>Normal</option><option>Info</option></select>
-        </div>
-      </div>
-      <div class="form-group" style="margin-top:12px"><label>Notice Body *</label><textarea id="noticeBody" placeholder="Notice content..." style="min-height:100px"></textarea></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-secondary" onclick="closeModal('addNoticeModal')">Cancel</button>
-      <button class="btn-primary" onclick="submitNotice()">Post Notice</button>
-    </div>
-  </div>
-</div>
-
 <!-- Toast Container -->
 <div id="toastContainer"></div>
 
@@ -1851,8 +1481,6 @@ let currentCmdFilter = 'all';
 let currentCorrFilter = 'all';
 let currentIGPFilter = 'all';
 let currentVCFilter  = 'all';
-let currentProjFilter= 'all';
-let currentNoticeFilter = 'Active';
 let editContext = null;
 let stageContext = null;
 let postponeContext = null;
@@ -2059,22 +1687,18 @@ async function fetchSheet(sheetName) {
 async function loadAllData() {
   try {
     const [
-      staff, attendance, command, correspondence,
-      corrTimeline, igpworks, vcschedule, leave, notices, projects, rankings
+      staff, command, correspondence,
+      corrTimeline, igpworks, vcschedule, notices
     ] = await Promise.all([
       fetchSheet('Staff_Master'),
-      fetchSheet('Attendance'),
       fetchSheet('Command_Register'),
       fetchSheet('Correspondence_Tracker'),
       fetchSheet('Correspondence_Timeline'),
       fetchSheet('IGP_Command_Works'),
       fetchSheet('VC_Schedule'),
-      fetchSheet('Leave_Register'),
-      fetchSheet('Notices'),
-      fetchSheet('Projects'),
-      fetchSheet('Rankings')
+      fetchSheet('Notices')
     ]);
-    allData = { staff, attendance, command, correspondence, corrTimeline, igpworks, vcschedule, leave, notices, projects, rankings };
+    allData = { staff, command, correspondence, corrTimeline, igpworks, vcschedule, notices };
     staffListCache = staff;
     renderDashboard();
     renderNoticesBanner();
@@ -2095,7 +1719,7 @@ function updateAllDropdowns() {
   const dropdownIds = [
     'taskAssignedTo','taskAssignedBy',
     'corrAllocTo','corrAllocBy',
-    'igpAssignedTo','vcSpeaker','leaveStaff','leaveIncharge'
+    'igpAssignedTo','vcSpeaker'
   ];
   dropdownIds.forEach(id => {
     const el = document.getElementById(id);
@@ -2129,13 +1753,10 @@ function showScreen(name) {
   if (screen) screen.classList.add('active');
 
   const titles = {
-    dashboard:'Dashboard', attendance:'Attendance',
+    dashboard:'Dashboard',
     command:'Command Register', correspondence:'Correspondence Tracker',
     igpworks:'IGP Command Works', vc:'Conference & Meetings Hub',
-    staff:'Staff Directory', profile:'My Profile',
-    projects:'Projects', leave:'Leave Register',
-    notices:'Notices', rankings:'Rankings',
-    reports:'Reports & Analytics', admin:'Admin Panel',
+    staff:'Staff Directory', admin:'Admin Panel',
     staffmgmt:'Staff Management',
     'staff-management':'Staff Management'
   };
@@ -2152,18 +1773,11 @@ function showScreen(name) {
   closeSidebar();
 
   // Lazy-load screens
-  if (name === 'attendance') renderAttendance();
   if (name === 'command') renderCommand();
   if (name === 'correspondence') renderCorrespondence();
   if (name === 'igpworks') renderIGPWorks();
   if (name === 'vc') renderVC();
   if (name === 'staff') renderStaff();
-  if (name === 'profile') renderProfile();
-  if (name === 'projects') renderProjects();
-  if (name === 'leave') renderLeave();
-  if (name === 'notices') renderNotices();
-  if (name === 'rankings') renderRankings();
-  if (name === 'reports') renderReports();
   if (name === 'staffmgmt' || name === 'staff-management') renderStaffMgmt();
 }
 
@@ -2193,11 +1807,10 @@ function closeSidebar() {
 function startClock() {
   function update() {
     const now = new Date();
-    document.getElementById('liveTime').textContent = now.toLocaleTimeString('en-IN');
-    document.getElementById('liveDate').textContent = now.toLocaleDateString('en-IN', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
-    const h = now.getHours();
-    const greeting = h < 12 ? 'Good Morning' : h < 17 ? 'Good Afternoon' : 'Good Evening';
-    document.getElementById('punchGreeting').textContent = greeting;
+    const timeEl = document.getElementById('liveTime');
+    const dateEl = document.getElementById('liveDate');
+    if (timeEl) timeEl.textContent = now.toLocaleTimeString('en-IN');
+    if (dateEl) dateEl.textContent = now.toLocaleDateString('en-IN', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
   }
   update();
   setInterval(update, 1000);
@@ -2220,24 +1833,15 @@ function renderNoticesBanner() {
 // DASHBOARD RENDER
 // ============================================================
 function renderDashboard() {
-  const today = new Date().toISOString().split('T')[0];
-  const todayAttendance = (allData.attendance || []).filter(a => {
-    const d = typeof a.Date === 'string' ? a.Date : (a.Date instanceof Date ? a.Date.toISOString().split('T')[0] : '');
-    return d.startsWith(today);
-  });
-  const presentToday = todayAttendance.filter(a => ['Present','Late'].includes(a.Status)).length;
-  const onLeave = (allData.leave || []).filter(l => l.Status === 'Active').length;
   const pendingTasks = (allData.command || []).filter(t => ['Pending','In Progress'].includes(t.Status)).length;
   const activeCorr = (allData.correspondence || []).filter(c => c.Status === 'Active').length;
   const upcomingVC = (allData.vcschedule || []).filter(v => v.Status === 'Upcoming').length;
   const totalStaff = (allData.staff || []).filter(s => s.Status === 'Active').length;
 
-  document.getElementById('statPresent').textContent  = presentToday;
+  document.getElementById('statStaff').textContent    = totalStaff;
   document.getElementById('statPending').textContent  = pendingTasks;
   document.getElementById('statCorr').textContent     = activeCorr;
   document.getElementById('statVC').textContent       = upcomingVC;
-  document.getElementById('statStaff').textContent    = totalStaff;
-  document.getElementById('statLeave').textContent    = onLeave;
 
   // Heart module stats
   const cmd = allData.command || [];
@@ -2281,68 +1885,6 @@ function renderDashboard() {
       <td>${formatDate(t.Created_Date)}</td>
     </tr>`).join('');
 
-  // Rankings scroll
-  const rankings = allData.rankings || [];
-  if (rankings.length > 0) {
-    const sorted = [...rankings].sort((a,b) => (Number(b.Total_Points)||0) - (Number(a.Total_Points)||0));
-    const top = sorted.slice(0,3);
-    const medals = ['🥇','🥈','🥉'];
-    const inner = [...top,...top].map((r,i) => `
-      <span class="rank-item">
-        <span class="rank-medal">${medals[i%3]}</span>
-        <span class="rank-name">${r.Staff_Name||'—'}</span>
-        <span class="rank-pts">${r.Total_Points||0} pts</span>
-        <span class="rank-sep">|</span>
-      </span>`).join('');
-    document.getElementById('rankingScroll').innerHTML = inner;
-  }
-}
-
-// ============================================================
-// ATTENDANCE
-// ============================================================
-function renderAttendance() {
-  const today = new Date().toISOString().split('T')[0];
-  const todayRecs = (allData.attendance || []).filter(a => {
-    const d = typeof a.Date === 'string' ? a.Date : '';
-    return d.startsWith(today);
-  });
-
-  const wifiEl = document.getElementById('wifiStatus');
-  const wifiTxt = document.getElementById('wifiStatusText');
-  wifiEl.className = 'wifi-status connected';
-  wifiTxt.textContent = 'Attendance requires office WiFi — contact admin if unable to punch in';
-  document.getElementById('punchInBtn').disabled = false;
-
-  const tbody = document.getElementById('attendanceBody');
-  if (todayRecs.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="fa-solid fa-calendar-xmark"></i><p>No attendance records for today yet</p></div></td></tr>`;
-    return;
-  }
-  tbody.innerHTML = todayRecs.map((a,i) => `
-    <tr>
-      <td>${i+1}</td>
-      <td><strong>${a.Staff_Name||'—'}</strong></td>
-      <td>${a.Staff_ID||'—'}</td>
-      <td>${a.Punch_In_Time||'—'}</td>
-      <td>${a.Punch_Out_Time||'—'}</td>
-      <td>${statusBadge(a.Status)}</td>
-      <td>${a.Working_Hours||'—'}</td>
-    </tr>`).join('');
-}
-
-function doPunchIn() {
-  const now = new Date();
-  const time = now.toLocaleTimeString('en-IN');
-  showToast(`Punch In recorded at ${time}`, 'success');
-  document.getElementById('punchInBtn').disabled = true;
-  document.getElementById('punchOutBtn').disabled = false;
-}
-function doPunchOut() {
-  const now = new Date();
-  const time = now.toLocaleTimeString('en-IN');
-  showToast(`Punch Out recorded at ${time}`, 'info');
-  document.getElementById('punchOutBtn').disabled = true;
 }
 
 // ============================================================
@@ -2537,285 +2079,6 @@ function searchStaff() { renderStaff(); }
 // ============================================================
 // MY PROFILE
 // ============================================================
-function renderProfile() {
-  const phone = currentUser.phone;
-  const staff = allData.staff || [];
-  const me = staff.find(s => String(s.Phone || '').trim() === String(phone).trim()) || {};
-
-  const myTasks = (allData.command || []).filter(t =>
-    (t.Assigned_To || '').toLowerCase().includes((currentUser.name || '').toLowerCase())
-  );
-  const myCorr = (allData.correspondence || []).filter(c =>
-    (c.Allocated_To || '').toLowerCase().includes((currentUser.name || '').toLowerCase())
-  );
-  const myIGP = (allData.igpworks || []).filter(w =>
-    (w.Assigned_To || '').toLowerCase().includes((currentUser.name || '').toLowerCase())
-  );
-
-  const pending   = myTasks.filter(t => t.Status === 'Pending').length;
-  const completed = myTasks.filter(t => t.Status === 'Completed').length;
-  const activeCorr = myCorr.filter(c => c.Status === 'Active').length;
-
-  if (!me.Full_Name && currentUser.role !== 'admin') {
-    document.getElementById('profileContent').innerHTML =
-      '<div class="empty-state"><i class="fa-solid fa-circle-user"></i><p>Profile not found. Contact admin to add your details.</p></div>';
-    return;
-  }
-
-  document.getElementById('profileContent').innerHTML = `
-    <div class="profile-header" style="position:relative">
-      <div class="profile-avatar">${(currentUser.name || 'A')[0]}</div>
-      <div style="flex:1">
-        <div class="profile-name">${currentUser.name || 'Admin'}</div>
-        <div class="profile-rank">${currentUser.rank || '—'}${me.Badge_No ? ' &nbsp;•&nbsp; Badge: ' + me.Badge_No : ''}</div>
-        <div class="profile-badge-row">
-          <span class="profile-tag">📱 ${me.Phone || currentUser.phone || '—'}</span>
-          <span class="profile-tag">✉️ ${me.Gmail || currentUser.email || '—'}</span>
-          <span class="profile-tag">📁 ${me.Assigned_Projects || '—'}</span>
-          ${me.District_Assigned ? '<span class="profile-tag">📍 ' + me.District_Assigned + '</span>' : ''}
-          ${me.Reporting_Officer ? '<span class="profile-tag">👤 Reports to: ' + me.Reporting_Officer + '</span>' : ''}
-          ${me.Status ? '<span class="profile-tag">' + statusBadge(me.Status) + '</span>' : ''}
-        </div>
-      </div>
-      <button onclick="openProfileEditModal()" style="position:absolute;top:0;right:0;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer"><i class="fa-solid fa-pen"></i> Edit</button>
-    </div>
-
-    <div class="stats-grid" style="margin-bottom:20px">
-      <div class="stat-card"><div class="stat-icon blue"><i class="fa-solid fa-list-check"></i></div><div><div class="stat-value">${myTasks.length}</div><div class="stat-label">Total Tasks</div></div></div>
-      <div class="stat-card"><div class="stat-icon warning"><i class="fa-solid fa-clock"></i></div><div><div class="stat-value">${pending}</div><div class="stat-label">Pending</div></div></div>
-      <div class="stat-card"><div class="stat-icon success"><i class="fa-solid fa-check-circle"></i></div><div><div class="stat-value">${completed}</div><div class="stat-label">Completed</div></div></div>
-      <div class="stat-card"><div class="stat-icon gold"><i class="fa-solid fa-envelope"></i></div><div><div class="stat-value">${activeCorr}</div><div class="stat-label">Active Files</div></div></div>
-    </div>
-
-    <div class="section-header"><div class="section-title">My Assigned Tasks (${myTasks.length})</div></div>
-    <div class="card" style="padding:0;margin-bottom:16px">
-      <div class="table-wrap"><table>
-        <thead><tr><th>S.No</th><th>Task</th><th>Category</th><th>Priority</th><th>Status</th><th>Due Date</th><th>Assigned By</th></tr></thead>
-        <tbody>${myTasks.length === 0
-          ? '<tr><td colspan="7"><div class="empty-state"><i class="fa-solid fa-clipboard"></i><p>No tasks assigned yet</p></div></td></tr>'
-          : myTasks.map(t => `<tr>
-              <td><strong>${t.Serial_No||'—'}</strong></td>
-              <td>${t.Task_Title||'—'}</td>
-              <td>${t.Category||'—'}</td>
-              <td>${priorityBadge(t.Priority)}</td>
-              <td>${statusBadge(t.Status)}</td>
-              <td>${formatDate(t.Due_Date)}</td>
-              <td>${t.Assigned_By||'—'}</td>
-            </tr>`).join('')}
-        </tbody>
-      </table></div>
-    </div>
-
-    <div class="section-header"><div class="section-title">My Correspondence (${myCorr.length})</div></div>
-    <div class="card" style="padding:0;margin-bottom:16px">
-      <div class="table-wrap"><table>
-        <thead><tr><th>S.No</th><th>Type</th><th>Subject</th><th>Current Stage</th><th>Status</th><th>Date</th></tr></thead>
-        <tbody>${myCorr.length === 0
-          ? '<tr><td colspan="6"><div class="empty-state"><i class="fa-solid fa-envelope"></i><p>No correspondence allocated</p></div></td></tr>'
-          : myCorr.map(c => `<tr>
-              <td><strong>${c.Serial_No||'—'}</strong></td>
-              <td>${corrTypeBadge ? corrTypeBadge(c.Type) : (c.Type||'—')}</td>
-              <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.Subject||'—'}</td>
-              <td>${stageBadge ? stageBadge(c.Current_Stage) : (c.Current_Stage||'—')}</td>
-              <td>${statusBadge(c.Status)}</td>
-              <td>${formatDate(c.Date)}</td>
-            </tr>`).join('')}
-        </tbody>
-      </table></div>
-    </div>
-
-    ${myIGP.length > 0 ? `
-    <div class="section-header"><div class="section-title">My IGP Works (${myIGP.length})</div></div>
-    <div class="card" style="padding:0;margin-bottom:16px">
-      <div class="table-wrap"><table>
-        <thead><tr><th>S.No</th><th>Work Title</th><th>Priority</th><th>Status</th><th>Due Date</th></tr></thead>
-        <tbody>${myIGP.map(w => `<tr>
-          <td><strong>${w.Serial_No||'—'}</strong></td>
-          <td>${w.Work_Title||'—'}</td>
-          <td>${priorityBadge(w.Priority)}</td>
-          <td>${statusBadge(w.Status)}</td>
-          <td>${formatDate(w.Due_Date)}</td>
-        </tr>`).join('')}</tbody>
-      </table></div>
-    </div>` : ''}
-
-    <!-- Profile Edit Modal -->
-    <div id="profileEditModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;align-items:center;justify-content:center">
-      <div class="card" style="width:100%;max-width:420px;margin:20px">
-        <div class="section-header"><div class="section-title"><i class="fa-solid fa-pen"></i> Edit My Details</div></div>
-        <div style="margin-top:12px;display:flex;flex-direction:column;gap:10px">
-          <div><label style="font-size:12px;color:var(--text3)">Phone (Login ID — read only)</label>
-            <input id="pePhone" value="${me.Phone||currentUser.phone||''}" readonly style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text3)"></div>
-          <div><label style="font-size:12px;color:var(--text3)">Gmail</label>
-            <input id="peGmail" value="${me.Gmail||currentUser.email||''}" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text1)"></div>
-          <div><label style="font-size:12px;color:var(--text3)">Assigned Projects</label>
-            <input id="peProjects" value="${me.Assigned_Projects||''}" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text1)"></div>
-          <div style="display:flex;gap:10px;margin-top:8px">
-            <button onclick="saveProfileEdit()" class="btn-primary" style="flex:1"><i class="fa-solid fa-floppy-disk"></i> Save</button>
-            <button onclick="document.getElementById('profileEditModal').style.display='none'" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);cursor:pointer">Cancel</button>
-          </div>
-        </div>
-      </div>
-    </div>`;
-}
-
-function openProfileEditModal() {
-  document.getElementById('profileEditModal').style.display = 'flex';
-}
-
-async function saveProfileEdit() {
-  const phone = currentUser.phone;
-  const staff = allData.staff || [];
-  const idx   = staff.findIndex(s => String(s.Phone || '').trim() === String(phone).trim());
-  if (idx === -1) { showToast('Profile not found in sheet', 'error'); return; }
-  const me = staff[idx];
-  me.Gmail             = document.getElementById('peGmail').value.trim();
-  me.Assigned_Projects = document.getElementById('peProjects').value.trim();
-  const rowData = [
-    me.Staff_ID||'', me.Full_Name||'', me.Rank||'', me.Badge_No||'',
-    me.Gender||'', me.Gmail, me.Phone||'', me.Date_Joined||'',
-    me.Status||'Active', me.Profile_Photo_URL||'', me.Assigned_Projects,
-    me.District_Assigned||'', me.Reporting_Officer||'', me.Created_Date||''
-  ];
-  await fetch(RELAY_URL, {
-    method: 'POST', mode: 'no-cors',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sheet: 'Staff_Master', action: 'update', row: idx + 2, col: 1, data: rowData })
-  });
-  document.getElementById('profileEditModal').style.display = 'none';
-  showToast('Profile updated!', 'success');
-  renderProfile();
-}
-
-// ============================================================
-// PROJECTS
-// ============================================================
-function renderProjects() {
-  let data = allData.projects || [];
-  if (currentProjFilter !== 'all') data = data.filter(p => p.Category === currentProjFilter);
-  const grid = document.getElementById('projectsGrid');
-  if (data.length === 0) {
-    grid.innerHTML = `<div class="empty-state"><i class="fa-solid fa-diagram-project"></i><p>No projects found</p></div>`;
-    return;
-  }
-  grid.innerHTML = data.map(p => `
-    <div class="card navy-card" style="cursor:pointer">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
-        <div style="font-weight:700;color:var(--text1);font-size:14px">${p.Project_Name||'—'}</div>
-        <span class="badge ${p.Status==='Active'?'badge-present':'badge-pending'}">${p.Status||'—'}</span>
-      </div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:4px"><i class="fa-solid fa-tag" style="width:14px"></i> ${p.Category||'—'}</div>
-      ${p.Incharge_Officer?`<div style="font-size:11px;color:var(--text3);margin-bottom:4px"><i class="fa-solid fa-user-tie" style="width:14px"></i> ${p.Incharge_Officer}</div>`:''}
-      ${p.Assigned_Staff?`<div style="font-size:11px;color:var(--text3);margin-bottom:4px"><i class="fa-solid fa-users" style="width:14px"></i> ${p.Assigned_Staff}</div>`:''}
-      ${p.External_Link?`<a href="${p.External_Link}" target="_blank" style="font-size:11px;color:var(--navy);font-weight:600;margin-top:8px;display:inline-block"><i class="fa-solid fa-external-link"></i> Open Dashboard</a>`:''}
-    </div>`).join('');
-}
-function filterProjects(f, el) {
-  currentProjFilter = f;
-  document.querySelectorAll('#screen-projects .tab-pill').forEach(p => p.classList.remove('active'));
-  el.classList.add('active');
-  renderProjects();
-}
-
-// ============================================================
-// LEAVE
-// ============================================================
-function renderLeave() {
-  const data = allData.leave || [];
-  const tbody = document.getElementById('leaveBody');
-  if (data.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fa-solid fa-plane"></i><p>No leave records found</p></div></td></tr>`;
-    return;
-  }
-  tbody.innerHTML = data.map((l,i) => `
-    <tr>
-      <td>${i+1}</td>
-      <td><strong>${l.Staff_Name||'—'}</strong></td>
-      <td><span class="badge badge-leave">${l.Leave_Type||'—'}</span></td>
-      <td>${formatDate(l.From_Date)}</td>
-      <td>${formatDate(l.To_Date)}</td>
-      <td>${l.Total_Days||'—'}</td>
-      <td>${l.Incharge_Person||'—'}</td>
-      <td>${statusBadge(l.Status)}</td>
-    </tr>`).join('');
-}
-
-// ============================================================
-// NOTICES
-// ============================================================
-function renderNotices() {
-  const data = (allData.notices || []).filter(n => n.Status === currentNoticeFilter);
-  const grid = document.getElementById('noticesGrid');
-  if (data.length === 0) {
-    grid.innerHTML = `<div class="empty-state"><i class="fa-solid fa-bullhorn"></i><p>No ${currentNoticeFilter.toLowerCase()} notices</p></div>`;
-    return;
-  }
-  grid.innerHTML = data.map(n => `
-    <div class="card ${n.Priority==='Urgent'?'heart-card':'navy-card'}">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div style="font-weight:700;font-size:15px;color:var(--text1)">${n.Title||'—'}</div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <span class="badge ${n.Priority==='Urgent'?'badge-urgent':n.Priority==='Normal'?'badge-completed':'badge-progress'}">${n.Priority||'Normal'}</span>
-          <span class="badge badge-info">${n.Status||'—'}</span>
-        </div>
-      </div>
-      <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:10px">${n.Body||'—'}</div>
-      <div style="font-size:11px;color:var(--text3)"><i class="fa-solid fa-user"></i> ${n.Posted_By||'—'} &nbsp;•&nbsp; <i class="fa-solid fa-calendar"></i> ${formatDate(n.Posted_Date)}</div>
-    </div>`).join('');
-}
-function filterNotices(f, el) {
-  currentNoticeFilter = f;
-  document.querySelectorAll('#screen-notices .tab-pill').forEach(p => p.classList.remove('active'));
-  el.classList.add('active');
-  renderNotices();
-}
-
-// ============================================================
-// RANKINGS
-// ============================================================
-function renderRankings() {
-  const data = [...(allData.rankings || [])].sort((a,b) => (Number(b.Total_Points)||0)-(Number(a.Total_Points)||0));
-  
-  // Top 3 cards
-  const medals = ['🥇','🥈','🥉'];
-  const colors = ['#FFD700','#C0C0C0','#CD7F32'];
-  const top3Grid = document.getElementById('top3Grid');
-  top3Grid.innerHTML = data.slice(0,3).map((r,i) => `
-    <div class="card" style="text-align:center;border-top:4px solid ${colors[i]}">
-      <div style="font-size:32px;margin-bottom:8px">${medals[i]}</div>
-      <div style="font-weight:700;font-size:15px;color:var(--text1)">${r.Staff_Name||'—'}</div>
-      <div style="font-size:12px;color:var(--text3);margin-top:4px">${r.Rank_Designation||'—'}</div>
-      <div style="font-family:'Rajdhani',sans-serif;font-size:28px;font-weight:700;color:var(--navy);margin-top:8px">${r.Total_Points||0}</div>
-      <div style="font-size:10px;color:var(--text3)">Total Points</div>
-    </div>`).join('') || '<div class="empty-state"><i class="fa-solid fa-trophy"></i><p>No ranking data yet</p></div>';
-
-  // Full table
-  const tbody = document.getElementById('rankingsBody');
-  tbody.innerHTML = data.map((r,i) => `
-    <tr>
-      <td><strong>${i+1}</strong> ${i===0?'🥇':i===1?'🥈':i===2?'🥉':''}</td>
-      <td><strong>${r.Staff_Name||'—'}</strong></td>
-      <td>${r.Rank_Designation||'—'}</td>
-      <td><span style="font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;color:var(--gold)">${r.Monthly_Points||0}</span></td>
-      <td><span style="font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;color:var(--navy)">${r.Total_Points||0}</span></td>
-    </tr>`).join('') || '<tr><td colspan="5"><div class="empty-state"><i class="fa-solid fa-trophy"></i><p>No data yet</p></div></td></tr>';
-}
-
-// ============================================================
-// REPORTS
-// ============================================================
-function renderReports() {
-  const myName = currentUser.name;
-  const myAttendance = (allData.attendance || []).filter(a => a.Staff_Name === myName);
-  const myTasks = (allData.command || []).filter(t => (t.Assigned_To||'').includes(myName.split(' ').pop()));
-  const myPoints = (allData.rankings || []).find(r => r.Staff_Name === myName) || {};
-
-  document.getElementById('rptPresent').textContent  = myAttendance.filter(a=>a.Status==='Present').length;
-  document.getElementById('rptLate').textContent     = myAttendance.filter(a=>a.Status==='Late').length;
-  document.getElementById('rptPoints').textContent   = myPoints.Total_Points||0;
-  document.getElementById('rptCompleted').textContent= myTasks.filter(t=>t.Status==='Completed').length;
-}
-function downloadReport(type) { showToast(`Preparing ${type} report for download...`, 'info'); }
 
 // ============================================================
 // HEART MODULE ACTIONS
@@ -3174,55 +2437,6 @@ async function submitVC() {
   }
 }
 
-async function submitLeave() {
-  const staff    = document.getElementById('leaveStaff').value.trim();
-  const incharge = document.getElementById('leaveIncharge').value.trim();
-  const from     = document.getElementById('leaveFrom').value;
-  const to       = document.getElementById('leaveTo').value;
-  if (!staff || !incharge || !from || !to) { showToast('Please fill all required fields', 'error'); return; }
-  const leaveType = document.getElementById('leaveType').value;
-  const reason    = document.getElementById('leaveReason').value;
-  const days      = Math.ceil((new Date(to) - new Date(from)) / (1000*60*60*24)) + 1;
-  const id        = `L${Date.now()}`;
-  const today     = new Date().toISOString().split('T')[0];
-  const row = [ id, '', staff, leaveType, from, to, days, incharge, reason, 'Active', currentUser.name, today, '' ];
-  closeModal('addLeaveModal');
-
-  const localObj = {
-    Leave_ID: id, Staff_Name: staff, Leave_Type: leaveType,
-    From_Date: from, To_Date: to, Total_Days: days,
-    Incharge_Person: incharge, Reason: reason, Status: 'Active'
-  };
-  optimisticAdd('leave', localObj, renderLeave);
-
-  showToast('Saved successfully!', 'success');
-  postToSheet('Leave_Register', row);
-}
-
-async function submitNotice() {
-  const title    = document.getElementById('noticeTitle').value.trim();
-  const body     = document.getElementById('noticeBody').value.trim();
-  if (!title || !body) { showToast('Please fill all fields', 'error'); return; }
-  const priority = document.getElementById('noticePriority').value;
-  const today    = new Date().toISOString().split('T')[0];
-  const id       = `N${Date.now()}`;
-  const row      = [ id, title, body, priority, currentUser.name, today, 'Active', '' ];
-  closeModal('addNoticeModal');
-  document.getElementById('noticeTitle').value = '';
-  document.getElementById('noticeBody').value  = '';
-
-  const localObj = {
-    Notice_ID: id, Title: title, Body: body,
-    Priority: priority, Posted_By: currentUser.name,
-    Posted_Date: today, Status: 'Active'
-  };
-  optimisticAdd('notices', localObj, renderNotices);
-
-  showToast('Saved successfully!', 'success');
-  postToSheet('Notices', row);
-  showToast('Done! Notice posted.', 'success');
-}
-
 // ============================================================
 // MODAL HELPERS
 // ============================================================
@@ -3293,12 +2507,10 @@ function formatDate(d) {
 }
 
 // Dummy loaders for refresh buttons
-function loadAttendance() { renderAttendance(); }
 function loadCommand() { renderCommand(); }
 function loadCorrespondence() { renderCorrespondence(); }
 function loadIGPWorks() { renderIGPWorks(); }
 function loadVC() { renderVC(); }
-function loadLeave() { renderLeave(); }
 
 // ============================================================
 // ============================================================
@@ -3526,6 +2738,20 @@ async function submitStaff() {
       : 'Staff added successfully!',
     'success'
   );
+}
+
+async function cleanUpUnusedSheets() {
+  if (!confirm('This will clear all data rows from Attendance, Leave, Rankings, Points_Log, Turn_Duties, Login_Log, Chat_Messages sheets. Headers are kept. Continue?')) return;
+  showToast('Cleaning up unused sheets...', 'info');
+  const sheets = ['Attendance','Leave_Register','Rankings','Points_Log','Turn_Duties','Login_Log','Chat_Messages'];
+  for (const sheet of sheets) {
+    await fetch(RELAY_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sheet, action: 'clearRows' })
+    });
+  }
+  showToast('Unused sheets cleared!', 'success');
 }
 
 async function clearAllStaff() {
