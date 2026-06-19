@@ -813,6 +813,9 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
         <div class="nav-item" onclick="showScreen('staff')">
           <i class="fa-solid fa-users"></i><span>Staff Directory</span>
         </div>
+        <div class="nav-item" onclick="showScreen('profile')">
+          <i class="fa-solid fa-circle-user"></i><span>My Profile</span>
+        </div>
 
         <div class="nav-section-label" style="margin-top:8px">❤ Command Centre</div>
         <div class="nav-item heart-item" onclick="showScreen('command')">
@@ -1176,6 +1179,17 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
           </div>
         </div>
 
+        <!-- ====== MY PROFILE ====== -->
+        <div class="screen" id="screen-profile">
+          <div class="page-header">
+            <h1><i class="fa-solid fa-circle-user" style="color:var(--navy)"></i> My Profile</h1>
+            <p>Your details, assigned tasks and correspondence</p>
+          </div>
+          <div id="profileContent">
+            <div class="loading"><div class="spinner"></div></div>
+          </div>
+        </div>
+
         <!-- ====== ADMIN PANEL ====== -->
         <div class="screen" id="screen-admin">
           <div class="page-header">
@@ -1193,6 +1207,11 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
               <div style="font-weight:700;font-size:15px;color:var(--text1)">Custom Stages</div>
               <div style="font-size:12px;color:var(--text3);margin-top:4px">Add correspondence stages</div>
             </div>
+          </div>
+          <div class="card navy-card" style="margin-top:12px">
+            <div style="font-weight:700;margin-bottom:8px"><i class="fa-solid fa-upload"></i> Bulk Import Staff</div>
+            <p style="font-size:12px;color:var(--text3);margin-bottom:12px">Import all 62 TS staff from the duty chart into Staff_Master sheet. Phone number = Login ID, Default password = 1111. Existing records will not be overwritten.</p>
+            <button onclick="bulkImportStaff()" style="background:var(--success);color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer"><i class="fa-solid fa-file-import"></i> Import All Staff from Template</button>
           </div>
           <div class="card navy-card" style="margin-top:12px">
             <div style="font-weight:700;margin-bottom:8px"><i class="fa-solid fa-broom"></i> Sheet Cleanup</div>
@@ -1753,7 +1772,7 @@ function showScreen(name) {
   if (screen) screen.classList.add('active');
 
   const titles = {
-    dashboard:'Dashboard',
+    dashboard:'Dashboard', profile:'My Profile',
     command:'Command Register', correspondence:'Correspondence Tracker',
     igpworks:'IGP Command Works', vc:'Conference & Meetings Hub',
     staff:'Staff Directory', admin:'Admin Panel',
@@ -1778,6 +1797,7 @@ function showScreen(name) {
   if (name === 'igpworks') renderIGPWorks();
   if (name === 'vc') renderVC();
   if (name === 'staff') renderStaff();
+  if (name === 'profile') renderProfile();
   if (name === 'staffmgmt' || name === 'staff-management') renderStaffMgmt();
 }
 
@@ -2752,6 +2772,225 @@ async function cleanUpUnusedSheets() {
     });
   }
   showToast('Unused sheets cleared!', 'success');
+}
+
+// ============================================================
+// MY PROFILE
+// ============================================================
+function renderProfile() {
+  const phone = String(currentUser?.phone || '').trim();
+  const staff = allData.staff || [];
+  const me = staff.find(s => String(s.Phone || '').trim() === phone) || null;
+
+  const myTasks = (allData.command || []).filter(t =>
+    (t.Assigned_To || '').toLowerCase().includes((currentUser?.name || '').toLowerCase())
+  );
+  const myCorr = (allData.correspondence || []).filter(c =>
+    (c.Allocated_To || '').toLowerCase().includes((currentUser?.name || '').toLowerCase())
+  );
+  const myIGP = (allData.igpworks || []).filter(w =>
+    (w.Assigned_To || '').toLowerCase().includes((currentUser?.name || '').toLowerCase())
+  );
+
+  const pending    = myTasks.filter(t => t.Status === 'Pending').length;
+  const completed  = myTasks.filter(t => t.Status === 'Completed').length;
+  const activeCorr = myCorr.filter(c => c.Status === 'Active').length;
+  const avatar     = (currentUser?.name || 'A')[0].toUpperCase();
+
+  const profileCard = me ? `
+    <div class="profile-header" style="position:relative">
+      <div class="profile-avatar">${avatar}</div>
+      <div style="flex:1;min-width:0">
+        <div class="profile-name">${me.Full_Name || currentUser.name}</div>
+        <div class="profile-rank">${me.Rank || currentUser.rank || '—'}${me.Badge_No ? ' &nbsp;•&nbsp; Badge: ' + me.Badge_No : ''}</div>
+        <div class="profile-badge-row" style="flex-wrap:wrap;gap:6px;margin-top:8px">
+          ${me.Phone ? `<span class="profile-tag">📱 ${me.Phone}</span>` : ''}
+          ${me.Gmail ? `<span class="profile-tag">✉️ ${me.Gmail}</span>` : ''}
+          ${me.Gender ? `<span class="profile-tag">👤 ${me.Gender}</span>` : ''}
+          ${me.Status ? `<span class="profile-tag">${statusBadge(me.Status)}</span>` : ''}
+          ${me.Assigned_Projects ? `<span class="profile-tag">📁 ${me.Assigned_Projects}</span>` : ''}
+          ${me.District_Assigned ? `<span class="profile-tag">📍 ${me.District_Assigned}</span>` : ''}
+          ${me.Date_Joined ? `<span class="profile-tag">📅 Joined: ${me.Date_Joined}</span>` : ''}
+          ${me.Reporting_Officer ? `<span class="profile-tag">🎖️ Reports to: ${me.Reporting_Officer}</span>` : ''}
+        </div>
+      </div>
+      <button onclick="openProfileEdit()" style="position:absolute;top:0;right:0;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer;white-space:nowrap">
+        <i class="fa-solid fa-pen"></i> Edit
+      </button>
+    </div>` : `
+    <div class="profile-header">
+      <div class="profile-avatar">${avatar}</div>
+      <div>
+        <div class="profile-name">${currentUser?.name || 'Admin'}</div>
+        <div class="profile-rank">${currentUser?.rank || 'Administrator'}</div>
+        <div class="profile-badge-row" style="margin-top:8px">
+          <span class="profile-tag">📱 ${currentUser?.phone || '—'}</span>
+          ${currentUser?.email ? `<span class="profile-tag">✉️ ${currentUser.email}</span>` : ''}
+        </div>
+        <p style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:8px">Profile not found in Staff Master. Ask admin to add your details, or go to Staff Management to add yourself.</p>
+      </div>
+    </div>`;
+
+  document.getElementById('profileContent').innerHTML = `
+    ${profileCard}
+
+    <div class="stats-grid" style="margin:16px 0">
+      <div class="stat-card">
+        <div class="stat-icon blue"><i class="fa-solid fa-list-check"></i></div>
+        <div><div class="stat-value">${myTasks.length}</div><div class="stat-label">Total Tasks</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon warning"><i class="fa-solid fa-clock"></i></div>
+        <div><div class="stat-value">${pending}</div><div class="stat-label">Pending</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon success"><i class="fa-solid fa-check-circle"></i></div>
+        <div><div class="stat-value">${completed}</div><div class="stat-label">Completed</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon gold"><i class="fa-solid fa-envelope"></i></div>
+        <div><div class="stat-value">${activeCorr}</div><div class="stat-label">Active Files</div></div>
+      </div>
+    </div>
+
+    <div class="section-header"><div class="section-title">My Assigned Tasks (${myTasks.length})</div></div>
+    <div class="card" style="padding:0;margin-bottom:16px">
+      <div class="table-wrap"><table>
+        <thead><tr><th>#</th><th>Task</th><th>Category</th><th>Priority</th><th>Status</th><th>Due Date</th><th>Assigned By</th></tr></thead>
+        <tbody>${myTasks.length === 0
+          ? '<tr><td colspan="7"><div class="empty-state"><i class="fa-solid fa-clipboard"></i><p>No tasks assigned yet</p></div></td></tr>'
+          : myTasks.map((t,i) => `<tr>
+              <td>${i+1}</td><td>${t.Task_Title||'—'}</td><td>${t.Category||'—'}</td>
+              <td>${priorityBadge(t.Priority)}</td><td>${statusBadge(t.Status)}</td>
+              <td>${formatDate(t.Due_Date)}</td><td>${t.Assigned_By||'—'}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table></div>
+    </div>
+
+    <div class="section-header"><div class="section-title">My Correspondence (${myCorr.length})</div></div>
+    <div class="card" style="padding:0;margin-bottom:16px">
+      <div class="table-wrap"><table>
+        <thead><tr><th>#</th><th>Type</th><th>Subject</th><th>Stage</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody>${myCorr.length === 0
+          ? '<tr><td colspan="6"><div class="empty-state"><i class="fa-solid fa-envelope"></i><p>No correspondence allocated</p></div></td></tr>'
+          : myCorr.map((c,i) => `<tr>
+              <td>${i+1}</td><td>${c.Type||'—'}</td>
+              <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.Subject||'—'}</td>
+              <td>${c.Current_Stage||'—'}</td><td>${statusBadge(c.Status)}</td>
+              <td>${formatDate(c.Date)}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table></div>
+    </div>
+
+    ${myIGP.length > 0 ? `
+    <div class="section-header"><div class="section-title">My IGP Works (${myIGP.length})</div></div>
+    <div class="card" style="padding:0;margin-bottom:16px">
+      <div class="table-wrap"><table>
+        <thead><tr><th>#</th><th>Work Title</th><th>Priority</th><th>Status</th><th>Due Date</th></tr></thead>
+        <tbody>${myIGP.map((w,i) => `<tr>
+          <td>${i+1}</td><td>${w.Work_Title||'—'}</td>
+          <td>${priorityBadge(w.Priority)}</td><td>${statusBadge(w.Status)}</td>
+          <td>${formatDate(w.Due_Date)}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    </div>` : ''}
+
+    <!-- Profile Edit Modal -->
+    <div id="profileEditModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9000;align-items:center;justify-content:center;padding:16px">
+      <div class="card" style="width:100%;max-width:440px">
+        <div class="section-header" style="margin-bottom:14px">
+          <div class="section-title"><i class="fa-solid fa-pen"></i> Edit My Profile</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div><label style="font-size:12px;color:var(--text3);display:block;margin-bottom:4px">Full Name</label>
+            <input id="peFullName" value="${me?.Full_Name||currentUser?.name||''}" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text1)"></div>
+          <div><label style="font-size:12px;color:var(--text3);display:block;margin-bottom:4px">Phone (Login ID — read only)</label>
+            <input id="pePhone" value="${me?.Phone||currentUser?.phone||''}" readonly style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text3)"></div>
+          <div><label style="font-size:12px;color:var(--text3);display:block;margin-bottom:4px">Gmail</label>
+            <input id="peGmail" value="${me?.Gmail||currentUser?.email||''}" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text1)"></div>
+          <div><label style="font-size:12px;color:var(--text3);display:block;margin-bottom:4px">Assigned Projects</label>
+            <input id="peProjects" value="${me?.Assigned_Projects||''}" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text1)"></div>
+          <div><label style="font-size:12px;color:var(--text3);display:block;margin-bottom:4px">District / Unit</label>
+            <input id="peDistrict" value="${me?.District_Assigned||''}" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text1)"></div>
+          <div><label style="font-size:12px;color:var(--text3);display:block;margin-bottom:4px">Reporting Officer</label>
+            <input id="peReporting" value="${me?.Reporting_Officer||''}" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text1)"></div>
+          <div style="display:flex;gap:10px;margin-top:4px">
+            <button onclick="saveProfileEdit()" class="btn-primary" style="flex:1"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
+            <button onclick="document.getElementById('profileEditModal').style.display='none'" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-size:13px">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function openProfileEdit() {
+  document.getElementById('profileEditModal').style.display = 'flex';
+}
+
+async function saveProfileEdit() {
+  const phone  = String(currentUser?.phone || '').trim();
+  const staff  = allData.staff || [];
+  const idx    = staff.findIndex(s => String(s.Phone || '').trim() === phone);
+  if (idx === -1) { showToast('Profile not found in Staff Master', 'error'); return; }
+  const me = staff[idx];
+  me.Full_Name         = document.getElementById('peFullName').value.trim() || me.Full_Name;
+  me.Gmail             = document.getElementById('peGmail').value.trim();
+  me.Assigned_Projects = document.getElementById('peProjects').value.trim();
+  me.District_Assigned = document.getElementById('peDistrict').value.trim();
+  me.Reporting_Officer = document.getElementById('peReporting').value.trim();
+  const rowData = [
+    me.Staff_ID||'', me.Full_Name, me.Rank||'', me.Badge_No||'',
+    me.Gender||'', me.Gmail, me.Phone||'', me.Date_Joined||'',
+    me.Status||'Active', me.Profile_Photo_URL||'',
+    me.Assigned_Projects, me.District_Assigned, me.Reporting_Officer,
+    me.Created_Date||''
+  ];
+  await fetch(RELAY_URL, {
+    method:'POST', mode:'no-cors',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ sheet:'Staff_Master', action:'update', row: idx+2, col:1, data: rowData })
+  });
+  document.getElementById('profileEditModal').style.display = 'none';
+  showToast('Profile updated!', 'success');
+  currentUser.name  = me.Full_Name;
+  currentUser.email = me.Gmail;
+  document.getElementById('sidebarName').textContent = me.Full_Name;
+  renderProfile();
+}
+
+// ============================================================
+// BULK IMPORT STAFF FROM DUTY CHART TEMPLATE
+// ============================================================
+const STAFF_TEMPLATE = [["S1001","K. Vijaya Kumar","SI","","Male","","9440470479","2018-11-23","Active","","APOLIS, Drones,Mee-seva,","Guntur Range","","2024-01-01"],["S1002","sheshanjali","PC","","Female","","","","Active","","","","","2024-01-01"],["S1003","CH.Srinivasa Rao","HC","316","Male","","6281861526","2020-01-15","Active","","Drones, APFRS-Biometric, Meeseva","Guntur Dist","","2024-01-01"],["S1004","M.Mohan","SI","","Male","","","","Active","","Data center","","","2024-01-01"],["S1005","K. Sreekanth","RI","","Male","","9491416025","2021-04-04","Active","","Cloud based CCTVs, CCTV in PS,E-Office","APSP","","2024-01-01"],["S1006","T.Koteswararao","PC","1815","Male","","9000640658","2019-01-23","Active","","CCTV in PS","Communication","","2024-01-01"],["S1007","O.Jyothi","WPC","2067","Female","","7674033487","2019-01-23","Active","","Cloud based CCTVs","Communication","","2024-01-01"],["S1008","CH.Venkatesh","PC","741","Male","","8886885859","2022-09-01","Active","","E-Office","Eluru Dist","","2024-01-01"],["S1009","S.Srinivasulu","HC","1610","Male","","7013677239","2024-09-05","Active","","E-Office","Vizianagaram Dist","","2024-01-01"],["S1010","G.Ravi kiran","SI","","Male","","","","Active","","E-challans&ITMS ,ERSS-112&Tabs","","","2024-01-01"],["S1011","R.Ramarao","PC","1615","Male","","9441473964","2022-07-26","Active","","ERSS-112 AND TABS &48 call takers","Tirupathi Dist","","2024-01-01"],["S1012","K.Kiran Vani","WHC","1982","Female","","8977959518","2019-01-23","Active","","E-challans,Brerath Analyzers, Speed Laser guns","Communication","","2024-01-01"],["S1013","P.Ashok Kumar","PC","444","Male","","9160998444","2022-03-26","Active","","E-challans","Palnadu Dist","","2024-01-01"],["S1014","T. Venkata Naidu","RSI","","Male","","6304218129","2022-10-12","Active","","BWC, Women safety (Disha), LHMS","Kadapa Dist","","2024-01-01"],["S1015","CH.Siva Balakrishna","HC","1639","Male","","9491800714","2023-12-17","Active","","BWC,LHMS","Communication","","2024-01-01"],["S1016","R.Kishore","PC","1435","Male","","9666881292","2023-10-01","Active","","Women Safety","6th Battalion","","2024-01-01"],["S1017","E Prasanna","WPC","6872","Female","","9505328763","2025-04-09","Active","","Women Safety","Guntur Dist","","2024-01-01"],["S1018","V.Sudharshana reddy","IC","","Male","","","","Active","","CCTNS","","","2024-01-01"],["S1019","T. Anoj Kumar","RSI","","Male","","9493946020","2024-01-11","Active","","CCTNS, NATGRID, CEIR, BISAG","DAR Srikakulam","","2024-01-01"],["S1020","Md.Anwar","PC","1773","Male","","8639399057","2021-05-19","Active","","CCTNS & Related, APCOPS, PGRS, SCRB Reports","Krishna District","","2024-01-01"],["S1021","PVK.Prasad","HC","1649","Male","","9110300554","2024-01-01","Active","","CCTNS DB, AP Police website (Citizen Portal)","Communication","","2024-01-01"],["S1022","N. Bhanu Hari","PC","1871","Male","","8309578086","2025-03-27","Active","","CCTNS DB, NATGRID(Sudarshan app)","Communication","","2024-01-01"],["S1023","Sk. Lal john basha","HC","1806","Male","","9573180827","2025-04-01","Active","","CCTNS DB, NATGRID(Gandiva app)","Communication","","2024-01-01"],["S1024","D.Aashik","PC","3582","Male","","8639592237","2024-09-13","Active","","CCTNS, CEIR","NTR District","","2024-01-01"],["S1025","Suneetha","WPC","2546","Female","","9948255139","2025-04-11","Active","","CCTNS, CEIR, BISAG","Krishna District","","2024-01-01"],["S1026","Sowmya","WPC","1884","Female","","7730979136","2025-06-05","Active","","CCTNS, CEIR, BISAG","Communication","","2024-01-01"],["S1027","L.Trinadha Rao","PC","1722","Male","","9652881207","2022-07-26","Active","","CCTNS BSNL Connectivity","Tirupati District","","2024-01-01"],["S1028","A.Ganeswara rao","PC","1705","Male","","9704347908","2022-07-26","Active","","CCTNS DB, Pragathi Reports","Tirupati District","","2024-01-01"],["S1029","S.Rajasekhar rao","PC","1817","Male","","9849583594","2019-01-23","Active","","CCTNS Helpdesk","Communication","","2024-01-01"],["S1030","K.Gopi","PC","4300","Male","","9553312439","2024-01-18","Active","","CCTNS Helpdesk","Guntur District","","2024-01-01"],["S1031","L.Rahul","PC","2885","Male","","7095233770","2024-01-02","Active","","CCTNS Helpdesk","Krishna District","","2024-01-01"],["S1032","K.Sreenu","PC","1644","Male","","6301615193","2024-02-07","Active","","CCTNS Helpdesk","Tirupathi","","2024-01-01"],["S1033","K.Sathish","IC","","Male","","9248092990","2021-06-20","Active","","ICJS - eSakshya & eSummons, NDSO, CRIMAC, ITSSO, RTGS","NTR District","","2024-01-01"],["S1034","N.Ramanjaneyulu","PC","2401","Male","","9603557975","2024-03-01","Active","","ICJS - eSakshya & eSummons","Ongole","","2024-01-01"],["S1035","J.Mounika","WPC","3786","Female","","6281029399","2024-06-19","Active","","ICJS - eSakshya & eSummons","NTR District","","2024-01-01"],["S1036","E.Vasantha Kumari","WPC","3762","Female","","8790267046","2024-08-28","Active","","ICJS - eSakshya & eSummons","NTR District","","2024-01-01"],["S1037","Ram Koti Naik","ARSI","","Male","","9951929562","2018-03-15","Active","","MTO, 112 Control Room Shift","SCR CPL Amberpet","","2024-01-01"],["S1038","G. Govinda Rao","PC","1146","Male","","9391211030","2024-12-15","Active","","MTO Writer","Tirupati District","","2024-01-01"],["S1039","D. Raviner Babu","HC","917","Male","","8688887707","2022-06-14","Active","","Driver","PTO","","2024-01-01"],["S1040","SK. Silar Vali","HC","997","Male","","9908069956","2019-06-14","Active","","Driver","PTO","","2024-01-01"],["S1041","SK. Riyaz","PC","554","Male","","9493515387","","Active","","Driver","Nellore","","2024-01-01"],["S1042","S. Ravi Kumar","PC","387","Male","","6303289717","2019-01-14","Active","","Driver - attached to Dir FSL","16th Bn. APSP VSKP","","2024-01-01"],["S1043","G. Paramesh","PC","915","Male","","7013574236","2023-04-27","Active","","Driver","Palnadu District","","2024-01-01"],["S1044","A. Syambabu","HG","202","Male","","9010634392","2024-04-10","Active","","112 Control Room (Driver)","Krishna District","","2024-01-01"],["S1045","B. Rani","WASI","","Female","","9247836443","2022-10-07","Active","","112 Control Room Shift","West Godavari District","","2024-01-01"],["S1046","Pallapothu Suresh","PC","6075","Male","","","","Active","","SAKTHI Team","Palnadu","","2024-01-01"],["S1047","Ch.Durga Rao","PC","2669","Male","","","","Active","","SAKTHI Team","Eluru","","2024-01-01"],["S1048","P Harika","WPC","2058","Female","","","","Active","","SAKTHI Team","Communication","","2024-01-01"],["S1049","P.Komala","WPC","2051","Female","","","","Active","","SAKTHI Team","Communication","","2024-01-01"],["S1050","A.Prasanna Lakshmi","WPC","2075","Female","","","","Active","","SAKTHI Team","Communication","","2024-01-01"],["S1051","T.Keerthi","WPC","2057","Female","","","","Active","","SAKTHI Team","Communication","","2024-01-01"],["S1052","Sarojini","AAO","","Female","","","","Active","","AO Section and Staff","","","2024-01-01"],["S1053","L.Venkata Krishna","PC","4159","Male","","","","Active","","CCTNS Reports","Bapatla District","","2024-01-01"],["S1054","Md.Sadhik","RSI","","Male","","","","Active","","Data Center-2","NTR Dist","","2024-01-01"],["S1055","M. Gowri Shankara Rao","PC","198","Male","","","","Active","","Data center","Krishna Dist","","2024-01-01"],["S1056","A. Murali","PC","956","Male","","","","Active","","Data center","16th BN","","2024-01-01"],["S1057","S. Ramu","PC","1891","Male","","","","Active","","Data center","PCO","","2024-01-01"],["S1058","Y. Pardha Saradhi","PC","4344","Male","","","","Active","","Data center","NTR Dist","","2024-01-01"],["S1059","K. Ananth Kumar","PC","1305","Male","","","","Active","","Data center","6th BN","","2024-01-01"],["S1060","P. Sunil Kumar","HC","1826","Male","","","","Active","","DGP Office Team","PCO","","2024-01-01"],["S1061","K. Praveen","PC","8303","Male","","","","Active","","DGP Office Team","PCO","","2024-01-01"],["S1062","V.Sheshanjali","CSP","","Female","","","","Active","","APOLIS","Guntur Dist","","2024-01-01"]];
+
+async function bulkImportStaff() {
+  if (!confirm('This will import 62 staff records from the TS Duty Chart into Staff_Master sheet.\n\nPhone number = Login ID\nDefault password = 1111\n\nOnly new records are added (existing phone numbers skipped).\n\nProceed?')) return;
+
+  const existing = (allData.staff || []).map(s => String(s.Phone || '').trim()).filter(Boolean);
+  const toImport = STAFF_TEMPLATE.filter(r => !existing.includes(String(r[6]).trim()) || !r[6]);
+
+  showToast(`Importing ${toImport.length} staff records...`, 'info');
+
+  let count = 0;
+  for (const row of toImport) {
+    await fetch(RELAY_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sheet: 'Staff_Master', action: 'append', data: row })
+    });
+    count++;
+    if (count % 10 === 0) showToast(`Imported ${count}/${toImport.length}...`, 'info');
+    await new Promise(r => setTimeout(r, 300));
+  }
+
+  showToast(`Import complete! ${count} staff added. Reloading data...`, 'success');
+  setTimeout(async () => {
+    await loadAllData();
+    renderStaffManagement();
+    updateAllDropdowns();
+  }, 4000);
 }
 
 async function clearAllStaff() {
