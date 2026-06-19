@@ -2051,6 +2051,13 @@ function initApp() {
   startClock();
   const punchEl = document.getElementById('punchUserName');
   if (punchEl) punchEl.textContent = currentUser.name;
+
+  // Immediately seed staff from embedded data so dropdowns work before sheet loads
+  if (!allData.staff || allData.staff.length === 0) {
+    allData.staff = mergeStaffData([]);
+  }
+  updateAllDropdowns();
+
   loadStaffList();
   loadAllData();
   showScreen('dashboard');
@@ -2139,8 +2146,12 @@ async function loadAllData() {
 }
 
 async function loadStaffList() {
-  const staff = await fetchSheet('Staff_Master');
-  allData.staff = mergeStaffData(staff);
+  try {
+    const staff = await fetchSheet('Staff_Master');
+    allData.staff = mergeStaffData(staff);
+  } catch(e) {
+    allData.staff = mergeStaffData([]);
+  }
   updateAllDropdowns();
 }
 
