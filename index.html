@@ -909,6 +909,25 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
               <div><div class="stat-value" id="statVC">—</div><div class="stat-label">Upcoming VCs</div></div>
             </div>
           </div>
+          
+          <!-- Pending Approvals Section -->
+          <div id="pendingApprovalsSection" style="display:none;margin-bottom:20px;">
+            <div class="section-header">
+              <div class="section-title"><i class="fa-solid fa-clock-rotate-left" style="color:var(--warning)"></i> Pending Your Approval <span class="nav-badge" id="approvalCountBadge">0</span></div>
+            </div>
+            <div class="card heart-card" style="padding:16px;background:var(--bg2)">
+              <div class="table-wrap">
+                <table>
+                  <thead class="heart-thead"><tr>
+                    <th>Module</th><th>Date</th><th>Project</th><th>Title/Subject</th><th>Assigned/Allocated To</th><th>Current Status/Stage</th><th>Actions</th>
+                  </tr></thead>
+                  <tbody id="pendingApprovalsBody">
+                    <tr><td colspan="7" style="text-align:center;color:var(--text3)">No pending approvals</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
 
           <!-- Heart Modules -->
           <div class="section-header">
@@ -1703,6 +1722,18 @@ function initApp() {
     document.getElementById('adminBadge').style.display = 'inline-block';
   }
 
+  // Show/Hide Add IGP Work button based on rank (hide from ASI down)
+  const addIGPBtn = document.getElementById('addIGPBtn');
+  if (addIGPBtn) {
+    const hiddenRanks = ['ASI', 'HC', 'PC', 'WPC', 'HC(C)', 'PC(C)', 'WPC(C)', 'ARSI', 'HG', 'AAO'];
+    const userRank = currentUser?.rank || '';
+    if (currentUser?.role === 'admin' || (userRank && !hiddenRanks.includes(userRank))) {
+      addIGPBtn.style.display = 'inline-flex';
+    } else {
+      addIGPBtn.style.display = 'none';
+    }
+  }
+
   // Set today as default in form date fields
   const today = new Date().toISOString().split('T')[0];
   ['taskEntryDate','corrEntryDate','igpEntryDate','vcEntryDate'].forEach(id => {
@@ -2020,6 +2051,171 @@ function renderDashboard() {
       <td>${formatDate(t.Created_Date)}</td>
     </tr>`).join('');
 
+  renderPendingApprovals();
+}
+
+function renderPendingApprovals() {
+  const section = document.getElementById('pendingApprovalsSection');
+  const tbody = document.getElementById('pendingApprovalsBody');
+  if (!section || !tbody) return;
+
+  if (!isOfficer()) {
+    section.style.display = 'none';
+    return;
+  }
+
+  let pendingList = [];
+
+  // Command Register
+  (allData.command || []).forEach((t, idx) => {
+    if (t.Status === 'Pending for Approval' || t.Status === 'Pending Approval') {
+      pendingList.push({
+        id: t.Task_ID || t.ID,
+        module: 'command',
+        moduleLabel: 'Command Register',
+        date: t.Created_Date || t.Date,
+        project: t.Project_Name,
+        title: t.Task_Title,
+        to: t.Assigned_To,
+        status: t.Status,
+        row: rowNumber(t, idx),
+        raw: t
+      });
+    }
+  });
+
+  // Correspondence
+  (allData.correspondence || []).forEach((c, idx) => {
+    if (c.Current_Stage === 'Pending for Approval' || c.Current_Stage === 'Pending Approval' || c.Status === 'Pending Approval') {
+      pendingList.push({
+        id: c.Corr_ID || c.ID,
+        module: 'correspondence',
+        moduleLabel: 'Correspondence',
+        date: c.Date,
+        project: c.Project_Name,
+        title: c.Subject,
+        to: c.Allocated_To,
+        status: c.Current_Stage || c.Status,
+        row: rowNumber(c, idx),
+        raw: c
+      });
+    }
+  });
+
+  // IGP Command Works
+  (allData.igpworks || []).forEach((w, idx) => {
+    if (w.Status === 'Pending for Approval' || w.Status === 'Pending Approval') {
+      pendingList.push({
+        id: w.Work_ID || w.ID,
+        module: 'igp',
+        moduleLabel: 'IGP Works',
+        date: w.Date,
+        project: w.Project_Name,
+        title: w.Work_Title,
+        to: w.Assigned_To,
+        status: w.Status,
+        row: rowNumber(w, idx),
+        raw: w
+      });
+    }
+  });
+
+  const count = pendingList.length;
+  const countBadge = document.getElementById('approvalCountBadge');
+  if (countBadge) countBadge.textContent = count;
+
+  if (count === 0) {
+    section.style.display = 'none';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text3)">No pending approvals</td></tr>';
+    return;
+  }
+
+  section.style.display = 'block';
+
+  tbody.innerHTML = pendingList.map(item => `
+    <tr>
+      <td><span class="badge badge-info">${item.moduleLabel}</span></td>
+      <td>${formatDate(item.date)}</td>
+      <td>${projectBadge(item.project)}</td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${item.title}">${item.title}</td>
+      <td>${item.to}</td>
+      <td>${statusBadge(item.status)}</td>
+      <td>
+        <div class="row-actions">
+          <button class="action-btn" title="Approve" onclick="approveTask('${item.id}', '${item.module}', ${item.row})" style="color:var(--success);background:rgba(26,122,74,0.1)"><i class="fa-solid fa-circle-check"></i></button>
+          <button class="action-btn" title="Return/Reject" onclick="rejectTask('${item.id}', '${item.module}', ${item.row})" style="color:var(--danger);background:rgba(163,45,45,0.1)"><i class="fa-solid fa-circle-xmark"></i></button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function approveTask(id, module, rowNum) {
+  if (!confirm('Approve this request?')) return;
+  showToast('Approving...', 'info');
+  if (module === 'command') {
+    const t = allData.command.find(x => (x.Task_ID || x.ID) === id);
+    if (t) {
+      t.Status = 'Completed';
+      t.Approved_By = currentUser.name;
+      t.Officer_Remarks = 'Approved';
+      t.Completion_Date = new Date().toISOString().split('T')[0];
+      await postAction('Command_Register', 'update', commandRow(t), rowNum);
+    }
+  } else if (module === 'correspondence') {
+    const c = allData.correspondence.find(x => (x.Corr_ID || x.ID) === id);
+    if (c) {
+      c.Current_Stage = 'Approved by Officer';
+      c.Status = 'Active';
+      c.Remarks = 'Approved by ' + currentUser.name;
+      await postAction('Correspondence_Tracker', 'update', corrRow(c), rowNum);
+      await postAction('Correspondence_Timeline', 'append', [id, c.Serial_No, new Date().toISOString().split('T')[0], 'Approved by Officer', currentUser.name, 'Approved', c.Submission_Mode || 'Other', new Date().toISOString()]);
+    }
+  } else if (module === 'igp') {
+    const w = allData.igpworks.find(x => (x.Work_ID || x.ID) === id);
+    if (w) {
+      w.Status = 'Completed';
+      w.Approved_By = currentUser.name;
+      w.Remarks = 'Approved';
+      w.Completed_Date = new Date().toISOString().split('T')[0];
+      await postAction('IGP_Command_Works', 'update', igpRow(w), rowNum);
+    }
+  }
+  showToast('Approved successfully!', 'success');
+  await loadAllData();
+  renderDashboard();
+}
+
+async function rejectTask(id, module, rowNum) {
+  const remarks = prompt('Enter reason for returning/rejection:');
+  if (remarks === null) return;
+  showToast('Returning request...', 'info');
+  if (module === 'command') {
+    const t = allData.command.find(x => (x.Task_ID || x.ID) === id);
+    if (t) {
+      t.Status = 'Returned for Correction';
+      t.Officer_Remarks = remarks;
+      await postAction('Command_Register', 'update', commandRow(t), rowNum);
+    }
+  } else if (module === 'correspondence') {
+    const c = allData.correspondence.find(x => (x.Corr_ID || x.ID) === id);
+    if (c) {
+      c.Current_Stage = 'Returned for Correction';
+      c.Remarks = remarks;
+      await postAction('Correspondence_Tracker', 'update', corrRow(c), rowNum);
+      await postAction('Correspondence_Timeline', 'append', [id, c.Serial_No, new Date().toISOString().split('T')[0], 'Returned for Correction', currentUser.name, remarks, c.Submission_Mode || 'Other', new Date().toISOString()]);
+    }
+  } else if (module === 'igp') {
+    const w = allData.igpworks.find(x => (x.Work_ID || x.ID) === id);
+    if (w) {
+      w.Status = 'Returned for Correction';
+      w.Remarks = remarks;
+      await postAction('IGP_Command_Works', 'update', igpRow(w), rowNum);
+    }
+  }
+  showToast('Returned for correction successfully!', 'success');
+  await loadAllData();
+  renderDashboard();
 }
 
 // ============================================================
@@ -2028,6 +2224,7 @@ function renderDashboard() {
 function renderCommand() {
   let data = allData.command || [];
   if (currentCmdFilter !== 'all') data = data.filter(t => t.Status === currentCmdFilter);
+  if (currentCmdProject !== 'all') data = data.filter(t => t.Project_Name === currentCmdProject);
 
   const fromDate = document.getElementById('cmdFromDate')?.value;
   const toDate   = document.getElementById('cmdToDate')?.value;
@@ -2044,13 +2241,14 @@ function renderCommand() {
   if (search) data = data.filter(t => (t.Task_Title||'').toLowerCase().includes(search) || (t.Assigned_To||'').toLowerCase().includes(search));
   const tbody = document.getElementById('commandBody');
   if (data.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><i class="fa-solid fa-clipboard"></i><p>No command tasks yet. Click Add Task to add.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11"><div class="empty-state"><i class="fa-solid fa-clipboard"></i><p>No command tasks yet. Click Add Task to add.</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = data.map((t, i) => `
     <tr>
       <td><strong>${t.Serial_No||'—'}</strong></td>
       <td>${formatDate(t.Created_Date)}</td>
+      <td>${projectBadge(t.Project_Name)}</td>
       <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${t.Task_Title||''}">${t.Task_Title||'—'}</td>
       <td>${t.Category||'—'}</td>
       <td>${t.Assigned_To||'—'}</td>
@@ -2079,6 +2277,8 @@ function renderCorrespondence() {
   } else if (currentCorrFilter !== 'all') {
     data = data.filter(c => c.Type === currentCorrFilter);
   }
+  if (currentCorrProject !== 'all') data = data.filter(c => c.Project_Name === currentCorrProject);
+
   const search = document.getElementById('corrSearch')?.value?.toLowerCase() || '';
   if (search) data = data.filter(c =>
     (c.Subject||'').toLowerCase().includes(search) ||
@@ -2087,13 +2287,14 @@ function renderCorrespondence() {
   );
   const tbody = document.getElementById('corrBody');
   if (data.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><i class="fa-solid fa-envelope"></i><p>No correspondence entries yet. Click New Correspondence to add.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><i class="fa-solid fa-envelope"></i><p>No correspondence entries yet. Click New Correspondence to add.</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = data.map((c, i) => `
     <tr>
       <td><strong>${c.Serial_No||'—'}</strong></td>
       <td>${formatDate(c.Date)}</td>
+      <td>${projectBadge(c.Project_Name)}</td>
       <td>${corrTypeBadge(c.Type)}</td>
       <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${c.Subject||''}">${c.Subject||'—'}</td>
       <td>${c.Allocated_To||'—'}</td>
@@ -2117,15 +2318,18 @@ function searchCorr() { renderCorrespondence(); }
 function renderIGPWorks() {
   let data = allData.igpworks || [];
   if (currentIGPFilter !== 'all') data = data.filter(w => w.Status === currentIGPFilter);
+  if (currentIGPProject !== 'all') data = data.filter(w => w.Project_Name === currentIGPProject);
+
   const tbody = document.getElementById('igpBody');
   if (data.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><i class="fa-solid fa-star"></i><p>No IGP command works yet. Click Add IGP Work to add.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><i class="fa-solid fa-star"></i><p>No IGP command works yet. Click Add IGP Work to add.</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = data.map((w, i) => `
     <tr>
       <td><strong>${w.Serial_No||'—'}</strong></td>
       <td>${formatDate(w.Date)}</td>
+      <td>${projectBadge(w.Project_Name)}</td>
       <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${w.Work_Title||''}">${w.Work_Title||'—'}</td>
       <td>${w.Assigned_To||'—'}</td>
       <td>${priorityBadge(w.Priority)}</td>
@@ -2148,14 +2352,17 @@ function filterIGP(f, el) {
 function renderVC() {
   let data = allData.vcschedule || [];
   if (currentVCFilter !== 'all') data = data.filter(v => v.Status === currentVCFilter);
+  if (currentVCProject !== 'all') data = data.filter(v => v.Project_Name === currentVCProject);
+
   const tbody = document.getElementById('vcBody');
   if (data.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><i class="fa-solid fa-video"></i><p>No VC schedules yet. Click Schedule VC to add.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><i class="fa-solid fa-video"></i><p>No VC schedules yet. Click Schedule VC to add.</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = data.map((v, i) => `
     <tr>
       <td><strong>${v.Serial_No||'—'}</strong></td>
+      <td>${projectBadge(v.Project_Name)}</td>
       <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${v.Subject||''}">${v.Subject||'—'}</td>
       <td>${formatDate(v.Date)} ${v.Time||''}</td>
       <td><span class="badge badge-info">${v.Platform||'—'}</span></td>
@@ -2229,26 +2436,172 @@ function renderActionBtn(title, icon, fn, danger=false) {
   return `<button class="action-btn" title="${title}" onclick="${fn}" style="${danger?'color:var(--danger)':''}"><i class="fa-solid ${icon}"></i></button>`;
 }
 function renderCommandActions(i) {
+  const t = (allData.command || [])[i];
+  if (!t) return '';
   let html = renderActionBtn('View', 'fa-eye', `viewCommand(${i})`);
-  if (isAdmin()) html += renderActionBtn('Edit', 'fa-pen', `editCommand(${i})`) + renderActionBtn('Mark Complete', 'fa-check', `markCommandComplete(${i})`) + renderActionBtn('Delete', 'fa-trash', `deleteCommand(${i})`, true);
+  const isAssigned = (t.Assigned_To || '').toLowerCase().includes((currentUser?.name || '').toLowerCase());
+  
+  if (isAdmin()) {
+    html += renderActionBtn('Edit', 'fa-pen', `editCommand(${i})`);
+    html += renderActionBtn('Mark Complete', 'fa-check', `markCommandComplete(${i})`);
+    html += renderActionBtn('Delete', 'fa-trash', `deleteCommand(${i})`, true);
+  } else if (isAssigned) {
+    if (t.Status !== 'Completed' && t.Status !== 'Pending for Approval') {
+      html += renderActionBtn('Submit for Approval', 'fa-paper-plane', `submitTaskForApproval(${i})`);
+    }
+  }
   return `<div class="row-actions">${html}</div>`;
 }
+
+async function submitTaskForApproval(i) {
+  const t = (allData.command || [])[i];
+  if (!t) return;
+  t.Status = 'Pending for Approval';
+  showToast('Submitting task for approval...', 'info');
+  await postAction('Command_Register', 'update', commandRow(t), rowNumber(t, i));
+  await refreshHeartScreen(renderCommand, 'Task submitted for officer approval');
+}
+
 function renderCorrActions(i) {
+  const c = (allData.correspondence || [])[i];
+  if (!c) return '';
   let html = renderActionBtn('View Timeline', 'fa-timeline', `viewCorrTimeline(${i})`);
-  if (isOfficer()) html += renderActionBtn('Update Stage', 'fa-forward-step', `openStageModal(${i})`);
-  if (isAdmin()) html += renderActionBtn('Edit', 'fa-pen', `editCorr(${i})`) + renderActionBtn('Delete', 'fa-trash', `deleteCorr(${i})`, true);
+  const isAllocated = (c.Allocated_To || '').toLowerCase().includes((currentUser?.name || '').toLowerCase());
+  
+  if (isOfficer() || isAllocated) {
+    html += renderActionBtn('Update Stage', 'fa-forward-step', `openStageModal(${i})`);
+  }
+  if (isAdmin()) {
+    html += renderActionBtn('Edit', 'fa-pen', `editCorr(${i})`);
+    html += renderActionBtn('Delete', 'fa-trash', `deleteCorr(${i})`, true);
+  }
   return `<div class="row-actions">${html}</div>`;
 }
+
 function renderIGPActions(i) {
+  const w = (allData.igpworks || [])[i];
+  if (!w) return '';
   let html = renderActionBtn('View', 'fa-eye', `viewIGP(${i})`);
-  if (isAdmin()) html += renderActionBtn('Edit', 'fa-pen', `editIGP(${i})`) + renderActionBtn('Mark Complete', 'fa-check', `updateIGPStatus(${i}, 'Completed')`) + renderActionBtn('Escalate', 'fa-flag', `updateIGPStatus(${i}, 'Escalated')`) + renderActionBtn('Delete', 'fa-trash', `deleteIGP(${i})`, true);
+  const isAssigned = (w.Assigned_To || '').toLowerCase().includes((currentUser?.name || '').toLowerCase());
+  
+  if (isAdmin()) {
+    html += renderActionBtn('Edit', 'fa-pen', `editIGP(${i})`);
+    html += renderActionBtn('Mark Complete', 'fa-check', `updateIGPStatus(${i}, 'Completed')`);
+    html += renderActionBtn('Escalate', 'fa-flag', `updateIGPStatus(${i}, 'Escalated')`);
+    html += renderActionBtn('Delete', 'fa-trash', `deleteIGP(${i})`, true);
+  } else if (isAssigned) {
+    if (w.Status !== 'Completed' && w.Status !== 'Pending for Approval') {
+      html += renderActionBtn('Submit for Approval', 'fa-paper-plane', `submitIGPForApproval(${i})`);
+    }
+  }
   return `<div class="row-actions">${html}</div>`;
 }
+
+async function submitIGPForApproval(i) {
+  const w = (allData.igpworks || [])[i];
+  if (!w) return;
+  w.Status = 'Pending for Approval';
+  showToast('Submitting work for approval...', 'info');
+  await postAction('IGP_Command_Works', 'update', igpRow(w), rowNumber(w, i));
+  await refreshHeartScreen(renderIGPWorks, 'IGP Work submitted for officer approval');
+}
+
 function renderVCActions(i) {
   let html = renderActionBtn('View', 'fa-eye', `viewVC(${i})`);
   if (isAdmin()) html += renderActionBtn('Mark Completed', 'fa-check', `updateVCStatus(${i}, 'Completed')`) + renderActionBtn('Postpone', 'fa-clock', `openPostponeModal(${i})`) + renderActionBtn('Edit', 'fa-pen', `editVC(${i})`) + renderActionBtn('Delete', 'fa-trash', `deleteVC(${i})`, true);
   return `<div class="row-actions">${html}</div>`;
 }
+function exportToCSV(filename, headers, rows) {
+  const escapeCSV = (val) => {
+    if (val === undefined || val === null) return '""';
+    let str = String(val);
+    str = str.replace(/"/g, '""');
+    return `"${str}"`;
+  };
+
+  const headerRow = headers.map(escapeCSV).join(',');
+  const rowLines = rows.map(r => r.map(escapeCSV).join(','));
+  const csvContent = "\uFEFF" + [headerRow, ...rowLines].join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  
+  if (navigator.msSaveBlob) { // IE 10+
+    navigator.msSaveBlob(blob, filename);
+  } else {
+    const link = document.createElement("a");
+    if (link.download !== undefined) { // feature detection
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  }
+}
+
+function getFilteredData(module) {
+  if (module === 'command') {
+    let data = allData.command || [];
+    if (currentCmdFilter !== 'all') data = data.filter(t => t.Status === currentCmdFilter);
+    if (currentCmdProject !== 'all') data = data.filter(t => t.Project_Name === currentCmdProject);
+    const fromDate = document.getElementById('cmdFromDate')?.value;
+    const toDate   = document.getElementById('cmdToDate')?.value;
+    if (fromDate) data = data.filter(t => (t.Created_Date || t.Date || '').split('T')[0] >= fromDate);
+    if (toDate) data = data.filter(t => (t.Created_Date || t.Date || '').split('T')[0] <= toDate);
+    const search = document.getElementById('cmdSearch')?.value?.toLowerCase() || '';
+    if (search) data = data.filter(t => (t.Task_Title||'').toLowerCase().includes(search) || (t.Assigned_To||'').toLowerCase().includes(search));
+    return {
+      headers: ['Serial No', 'Date', 'Project', 'Task Title', 'Category', 'Assigned To', 'Assigned By', 'Priority', 'Status', 'Due Date'],
+      rows: data.map(t => [t.Serial_No, formatDate(t.Created_Date), t.Project_Name, t.Task_Title, t.Category, t.Assigned_To, t.Assigned_By, t.Priority, t.Status, formatDate(t.Due_Date)])
+    };
+  }
+  if (module === 'correspondence') {
+    let data = allData.correspondence || [];
+    if (currentCorrFilter === 'Active' || currentCorrFilter === 'Completed') {
+      data = data.filter(c => c.Status === currentCorrFilter);
+    } else if (currentCorrFilter !== 'all') {
+      data = data.filter(c => c.Type === currentCorrFilter);
+    }
+    if (currentCorrProject !== 'all') data = data.filter(c => c.Project_Name === currentCorrProject);
+    const search = document.getElementById('corrSearch')?.value?.toLowerCase() || '';
+    if (search) data = data.filter(c => (c.Subject||'').toLowerCase().includes(search) || (c.Serial_No||'').toLowerCase().includes(search) || (c.Allocated_To||'').toLowerCase().includes(search));
+    return {
+      headers: ['Serial No', 'Date', 'Project', 'Type', 'Subject', 'Allocated To', 'Current Stage', 'Submission Mode', 'Status'],
+      rows: data.map(c => [c.Serial_No, formatDate(c.Date), c.Project_Name, c.Type, c.Subject, c.Allocated_To, c.Current_Stage, c.Submission_Mode, c.Status])
+    };
+  }
+  if (module === 'igp') {
+    let data = allData.igpworks || [];
+    if (currentIGPFilter !== 'all') data = data.filter(w => w.Status === currentIGPFilter);
+    if (currentIGPProject !== 'all') data = data.filter(w => w.Project_Name === currentIGPProject);
+    return {
+      headers: ['Serial No', 'Date', 'Project', 'Work Title', 'Assigned To', 'Priority', 'Status', 'Due Date', 'Remarks'],
+      rows: data.map(w => [w.Serial_No, formatDate(w.Date), w.Project_Name, w.Work_Title, w.Assigned_To, w.Priority, w.Status, formatDate(w.Due_Date), w.Remarks])
+    };
+  }
+  if (module === 'vc') {
+    let data = allData.vcschedule || [];
+    if (currentVCFilter !== 'all') data = data.filter(v => v.Status === currentVCFilter);
+    if (currentVCProject !== 'all') data = data.filter(v => v.Project_Name === currentVCProject);
+    return {
+      headers: ['Serial No', 'Project', 'Subject', 'Date & Time', 'Platform', 'Speaker', 'Organiser', 'Status', 'VC Link'],
+      rows: data.map(v => [v.Serial_No, v.Project_Name, v.Subject, `${formatDate(v.Date)} ${v.Time||''}`, v.Platform, v.Speaker, v.Organiser, v.Status, v.VC_Link])
+    };
+  }
+}
+
+function exportData(module) {
+  const res = getFilteredData(module);
+  if (!res || res.rows.length === 0) {
+    showToast('No data to export', 'error');
+    return;
+  }
+  const filename = `${module}_export_${new Date().toISOString().split('T')[0]}.csv`;
+  exportToCSV(filename, res.headers, res.rows);
+  showToast(`Exported ${res.rows.length} rows to ${filename}`, 'success');
+}
+
 async function postAction(sheetName, action, data={}, row=null) {
   try {
     await fetch(RELAY_URL, { method:'POST', mode:'no-cors', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ sheet:sheetName, action, row, rowNumber:row, data }) });
@@ -2286,22 +2639,255 @@ function commandRow(t) { return [field(t,['Task_ID','ID'],`T${Date.now()}`),fiel
 function corrRow(c) { return [field(c,['Corr_ID','ID'],`C${Date.now()}`),field(c,['Serial_No']),field(c,['Date','Created_Date']),field(c,['Type']),field(c,['Subject']),field(c,['Allocated_To']),field(c,['Allocated_By']),field(c,['Current_Stage'],'Draft Work Allocated'),field(c,['Submission_Mode']),field(c,['Reference_No']),field(c,['Status'],'Active'),field(c,['Remarks']),field(c,['Timestamp'],new Date().toISOString())]; }
 function igpRow(w) { return [field(w,['Work_ID','ID'],`I${Date.now()}`),field(w,['Serial_No']),field(w,['Date','Created_Date']),field(w,['Work_Title']),field(w,['Description','Work_Description']),field(w,['Assigned_To']),field(w,['Priority']),field(w,['Status'],'Pending'),field(w,['Due_Date']),field(w,['Completed_Date']),field(w,['Remarks']),field(w,['Approved_By']),field(w,['Timestamp'],new Date().toISOString())]; }
 function vcRow(v) { return [field(v,['VC_ID','ID'],`V${Date.now()}`),field(v,['Serial_No']),field(v,['Subject']),field(v,['Date']),field(v,['Time']),field(v,['Platform']),field(v,['VC_Link']),field(v,['Organiser']),field(v,['Speaker']),field(v,['Allotted_Persons']),field(v,['Status'],'Upcoming'),field(v,['Linked_Postponed_ID']),field(v,['Postpone_Reason']),field(v,['Created_By'],currentUser?.name),field(v,['Remarks']),field(v,['Entry_Date','Timestamp'],new Date().toISOString())]; }
-function viewCommand(i) { const t=(allData.command||[])[i]; if(!t)return; showDetails('Command Register Details', detailRows([['Serial No',t.Serial_No],['Date',formatDate(t.Created_Date||t.Date)],['Title',t.Task_Title],['Description',t.Description||t.Task_Description||t.Remarks],['Category',t.Category],['Priority',t.Priority],['Assigned To',t.Assigned_To],['Assigned By',t.Assigned_By],['Due Date',formatDate(t.Due_Date)],['Status',statusBadge(t.Status)],['Officer Remarks',t.Officer_Remarks],['Staff Remarks',t.Staff_Remarks],['Points Awarded',t.Points_Awarded],['Approved By',t.Approved_By]])); }
-function editCommand(i) { const t=(allData.command||[])[i]; if(!t)return; editContext={module:'command',index:i,row:rowNumber(t,i),id:field(t,['Task_ID','ID'])}; document.querySelector('#addTaskModal .modal-title').textContent='Edit Command Task'; document.getElementById('taskTitle').value=t.Task_Title||''; document.getElementById('taskEntryDate').value=String(t.Created_Date||t.Date||'').split('T')[0]; document.getElementById('taskDesc').value=t.Description||t.Task_Description||t.Remarks||''; document.getElementById('taskPriority').value=t.Priority||'Medium'; document.getElementById('taskAssignedTo').value=t.Assigned_To||''; document.getElementById('taskAssignedBy').value=t.Assigned_By||''; document.getElementById('taskDueDate').value=String(t.Due_Date||'').split('T')[0]; openModal('addTaskModal'); }
-async function markCommandComplete(i) { const t=(allData.command||[])[i]; if(!t)return; t.Status='Completed'; showToast('Updating task...','info'); await postAction('Command_Register','update',commandRow(t),rowNumber(t,i)); await refreshHeartScreen(renderCommand,'Task marked as completed'); }
-async function deleteCommand(i) { const t=(allData.command||[])[i]; if(!t || !confirm('Delete this task?'))return; showToast('Deleting task...','info'); await postAction('Command_Register','delete',{},rowNumber(t,i)); await refreshHeartScreen(renderCommand,'Task deleted'); }
-function viewCorrTimeline(i) { const c=(allData.correspondence||[])[i]; if(!c)return; const id=field(c,['Corr_ID','ID']); const stages=(allData.corrTimeline||[]).filter(t=>field(t,['Corr_ID','ID'])===id || t.Serial_No===c.Serial_No); const timeline=stages.length?stages.map(s=>`<div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-content"><div class="timeline-stage">${s.Stage||s.Current_Stage||'Stage Update'}</div><div class="timeline-meta">${formatDate(s.Date||s.Timestamp)} · ${s.Updated_By||s.By||'—'} · ${s.Submission_Mode||''}</div><div class="timeline-remarks">${s.Remarks||'—'}</div></div></div>`).join(''):'<div class="empty-state"><i class="fa-solid fa-timeline"></i><p>No timeline updates yet.</p></div>'; showDetails('Correspondence Timeline', detailRows([['Serial No',c.Serial_No],['Date',formatDate(c.Date)],['Type',c.Type],['Subject',c.Subject],['Allocated To',c.Allocated_To],['Allocated By',c.Allocated_By],['Current Stage',stageBadge(c.Current_Stage)],['Submission Mode',c.Submission_Mode],['Status',statusBadge(c.Status)],['Remarks',c.Remarks]]) + `<div class="section-title" style="margin:16px 0 10px">Stage History</div><div class="timeline">${timeline}</div>`); }
-function openStageModal(i) { const c=(allData.correspondence||[])[i]; if(!c)return; stageContext={index:i,row:rowNumber(c,i)}; const modal=ensureDynamicModal('stageModal','Update Correspondence Stage'); modal.querySelector('.modal-body').innerHTML=`<div class="form-group"><label>Current Stage</label><input type="text" value="${c.Current_Stage||'—'}" readonly></div><div class="form-group" style="margin-top:12px"><label>Next Stage</label><select id="stageNext">${CORR_STAGES.map(s=>`<option ${s===c.Current_Stage?'selected':''}>${s}</option>`).join('')}</select></div><div class="form-group" style="margin-top:12px"><label>Submission Mode</label><select id="stageMode"><option>WhatsApp</option><option>Hardcopy</option><option>eOffice</option><option>Email</option><option>Other</option></select></div><div class="form-group" style="margin-top:12px"><label>Remarks</label><textarea id="stageRemarks"></textarea></div>`; modal.querySelector('.modal-footer').innerHTML=`<button class="btn-secondary" onclick="closeModal('stageModal')">Cancel</button><button class="btn-heart" onclick="saveStageUpdate()">Save</button>`; openModal('stageModal'); }
-async function saveStageUpdate() { const c=(allData.correspondence||[])[stageContext?.index]; if(!c)return; const next=document.getElementById('stageNext').value; const mode=document.getElementById('stageMode').value; const remarks=document.getElementById('stageRemarks').value; showToast('Updating stage...','info'); await postAction('Correspondence_Timeline','append',[field(c,['Corr_ID','ID']),c.Serial_No,new Date().toISOString().split('T')[0],next,currentUser.name,remarks,mode,new Date().toISOString()]); c.Current_Stage=next; c.Submission_Mode=mode; c.Status=next==='Completed'?'Completed':'Active'; await postAction('Correspondence_Tracker','update',corrRow(c),stageContext.row); closeModal('stageModal'); await refreshHeartScreen(renderCorrespondence,'Stage updated successfully'); }
-function editCorr(i) { const c=(allData.correspondence||[])[i]; if(!c)return; editContext={module:'corr',index:i,row:rowNumber(c,i),id:field(c,['Corr_ID','ID'])}; document.querySelector('#addCorrModal .modal-title').textContent='Edit Correspondence Entry'; document.getElementById('corrEntryDate').value=String(c.Date||c.Created_Date||'').split('T')[0]; document.getElementById('corrType').value=c.Type||'Draft'; document.getElementById('corrAllocTo').value=c.Allocated_To||''; document.getElementById('corrAllocBy').value=c.Allocated_By||''; document.getElementById('corrMode').value=c.Submission_Mode||'WhatsApp'; document.getElementById('corrSubject').value=c.Subject||''; document.getElementById('corrRemarks').value=c.Remarks||''; openModal('addCorrModal'); }
-async function deleteCorr(i) { const c=(allData.correspondence||[])[i]; if(!c || !confirm('Delete this correspondence entry?'))return; showToast('Deleting correspondence...','info'); await postAction('Correspondence_Tracker','delete',{},rowNumber(c,i)); await refreshHeartScreen(renderCorrespondence,'Correspondence deleted'); }
-function viewIGP(i) { const w=(allData.igpworks||[])[i]; if(!w)return; showDetails('IGP Command Work Details', detailRows([['Serial No',w.Serial_No],['Date',formatDate(w.Date)],['Title',w.Work_Title],['Description',w.Description||w.Work_Description],['Assigned To',w.Assigned_To],['Priority',w.Priority],['Status',statusBadge(w.Status)],['Due Date',formatDate(w.Due_Date)],['Completed Date',formatDate(w.Completed_Date)],['Remarks',w.Remarks],['Approved By',w.Approved_By]])); }
-function editIGP(i) { const w=(allData.igpworks||[])[i]; if(!w)return; editContext={module:'igp',index:i,row:rowNumber(w,i),id:field(w,['Work_ID','ID'])}; document.querySelector('#addIGPModal .modal-title').textContent='Edit IGP Command Work'; document.getElementById('igpEntryDate').value=String(w.Date||w.Created_Date||'').split('T')[0]; document.getElementById('igpTitle').value=w.Work_Title||''; document.getElementById('igpAssignedTo').value=w.Assigned_To||''; document.getElementById('igpPriority').value=w.Priority||'Medium'; document.getElementById('igpDueDate').value=String(w.Due_Date||'').split('T')[0]; document.getElementById('igpDesc').value=w.Description||w.Work_Description||''; document.getElementById('igpRemarks').value=w.Remarks||''; openModal('addIGPModal'); }
-async function updateIGPStatus(i,status) { const w=(allData.igpworks||[])[i]; if(!w)return; w.Status=status; if(status==='Completed')w.Completed_Date=new Date().toISOString().split('T')[0]; showToast('Updating IGP work...','info'); await postAction('IGP_Command_Works','update',igpRow(w),rowNumber(w,i)); await refreshHeartScreen(renderIGPWorks,status==='Completed'?'IGP Work marked complete':'Work escalated'); }
-async function deleteIGP(i) { const w=(allData.igpworks||[])[i]; if(!w || !confirm('Delete this IGP work?'))return; showToast('Deleting IGP work...','info'); await postAction('IGP_Command_Works','delete',{},rowNumber(w,i)); await refreshHeartScreen(renderIGPWorks,'IGP work deleted'); }
-function viewVC(i) { const v=(allData.vcschedule||[])[i]; if(!v)return; const link=v.VC_Link?`<a href="${v.VC_Link}" target="_blank" style="color:var(--navy);font-weight:700">${v.VC_Link}</a>`:'—'; showDetails('VC Schedule Details', detailRows([['Subject',v.Subject],['Date',formatDate(v.Date)],['Time',v.Time],['Platform',v.Platform],['VC Link',link],['Organiser',v.Organiser],['Speaker',v.Speaker],['Allotted Persons',v.Allotted_Persons],['Status',vcStatusBadge(v.Status)],['Remarks',v.Remarks]])); }
-function editVC(i) { const v=(allData.vcschedule||[])[i]; if(!v)return; editContext={module:'vc',index:i,row:rowNumber(v,i),id:field(v,['VC_ID','ID'])}; document.querySelector('#addVCModal .modal-title').textContent='Edit VC / Meeting'; document.getElementById('vcEntryDate').value=String(v.Entry_Date||'').split('T')[0]; document.getElementById('vcSubject').value=v.Subject||''; document.getElementById('vcDate').value=String(v.Date||'').split('T')[0]; document.getElementById('vcTime').value=v.Time||''; document.getElementById('vcPlatform').value=v.Platform||'BharatVC'; document.getElementById('vcLink').value=v.VC_Link||''; document.getElementById('vcOrganiser').value=v.Organiser||''; document.getElementById('vcSpeaker').value=v.Speaker||''; document.getElementById('vcPersons').value=v.Allotted_Persons||''; document.getElementById('vcRemarks').value=v.Remarks||''; openModal('addVCModal'); }
-async function updateVCStatus(i,status) { const v=(allData.vcschedule||[])[i]; if(!v)return; v.Status=status; showToast('Updating VC...','info'); await postAction('VC_Schedule','update',vcRow(v),rowNumber(v,i)); await refreshHeartScreen(renderVC,'VC marked completed'); }
+function formatPersonBadges(str) {
+  return (str || '').split(',').map(n => n.trim()).filter(Boolean).map(n => `<span class="badge" style="background:var(--navy);color:#fff;margin:2px;font-size:10px">${n}</span>`).join('') || '—';
+}
+
+function viewCommand(i) {
+  const t = (allData.command || [])[i];
+  if (!t) return;
+  showDetails('Command Register Details', detailRows([
+    ['Serial No', t.Serial_No],
+    ['Date', formatDate(t.Created_Date || t.Date)],
+    ['Project', projectBadge(t.Project_Name)],
+    ['Title', t.Task_Title],
+    ['Description', t.Description || t.Task_Description || t.Remarks],
+    ['Category', t.Category],
+    ['Priority', t.Priority],
+    ['Assigned To', formatPersonBadges(t.Assigned_To)],
+    ['Assigned By', t.Assigned_By],
+    ['Due Date', formatDate(t.Due_Date)],
+    ['Status', statusBadge(t.Status)],
+    ['Officer Remarks', t.Officer_Remarks],
+    ['Staff Remarks', t.Staff_Remarks],
+    ['Points Awarded', t.Points_Awarded],
+    ['Approved By', t.Approved_By]
+  ]));
+}
+
+function editCommand(i) {
+  const t = (allData.command || [])[i];
+  if (!t) return;
+  editContext = { module: 'command', index: i, row: rowNumber(t, i), id: field(t, ['Task_ID', 'ID']) };
+  document.querySelector('#addTaskModal .modal-title').textContent = 'Edit Command Task';
+  document.getElementById('taskTitle').value = t.Task_Title || '';
+  document.getElementById('taskEntryDate').value = String(t.Created_Date || t.Date || '').split('T')[0];
+  document.getElementById('taskDesc').value = t.Description || t.Task_Description || t.Remarks || '';
+  document.getElementById('taskPriority').value = t.Priority || 'Medium';
+  document.getElementById('taskAssignedBy').value = t.Assigned_By || '';
+  document.getElementById('taskDueDate').value = String(t.Due_Date || '').split('T')[0];
+  document.getElementById('taskProject').value = t.Project_Name || '';
+  
+  // Set multi-select value
+  const assignedOptions = (t.Assigned_To || '').split(',').map(s => s.trim());
+  const selectEl = document.getElementById('taskAssignedTo');
+  Array.from(selectEl.options).forEach(opt => {
+    opt.selected = assignedOptions.includes(opt.value);
+  });
+  
+  openModal('addTaskModal');
+}
+
+async function markCommandComplete(i) {
+  const t = (allData.command || [])[i];
+  if (!t) return;
+  t.Status = 'Completed';
+  t.Completion_Date = new Date().toISOString().split('T')[0];
+  showToast('Updating task...', 'info');
+  await postAction('Command_Register', 'update', commandRow(t), rowNumber(t, i));
+  await refreshHeartScreen(renderCommand, 'Task marked as completed');
+}
+
+async function deleteCommand(i) {
+  const t = (allData.command || [])[i];
+  if (!t || !confirm('Delete this task?')) return;
+  showToast('Deleting task...', 'info');
+  await postAction('Command_Register', 'delete', {}, rowNumber(t, i));
+  await refreshHeartScreen(renderCommand, 'Task deleted');
+}
+
+function viewCorrTimeline(i) {
+  const c = (allData.correspondence || [])[i];
+  if (!c) return;
+  const id = field(c, ['Corr_ID', 'ID']);
+  const stages = (allData.corrTimeline || []).filter(t => field(t, ['Corr_ID', 'ID']) === id || t.Serial_No === c.Serial_No);
+  const timeline = stages.length ? stages.map(s => `<div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-content"><div class="timeline-stage">${s.Stage || s.Current_Stage || 'Stage Update'}</div><div class="timeline-meta">${formatDate(s.Date || s.Timestamp)} · ${s.Updated_By || s.By || '—'} · ${s.Submission_Mode || ''}</div><div class="timeline-remarks">${s.Remarks || '—'}</div></div></div>`).join('') : '<div class="empty-state"><i class="fa-solid fa-timeline"></i><p>No timeline updates yet.</p></div>';
+  showDetails('Correspondence Timeline', detailRows([
+    ['Serial No', c.Serial_No],
+    ['Date', formatDate(c.Date)],
+    ['Project', projectBadge(c.Project_Name)],
+    ['Type', c.Type],
+    ['Subject', c.Subject],
+    ['Allocated To', formatPersonBadges(c.Allocated_To)],
+    ['Allocated By', c.Allocated_By],
+    ['Current Stage', stageBadge(c.Current_Stage)],
+    ['Submission Mode', c.Submission_Mode],
+    ['Status', statusBadge(c.Status)],
+    ['Remarks', c.Remarks]
+  ]) + `<div class="section-title" style="margin:16px 0 10px">Stage History</div><div class="timeline">${timeline}</div>`);
+}
+
+function openStageModal(i) {
+  const c = (allData.correspondence || [])[i];
+  if (!c) return;
+  stageContext = { index: i, row: rowNumber(c, i) };
+  const modal = ensureDynamicModal('stageModal', 'Update Correspondence Stage');
+  modal.querySelector('.modal-body').innerHTML = `<div class="form-group"><label>Current Stage</label><input type="text" value="${c.Current_Stage || '—'}" readonly></div><div class="form-group" style="margin-top:12px"><label>Next Stage</label><select id="stageNext">${CORR_STAGES.map(s => `<option ${s === c.Current_Stage ? 'selected' : ''}>${s}</option>`).join('')}</select></div><div class="form-group" style="margin-top:12px"><label>Submission Mode</label><select id="stageMode"><option>WhatsApp</option><option>Hardcopy</option><option>eOffice</option><option>Email</option><option>Other</option></select></div><div class="form-group" style="margin-top:12px"><label>Remarks</label><textarea id="stageRemarks"></textarea></div>`;
+  modal.querySelector('.modal-footer').innerHTML = `<button class="btn-secondary" onclick="closeModal('stageModal')">Cancel</button><button class="btn-heart" onclick="saveStageUpdate()">Save</button>`;
+  openModal('stageModal');
+}
+
+async function saveStageUpdate() {
+  const c = (allData.correspondence || [])[stageContext?.index];
+  if (!c) return;
+  const next = document.getElementById('stageNext').value;
+  const mode = document.getElementById('stageMode').value;
+  const remarks = document.getElementById('stageRemarks').value;
+  showToast('Updating stage...', 'info');
+  await postAction('Correspondence_Timeline', 'append', [field(c, ['Corr_ID', 'ID']), c.Serial_No, new Date().toISOString().split('T')[0], next, currentUser.name, remarks, mode, new Date().toISOString()]);
+  c.Current_Stage = next;
+  c.Submission_Mode = mode;
+  c.Status = next === 'Completed' ? 'Completed' : 'Active';
+  await postAction('Correspondence_Tracker', 'update', corrRow(c), stageContext.row);
+  closeModal('stageModal');
+  await refreshHeartScreen(renderCorrespondence, 'Stage updated successfully');
+}
+
+function editCorr(i) {
+  const c = (allData.correspondence || [])[i];
+  if (!c) return;
+  editContext = { module: 'corr', index: i, row: rowNumber(c, i), id: field(c, ['Corr_ID', 'ID']) };
+  document.querySelector('#addCorrModal .modal-title').textContent = 'Edit Correspondence Entry';
+  document.getElementById('corrEntryDate').value = String(c.Date || c.Created_Date || '').split('T')[0];
+  document.getElementById('corrType').value = c.Type || 'Draft';
+  document.getElementById('corrAllocBy').value = c.Allocated_By || '';
+  document.getElementById('corrMode').value = c.Submission_Mode || 'WhatsApp';
+  document.getElementById('corrSubject').value = c.Subject || '';
+  document.getElementById('corrRemarks').value = c.Remarks || '';
+  document.getElementById('corrProject').value = c.Project_Name || '';
+  
+  // Set multi-select value
+  const allocatedOptions = (c.Allocated_To || '').split(',').map(s => s.trim());
+  const selectEl = document.getElementById('corrAllocTo');
+  Array.from(selectEl.options).forEach(opt => {
+    opt.selected = allocatedOptions.includes(opt.value);
+  });
+  
+  openModal('addCorrModal');
+}
+
+async function deleteCorr(i) {
+  const c = (allData.correspondence || [])[i];
+  if (!c || !confirm('Delete this correspondence entry?')) return;
+  showToast('Deleting correspondence...', 'info');
+  await postAction('Correspondence_Tracker', 'delete', {}, rowNumber(c, i));
+  await refreshHeartScreen(renderCorrespondence, 'Correspondence deleted');
+}
+
+function viewIGP(i) {
+  const w = (allData.igpworks || [])[i];
+  if (!w) return;
+  showDetails('IGP Command Work Details', detailRows([
+    ['Serial No', w.Serial_No],
+    ['Date', formatDate(w.Date)],
+    ['Project', projectBadge(w.Project_Name)],
+    ['Title', w.Work_Title],
+    ['Description', w.Description || w.Work_Description],
+    ['Assigned To', formatPersonBadges(w.Assigned_To)],
+    ['Priority', w.Priority],
+    ['Status', statusBadge(w.Status)],
+    ['Due Date', formatDate(w.Due_Date)],
+    ['Completed Date', formatDate(w.Completed_Date)],
+    ['Remarks', w.Remarks],
+    ['Approved By', w.Approved_By]
+  ]));
+}
+
+function editIGP(i) {
+  const w = (allData.igpworks || [])[i];
+  if (!w) return;
+  editContext = { module: 'igp', index: i, row: rowNumber(w, i), id: field(w, ['Work_ID', 'ID']) };
+  document.querySelector('#addIGPModal .modal-title').textContent = 'Edit IGP Command Work';
+  document.getElementById('igpEntryDate').value = String(w.Date || w.Created_Date || '').split('T')[0];
+  document.getElementById('igpTitle').value = w.Work_Title || '';
+  document.getElementById('igpPriority').value = w.Priority || 'Medium';
+  document.getElementById('igpDueDate').value = String(w.Due_Date || '').split('T')[0];
+  document.getElementById('igpDesc').value = w.Description || w.Work_Description || '';
+  document.getElementById('igpRemarks').value = w.Remarks || '';
+  document.getElementById('igpProject').value = w.Project_Name || '';
+  
+  // Set multi-select value
+  const assignedOptions = (w.Assigned_To || '').split(',').map(s => s.trim());
+  const selectEl = document.getElementById('igpAssignedTo');
+  Array.from(selectEl.options).forEach(opt => {
+    opt.selected = assignedOptions.includes(opt.value);
+  });
+  
+  openModal('addIGPModal');
+}
+
+async function updateIGPStatus(i, status) {
+  const w = (allData.igpworks || [])[i];
+  if (!w) return;
+  w.Status = status;
+  if (status === 'Completed') w.Completed_Date = new Date().toISOString().split('T')[0];
+  showToast('Updating IGP work...', 'info');
+  await postAction('IGP_Command_Works', 'update', igpRow(w), rowNumber(w, i));
+  await refreshHeartScreen(renderIGPWorks, status === 'Completed' ? 'IGP Work marked complete' : 'Work escalated');
+}
+
+async function deleteIGP(i) {
+  const w = (allData.igpworks || [])[i];
+  if (!w || !confirm('Delete this IGP work?')) return;
+  showToast('Deleting IGP work...', 'info');
+  await postAction('IGP_Command_Works', 'delete', {}, rowNumber(w, i));
+  await refreshHeartScreen(renderIGPWorks, 'IGP work deleted');
+}
+
+function viewVC(i) {
+  const v = (allData.vcschedule || [])[i];
+  if (!v) return;
+  const link = v.VC_Link ? `<a href="${v.VC_Link}" target="_blank" style="color:var(--navy);font-weight:700">${v.VC_Link}</a>` : '—';
+  showDetails('VC Schedule Details', detailRows([
+    ['Subject', v.Subject],
+    ['Project', projectBadge(v.Project_Name)],
+    ['Date', formatDate(v.Date)],
+    ['Time', v.Time],
+    ['Platform', v.Platform],
+    ['VC Link', link],
+    ['Organiser', v.Organiser],
+    ['Speaker', v.Speaker],
+    ['Allotted Persons', formatPersonBadges(v.Allotted_Persons)],
+    ['Status', vcStatusBadge(v.Status)],
+    ['Remarks', v.Remarks]
+  ]));
+}
+
+function editVC(i) {
+  const v = (allData.vcschedule || [])[i];
+  if (!v) return;
+  editContext = { module: 'vc', index: i, row: rowNumber(v, i), id: field(v, ['VC_ID', 'ID']) };
+  document.querySelector('#addVCModal .modal-title').textContent = 'Edit VC / Meeting';
+  document.getElementById('vcEntryDate').value = String(v.Entry_Date || '').split('T')[0];
+  document.getElementById('vcSubject').value = v.Subject || '';
+  document.getElementById('vcDate').value = String(v.Date || '').split('T')[0];
+  document.getElementById('vcTime').value = v.Time || '';
+  document.getElementById('vcPlatform').value = v.Platform || 'BharatVC';
+  document.getElementById('vcLink').value = v.VC_Link || '';
+  document.getElementById('vcOrganiser').value = v.Organiser || '';
+  document.getElementById('vcSpeaker').value = v.Speaker || '';
+  document.getElementById('vcRemarks').value = v.Remarks || '';
+  document.getElementById('vcProject').value = v.Project_Name || '';
+  
+  // Set multi-select value
+  const allottedOptions = (v.Allotted_Persons || '').split(',').map(s => s.trim());
+  const selectEl = document.getElementById('vcPersons');
+  Array.from(selectEl.options).forEach(opt => {
+    opt.selected = allottedOptions.includes(opt.value);
+  });
+  
+  openModal('addVCModal');
+}
 function openPostponeModal(i) { const v=(allData.vcschedule||[])[i]; if(!v)return; postponeContext={index:i,row:rowNumber(v,i)}; const modal=ensureDynamicModal('postponeModal','Postpone VC'); modal.querySelector('.modal-body').innerHTML=`<div class="form-grid"><div class="form-group"><label>New Date</label><input type="date" id="postponeDate"></div><div class="form-group"><label>New Time</label><input type="time" id="postponeTime"></div></div><div class="form-group" style="margin-top:12px"><label>Postpone Reason</label><textarea id="postponeReason"></textarea></div>`; modal.querySelector('.modal-footer').innerHTML=`<button class="btn-secondary" onclick="closeModal('postponeModal')">Cancel</button><button class="btn-heart" onclick="savePostponeVC()">Save</button>`; openModal('postponeModal'); }
 async function savePostponeVC() { const v=(allData.vcschedule||[])[postponeContext?.index]; if(!v)return; const newDate=document.getElementById('postponeDate').value; const newTime=document.getElementById('postponeTime').value; const reason=document.getElementById('postponeReason').value; if(!newDate||!newTime){showToast('Please select new date and time','error');return;} const linkedId=field(v,['VC_ID','ID']); const newEntry={...v,VC_ID:`V${Date.now()}`,Serial_No:`${(allData.vcschedule||[]).length+1}/2026`,Date:newDate,Time:newTime,Status:'Upcoming',Linked_Postponed_ID:linkedId,Postpone_Reason:reason}; v.Status='Postponed'; v.Postpone_Reason=reason; showToast('Postponing VC...','info'); await postAction('VC_Schedule','append',vcRow(newEntry)); await postAction('VC_Schedule','update',vcRow(v),postponeContext.row); closeModal('postponeModal'); await refreshHeartScreen(renderVC,'VC postponed'); }
 async function deleteVC(i) { const v=(allData.vcschedule||[])[i]; if(!v || !confirm('Delete this VC schedule?'))return; showToast('Deleting VC...','info'); await postAction('VC_Schedule','delete',{},rowNumber(v,i)); await refreshHeartScreen(renderVC,'VC deleted'); }
