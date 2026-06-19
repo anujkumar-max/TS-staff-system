@@ -1703,6 +1703,40 @@ async function fetchSheet(sheetName) {
   }
 }
 
+function mergeStaffData(sheetStaff) {
+  // Build combined list: DASHBOARD_STAFF (full data) + STAFF_TEMPLATE (duty chart)
+  // then overlay with anything from the sheet
+  const sheetPhones = new Set((sheetStaff || []).map(s => String(s.Phone || '').trim()).filter(Boolean));
+  const sheetNames  = new Set((sheetStaff || []).map(s => String(s.Full_Name || s.Name || '').trim().toLowerCase()).filter(Boolean));
+
+  // Convert embedded arrays to objects matching sheet column names
+  const toObj = (r) => ({
+    Staff_ID: r[0], Full_Name: r[1], Rank: r[2], Badge_No: r[3],
+    Gender: r[4], Gmail: r[5], Phone: r[6], Date_Joined: r[7],
+    Status: r[8], Profile_Photo_URL: r[9], Assigned_Projects: r[10],
+    District_Assigned: r[11], Reporting_Officer: r[12], Created_Date: r[13]
+  });
+
+  const dashPhones = new Set(DASHBOARD_STAFF.map(r => String(r[6]).trim()).filter(Boolean));
+
+  // DASHBOARD_STAFF records not already in sheet
+  const dashExtra = DASHBOARD_STAFF
+    .filter(r => !sheetPhones.has(String(r[6]).trim()) && !sheetNames.has(String(r[1]).trim().toLowerCase()))
+    .map(toObj);
+
+  // STAFF_TEMPLATE records not already in sheet and not in dashboard
+  const tmplExtra = STAFF_TEMPLATE
+    .filter(r => {
+      const ph = String(r[6]).trim();
+      const nm = String(r[1]).trim().toLowerCase();
+      return !sheetPhones.has(ph) && !dashPhones.has(ph) && !sheetNames.has(nm);
+    })
+    .map(toObj);
+
+  // Sheet records come first (authoritative), then fill gaps from embedded data
+  return [...(sheetStaff || []), ...dashExtra, ...tmplExtra];
+}
+
 async function loadAllData() {
   try {
     const [
@@ -1717,8 +1751,10 @@ async function loadAllData() {
       fetchSheet('VC_Schedule'),
       fetchSheet('Notices')
     ]);
-    allData = { staff, command, correspondence, corrTimeline, igpworks, vcschedule, notices };
-    staffListCache = staff;
+    // Merge sheet staff with embedded data so profiles always show
+    const mergedStaff = mergeStaffData(staff);
+    allData = { staff: mergedStaff, command, correspondence, corrTimeline, igpworks, vcschedule, notices };
+    staffListCache = mergedStaff;
     renderDashboard();
     renderNoticesBanner();
     updateAllDropdowns();
