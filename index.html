@@ -2538,46 +2538,153 @@ function searchStaff() { renderStaff(); }
 // MY PROFILE
 // ============================================================
 function renderProfile() {
-  const me = (allData.staff || []).find(s => s.Gmail === currentUser.email) || {};
-  const myTasks = (allData.command || []).filter(t => (t.Assigned_To||'').includes(currentUser.name.split(' ').pop()));
-  const myPoints = (allData.rankings || []).find(r => r.Staff_Name === currentUser.name) || {};
+  const phone = currentUser.phone;
+  const staff = allData.staff || [];
+  const me = staff.find(s => String(s.Phone || '').trim() === String(phone).trim()) || {};
+
+  const myTasks = (allData.command || []).filter(t =>
+    (t.Assigned_To || '').toLowerCase().includes((currentUser.name || '').toLowerCase())
+  );
+  const myCorr = (allData.correspondence || []).filter(c =>
+    (c.Allocated_To || '').toLowerCase().includes((currentUser.name || '').toLowerCase())
+  );
+  const myIGP = (allData.igpworks || []).filter(w =>
+    (w.Assigned_To || '').toLowerCase().includes((currentUser.name || '').toLowerCase())
+  );
+
+  const pending   = myTasks.filter(t => t.Status === 'Pending').length;
+  const completed = myTasks.filter(t => t.Status === 'Completed').length;
+  const activeCorr = myCorr.filter(c => c.Status === 'Active').length;
+
+  if (!me.Full_Name && currentUser.role !== 'admin') {
+    document.getElementById('profileContent').innerHTML =
+      '<div class="empty-state"><i class="fa-solid fa-circle-user"></i><p>Profile not found. Contact admin to add your details.</p></div>';
+    return;
+  }
 
   document.getElementById('profileContent').innerHTML = `
-    <div class="profile-header">
-      <div class="profile-avatar">${currentUser.name[0]}</div>
-      <div>
-        <div class="profile-name">${currentUser.name}</div>
-        <div class="profile-rank">${currentUser.rank} &nbsp;•&nbsp; Badge: ${me.Badge_No||'—'}</div>
+    <div class="profile-header" style="position:relative">
+      <div class="profile-avatar">${(currentUser.name || 'A')[0]}</div>
+      <div style="flex:1">
+        <div class="profile-name">${currentUser.name || 'Admin'}</div>
+        <div class="profile-rank">${currentUser.rank || '—'}${me.Badge_No ? ' &nbsp;•&nbsp; Badge: ' + me.Badge_No : ''}</div>
         <div class="profile-badge-row">
-          <span class="profile-tag"><i class="fa-solid fa-envelope"></i> ${currentUser.email}</span>
-          <span class="profile-tag"><i class="fa-solid fa-diagram-project"></i> ${me.Assigned_Projects||'—'}</span>
-          <span class="profile-tag"><i class="fa-solid fa-circle-check"></i> ${me.Status||'Active'}</span>
+          <span class="profile-tag">📱 ${me.Phone || currentUser.phone || '—'}</span>
+          <span class="profile-tag">✉️ ${me.Gmail || currentUser.email || '—'}</span>
+          <span class="profile-tag">📁 ${me.Assigned_Projects || '—'}</span>
+          ${me.District_Assigned ? '<span class="profile-tag">📍 ' + me.District_Assigned + '</span>' : ''}
+          ${me.Reporting_Officer ? '<span class="profile-tag">👤 Reports to: ' + me.Reporting_Officer + '</span>' : ''}
+          ${me.Status ? '<span class="profile-tag">' + statusBadge(me.Status) + '</span>' : ''}
         </div>
       </div>
+      <button onclick="openProfileEditModal()" style="position:absolute;top:0;right:0;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer"><i class="fa-solid fa-pen"></i> Edit</button>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px">
-      <div class="stat-card"><div class="stat-icon blue"><i class="fa-solid fa-check"></i></div><div><div class="stat-value">${myTasks.filter(t=>t.Status==='Completed').length}</div><div class="stat-label">Tasks Done</div></div></div>
-      <div class="stat-card"><div class="stat-icon warning"><i class="fa-solid fa-clock"></i></div><div><div class="stat-value">${myTasks.filter(t=>t.Status==='Pending').length}</div><div class="stat-label">Pending</div></div></div>
-      <div class="stat-card"><div class="stat-icon gold"><i class="fa-solid fa-star"></i></div><div><div class="stat-value">${myPoints.Total_Points||0}</div><div class="stat-label">Total Points</div></div></div>
+
+    <div class="stats-grid" style="margin-bottom:20px">
+      <div class="stat-card"><div class="stat-icon blue"><i class="fa-solid fa-list-check"></i></div><div><div class="stat-value">${myTasks.length}</div><div class="stat-label">Total Tasks</div></div></div>
+      <div class="stat-card"><div class="stat-icon warning"><i class="fa-solid fa-clock"></i></div><div><div class="stat-value">${pending}</div><div class="stat-label">Pending</div></div></div>
+      <div class="stat-card"><div class="stat-icon success"><i class="fa-solid fa-check-circle"></i></div><div><div class="stat-value">${completed}</div><div class="stat-label">Completed</div></div></div>
+      <div class="stat-card"><div class="stat-icon gold"><i class="fa-solid fa-envelope"></i></div><div><div class="stat-value">${activeCorr}</div><div class="stat-label">Active Files</div></div></div>
     </div>
-    <div class="section-header"><div class="section-title">My Assigned Tasks</div></div>
-    <div class="card" style="padding:0">
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>S.No</th><th>Task</th><th>Priority</th><th>Status</th><th>Due</th></tr></thead>
-          <tbody>
-            ${myTasks.length === 0 ? '<tr><td colspan="5"><div class="empty-state"><i class="fa-solid fa-clipboard"></i><p>No tasks assigned yet</p></div></td></tr>' :
-              myTasks.map(t=>`<tr>
-                <td><strong>${t.Serial_No||'—'}</strong></td>
-                <td>${t.Task_Title||'—'}</td>
-                <td>${priorityBadge(t.Priority)}</td>
-                <td>${statusBadge(t.Status)}</td>
-                <td>${formatDate(t.Due_Date)}</td>
-              </tr>`).join('')}
-          </tbody>
-        </table>
+
+    <div class="section-header"><div class="section-title">My Assigned Tasks (${myTasks.length})</div></div>
+    <div class="card" style="padding:0;margin-bottom:16px">
+      <div class="table-wrap"><table>
+        <thead><tr><th>S.No</th><th>Task</th><th>Category</th><th>Priority</th><th>Status</th><th>Due Date</th><th>Assigned By</th></tr></thead>
+        <tbody>${myTasks.length === 0
+          ? '<tr><td colspan="7"><div class="empty-state"><i class="fa-solid fa-clipboard"></i><p>No tasks assigned yet</p></div></td></tr>'
+          : myTasks.map(t => `<tr>
+              <td><strong>${t.Serial_No||'—'}</strong></td>
+              <td>${t.Task_Title||'—'}</td>
+              <td>${t.Category||'—'}</td>
+              <td>${priorityBadge(t.Priority)}</td>
+              <td>${statusBadge(t.Status)}</td>
+              <td>${formatDate(t.Due_Date)}</td>
+              <td>${t.Assigned_By||'—'}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table></div>
+    </div>
+
+    <div class="section-header"><div class="section-title">My Correspondence (${myCorr.length})</div></div>
+    <div class="card" style="padding:0;margin-bottom:16px">
+      <div class="table-wrap"><table>
+        <thead><tr><th>S.No</th><th>Type</th><th>Subject</th><th>Current Stage</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody>${myCorr.length === 0
+          ? '<tr><td colspan="6"><div class="empty-state"><i class="fa-solid fa-envelope"></i><p>No correspondence allocated</p></div></td></tr>'
+          : myCorr.map(c => `<tr>
+              <td><strong>${c.Serial_No||'—'}</strong></td>
+              <td>${corrTypeBadge ? corrTypeBadge(c.Type) : (c.Type||'—')}</td>
+              <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.Subject||'—'}</td>
+              <td>${stageBadge ? stageBadge(c.Current_Stage) : (c.Current_Stage||'—')}</td>
+              <td>${statusBadge(c.Status)}</td>
+              <td>${formatDate(c.Date)}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table></div>
+    </div>
+
+    ${myIGP.length > 0 ? `
+    <div class="section-header"><div class="section-title">My IGP Works (${myIGP.length})</div></div>
+    <div class="card" style="padding:0;margin-bottom:16px">
+      <div class="table-wrap"><table>
+        <thead><tr><th>S.No</th><th>Work Title</th><th>Priority</th><th>Status</th><th>Due Date</th></tr></thead>
+        <tbody>${myIGP.map(w => `<tr>
+          <td><strong>${w.Serial_No||'—'}</strong></td>
+          <td>${w.Work_Title||'—'}</td>
+          <td>${priorityBadge(w.Priority)}</td>
+          <td>${statusBadge(w.Status)}</td>
+          <td>${formatDate(w.Due_Date)}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    </div>` : ''}
+
+    <!-- Profile Edit Modal -->
+    <div id="profileEditModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;align-items:center;justify-content:center">
+      <div class="card" style="width:100%;max-width:420px;margin:20px">
+        <div class="section-header"><div class="section-title"><i class="fa-solid fa-pen"></i> Edit My Details</div></div>
+        <div style="margin-top:12px;display:flex;flex-direction:column;gap:10px">
+          <div><label style="font-size:12px;color:var(--text3)">Phone (Login ID — read only)</label>
+            <input id="pePhone" value="${me.Phone||currentUser.phone||''}" readonly style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text3)"></div>
+          <div><label style="font-size:12px;color:var(--text3)">Gmail</label>
+            <input id="peGmail" value="${me.Gmail||currentUser.email||''}" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text1)"></div>
+          <div><label style="font-size:12px;color:var(--text3)">Assigned Projects</label>
+            <input id="peProjects" value="${me.Assigned_Projects||''}" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text1)"></div>
+          <div style="display:flex;gap:10px;margin-top:8px">
+            <button onclick="saveProfileEdit()" class="btn-primary" style="flex:1"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+            <button onclick="document.getElementById('profileEditModal').style.display='none'" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);cursor:pointer">Cancel</button>
+          </div>
+        </div>
       </div>
     </div>`;
+}
+
+function openProfileEditModal() {
+  document.getElementById('profileEditModal').style.display = 'flex';
+}
+
+async function saveProfileEdit() {
+  const phone = currentUser.phone;
+  const staff = allData.staff || [];
+  const idx   = staff.findIndex(s => String(s.Phone || '').trim() === String(phone).trim());
+  if (idx === -1) { showToast('Profile not found in sheet', 'error'); return; }
+  const me = staff[idx];
+  me.Gmail             = document.getElementById('peGmail').value.trim();
+  me.Assigned_Projects = document.getElementById('peProjects').value.trim();
+  const rowData = [
+    me.Staff_ID||'', me.Full_Name||'', me.Rank||'', me.Badge_No||'',
+    me.Gender||'', me.Gmail, me.Phone||'', me.Date_Joined||'',
+    me.Status||'Active', me.Profile_Photo_URL||'', me.Assigned_Projects,
+    me.District_Assigned||'', me.Reporting_Officer||'', me.Created_Date||''
+  ];
+  await fetch(RELAY_URL, {
+    method: 'POST', mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sheet: 'Staff_Master', action: 'update', row: idx + 2, col: 1, data: rowData })
+  });
+  document.getElementById('profileEditModal').style.display = 'none';
+  showToast('Profile updated!', 'success');
+  renderProfile();
 }
 
 // ============================================================
@@ -3213,24 +3320,18 @@ function renderStaffManagement() {
     return;
   }
 
-  tbody.innerHTML = staff.map((s, i) => 
+  tbody.innerHTML = staff.map((s, i) =>
     '<tr>' +
     '<td>' + (i + 1) + '</td>' +
-    '<td><strong>' + 
-      (s.Full_Name || '—') + 
-    '</strong></td>' +
+    '<td><strong>' + (s.Full_Name || '—') + '</strong></td>' +
     '<td>' + (s.Rank || '—') + '</td>' +
     '<td>' + (s.Phone || '—') + '</td>' +
     '<td>' + (s.Gender || '—') + '</td>' +
     '<td>' + (s.Badge_No || '—') + '</td>' +
     '<td>' + statusBadge(s.Status) + '</td>' +
     '<td><div class="row-actions">' +
-    '<button class="action-btn" ' +
-    'onclick="editStaff(' + i + ',' + 
-    JSON.stringify(s).replace(/"/g, '&quot;').replace(/'/g,"\\'") + 
-    ')" title="Edit">' +
-    '<i class="fa-solid fa-pen"></i>' +
-    '</button>' +
+    '<button class="action-btn" onclick="editStaff(' + i + ',' + JSON.stringify(s).replace(/"/g,'&quot;').replace(/'/g,"\\'") + ')" title="Edit"><i class="fa-solid fa-pen"></i></button>' +
+    '<button class="action-btn" onclick="deleteStaff(' + i + ',\'' + (s.Full_Name||'').replace(/'/g,"\\'") + '\')" title="Delete" style="color:var(--danger)"><i class="fa-solid fa-trash"></i></button>' +
     '</div></td>' +
     '</tr>'
   ).join('');
@@ -3267,12 +3368,8 @@ function renderStaffMgmt() {
       '<td>' + (s.Badge_No || '—') + '</td>' +
       '<td>' + statusBadge(s.Status) + '</td>' +
       '<td><div class="row-actions">' +
-      '<button class="action-btn" ' +
-      'onclick="editStaff(' + (realIndex !== -1 ? realIndex : i) + ',' + 
-      JSON.stringify(s).replace(/"/g, '&quot;').replace(/'/g,"\\'") + 
-      ')" title="Edit">' +
-      '<i class="fa-solid fa-pen"></i>' +
-      '</button>' +
+      '<button class="action-btn" onclick="editStaff(' + (realIndex !== -1 ? realIndex : i) + ',' + JSON.stringify(s).replace(/"/g,'&quot;').replace(/'/g,"\\'") + ')" title="Edit"><i class="fa-solid fa-pen"></i></button>' +
+      '<button class="action-btn" onclick="deleteStaff(' + (realIndex !== -1 ? realIndex : i) + ',\'' + (s.Full_Name||'').replace(/'/g,"\\'") + '\')" title="Delete" style="color:var(--danger)"><i class="fa-solid fa-trash"></i></button>' +
       '</div></td>' +
       '</tr>';
   }).join('');
@@ -3444,6 +3541,30 @@ async function clearAllStaff() {
   renderStaffManagement();
   updateAllDropdowns();
   showToast('All staff cleared. Please add staff again.', 'success');
+}
+
+async function deleteStaff(rowIndex, staffName) {
+  if (!confirm('Delete ' + staffName + '? This cannot be undone.')) return;
+  showToast('Deleting ' + staffName + '...', 'info');
+  // Remove from UI immediately
+  allData.staff = (allData.staff || []).filter((_, i) => i !== rowIndex);
+  renderStaffManagement();
+  updateAllDropdowns();
+  try {
+    await fetch(RELAY_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sheet: 'Staff_Master', action: 'delete', row: rowIndex + 2 })
+    });
+    await new Promise(r => setTimeout(r, 3000));
+    await loadAllData();
+    renderStaffManagement();
+    updateAllDropdowns();
+    showToast(staffName + ' deleted successfully!', 'success');
+  } catch(err) {
+    showToast('Delete failed. Try again.', 'error');
+  }
 }
 
 async function toggleStaffStatus(index) {
