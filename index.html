@@ -2049,7 +2049,8 @@ function initApp() {
   });
 
   startClock();
-  document.getElementById('punchUserName').textContent = currentUser.name;
+  const punchEl = document.getElementById('punchUserName');
+  if (punchEl) punchEl.textContent = currentUser.name;
   loadStaffList();
   loadAllData();
   showScreen('dashboard');
