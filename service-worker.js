@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ap-police-ts-v1';
+const CACHE_NAME = 'ap-police-ts-v2';
 
 const ASSETS_TO_CACHE = [
   'index.html',
