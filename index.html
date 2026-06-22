@@ -645,7 +645,7 @@ select[multiple] option:selected {
    ============================================================ */
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-  z-index: 1000; display: flex; align-items: center; justify-content: center;
+  z-index: 1000; align-items: center; justify-content: center;
   padding: 20px; display: none;
 }
 .modal-overlay.open { display: flex; }
@@ -712,7 +712,7 @@ select[multiple] option:selected {
   .content-area { padding: 14px 14px 70px; }
   .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .heart-grid { grid-template-columns: 1fr; }
-.form-grid { grid-template-columns: 1fr; }
+  .form-grid { grid-template-columns: 1fr; }
   .topbar-title { font-size: 15px; }
 }
 @media (min-width: 769px) {
@@ -793,6 +793,54 @@ select[multiple] option:selected {
   color: var(--text1); font-size: 12px; outline: none;
 }
 .date-filter-row input[type="date"]:focus { border-color: var(--navy); }
+
+/* ============================================================
+   LOADING BUTTON & SKELETON & NOTIFICATIONS
+   ============================================================ */
+.login-btn.btn-loading { opacity: 0.7; cursor: not-allowed; pointer-events: none; }
+.skeleton {
+  width: 60px;
+  height: 28px;
+  border-radius: 6px;
+  display: inline-block;
+  background: linear-gradient(90deg, var(--bg3) 25%, var(--border) 50%, var(--bg3) 75%);
+  background-size: 200% 100%;
+  animation: loading-shimmer 1.5s infinite;
+  color: transparent !important;
+}
+@keyframes loading-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.notif-dropdown {
+  position: absolute; right: 0; top: 100%; margin-top: 8px;
+  width: 320px; background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  z-index: 999; overflow: hidden; text-align: left;
+}
+.notif-dropdown-header {
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+  background: var(--bg3); color: var(--text1); font-weight: 600;
+}
+.notif-dropdown-header h3 { font-size: 14px; margin: 0; font-family: 'Rajdhani', sans-serif; font-weight: 700; }
+.notif-dropdown-body { max-height: 250px; overflow-y: auto; }
+.notif-item {
+  display: flex; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border);
+  transition: background 0.2s; cursor: pointer;
+}
+.notif-item:hover { background: var(--bg3); }
+.notif-item:last-child { border-bottom: none; }
+.notif-icon { color: var(--navy); font-size: 16px; display: flex; align-items: center; justify-content: center; width: 24px; }
+.notif-content { display: flex; flex-direction: column; gap: 2px; }
+.notif-title { font-size: 12px; color: var(--text1); line-height: 1.4; text-align: left; }
+.notif-time { font-size: 10px; color: var(--text3); text-align: left; }
+.notif-dropdown-footer { padding: 8px; border-top: 1px solid var(--border); text-align: center; background: var(--bg2); }
+.notif-clear-btn {
+  background: none; border: none; color: var(--navy); font-size: 12px; font-weight: 600;
+  cursor: pointer; width: 100%; padding: 6px; border-radius: 6px; transition: background 0.2s;
+}
+.notif-clear-btn:hover { background: var(--bg3); }
+
 </style>
 </head>
 <body>
@@ -824,7 +872,7 @@ select[multiple] option:selected {
     <button class="login-btn" id="loginBtn" onclick="doLogin()">
       <i class="fa-solid fa-right-to-bracket"></i> &nbsp;SIGN IN
     </button>
-    <div class="login-error" id="loginError">Invalid phone number or password. Default password: 1111</div>
+    <div class="login-error" id="loginError">Invalid phone number or password. Please try again.</div>
     <div class="login-footer">AP POLICE TECHNICAL SERVICES &nbsp;•&nbsp; MANGALAGIRI, ANDHRA PRADESH</div>
   </div>
 </div>
@@ -851,34 +899,27 @@ select[multiple] option:selected {
 
       <div class="sidebar-nav">
         <div class="nav-section-label">Main</div>
-        <div class="nav-item active" onclick="showScreen('dashboard')">
+        <div class="nav-item active" onclick="showScreen('dashboard')" role="button" tabindex="0">
           <i class="fa-solid fa-gauge-high"></i><span>Dashboard</span>
         </div>
-        <div class="nav-item" onclick="showScreen('profile')">
+        <div class="nav-item" onclick="showScreen('profile')" role="button" tabindex="0">
           <i class="fa-solid fa-circle-user"></i><span>My Profile</span>
         </div>
 
         <div class="nav-section-label" style="margin-top:8px">❤ Command Centre</div>
-        <div class="nav-item heart-item" onclick="showScreen('command')">
-          <i class="fa-solid fa-clipboard-list"></i><span>Command Register</span>
-          <span class="nav-badge" id="cmdBadge">0</span>
+        <div class="nav-item heart-item" onclick="showScreen('hub')" role="button" tabindex="0">
+          <i class="fa-solid fa-layer-group"></i><span>Command & Correspondence Hub</span>
+          <span class="nav-badge" id="hubBadge">0</span>
         </div>
-        <div class="nav-item heart-item" onclick="showScreen('correspondence')">
-          <i class="fa-solid fa-envelope-open-text"></i><span>Correspondence</span>
-          <span class="nav-badge" id="corrBadge">0</span>
-        </div>
-        <div class="nav-item heart-item" onclick="showScreen('igpworks')">
-          <i class="fa-solid fa-star"></i><span>IGP Command Works</span>
-        </div>
-        <div class="nav-item heart-item" onclick="showScreen('vc')">
+        <div class="nav-item heart-item" onclick="showScreen('vc')" role="button" tabindex="0">
           <i class="fa-solid fa-video"></i><span>Conf & Meetings</span>
         </div>
 
         <div class="nav-section-label" style="margin-top:8px">Admin</div>
-        <div class="nav-item" id="staffMgmtNavItem" onclick="showScreen('staff-management')" style="display:none">
+        <div class="nav-item" id="staffMgmtNavItem" onclick="showScreen('staff-management')" style="display:none" role="button" tabindex="0">
           <i class="fa-solid fa-users-gear"></i><span>Staff Management</span>
         </div>
-        <div class="nav-item" onclick="doLogout()">
+        <div class="nav-item" onclick="doLogout()" role="button" tabindex="0">
           <i class="fa-solid fa-right-from-bracket"></i><span>Logout</span>
         </div>
       </div>
@@ -898,20 +939,53 @@ select[multiple] option:selected {
     <div class="main-area">
       <!-- TOPBAR -->
       <div class="topbar">
-        <button class="topbar-toggle" onclick="toggleSidebar()">
+        <button class="topbar-toggle" onclick="toggleSidebar()" aria-label="Toggle sidebar">
           <i class="fa-solid fa-bars"></i>
         </button>
         <div class="topbar-title" id="topbarTitle">Dashboard</div>
         <div class="topbar-actions">
           <span class="admin-badge" id="adminBadge">ADMIN</span>
-          <button class="topbar-btn" onclick="refreshData()" title="Refresh">
+          <button class="topbar-btn" onclick="refreshData()" title="Refresh" aria-label="Refresh data">
             <i class="fa-solid fa-rotate-right"></i>
           </button>
-          <button class="topbar-btn" title="Notifications">
-            <i class="fa-solid fa-bell"></i>
-            <span class="notif-dot"></span>
-          </button>
-          <div class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle theme">
+          <div style="position: relative; display: flex; align-items: center;">
+            <button class="topbar-btn" id="notifBellBtn" onclick="toggleNotifDropdown(event)" title="Notifications" aria-label="Notifications">
+              <i class="fa-solid fa-bell"></i>
+              <span class="notif-dot" id="notifDot"></span>
+            </button>
+            <div class="notif-dropdown" id="notifDropdown" style="display: none;">
+              <div class="notif-dropdown-header">
+                <h3>Notifications</h3>
+              </div>
+              <div class="notif-dropdown-body">
+                <div class="notif-item" onclick="event.stopPropagation()">
+                  <div class="notif-icon"><i class="fa-solid fa-circle-check"></i></div>
+                  <div class="notif-content">
+                    <div class="notif-title">Duty roster updated for next week</div>
+                    <div class="notif-time">10 mins ago</div>
+                  </div>
+                </div>
+                <div class="notif-item" onclick="event.stopPropagation()">
+                  <div class="notif-icon"><i class="fa-solid fa-clipboard-list"></i></div>
+                  <div class="notif-content">
+                    <div class="notif-title">New task assigned by IGP Office</div>
+                    <div class="notif-time">2 hours ago</div>
+                  </div>
+                </div>
+                <div class="notif-item" onclick="event.stopPropagation()">
+                  <div class="notif-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                  <div class="notif-content">
+                    <div class="notif-title">Urgent meeting scheduled at 3 PM</div>
+                    <div class="notif-time">1 day ago</div>
+                  </div>
+                </div>
+              </div>
+              <div class="notif-dropdown-footer">
+                <button class="notif-clear-btn" onclick="clearNotifications(event)">Mark all read</button>
+              </div>
+            </div>
+          </div>
+          <div class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle theme" role="button" tabindex="0" aria-label="Toggle dark/light theme">
             <div class="theme-toggle-knob" id="themeKnob">
               <i class="fa-solid fa-moon" id="themeIcon"></i>
             </div>
@@ -938,19 +1012,15 @@ select[multiple] option:selected {
           <div class="stats-grid" id="dashStats">
             <div class="stat-card" style="cursor:default">
               <div class="stat-icon success"><i class="fa-solid fa-id-badge"></i></div>
-              <div><div class="stat-value" id="statStaff">—</div><div class="stat-label">Total Staff</div></div>
+              <div><div class="stat-value skeleton" id="statStaff"></div><div class="stat-label">Total Staff</div></div>
             </div>
-            <div class="stat-card" onclick="showScreen('command')">
-              <div class="stat-icon heart"><i class="fa-solid fa-clipboard-list"></i></div>
-              <div><div class="stat-value" id="statPending">—</div><div class="stat-label">Active Tasks</div></div>
+            <div class="stat-card" onclick="showScreen('hub')" role="button" tabindex="0">
+              <div class="stat-icon heart"><i class="fa-solid fa-layer-group"></i></div>
+              <div><div class="stat-value skeleton" id="statHub"></div><div class="stat-label">Hub Items</div></div>
             </div>
-            <div class="stat-card" onclick="showScreen('correspondence')">
-              <div class="stat-icon gold"><i class="fa-solid fa-envelope-open-text"></i></div>
-              <div><div class="stat-value" id="statCorr">—</div><div class="stat-label">Active Correspondence</div></div>
-            </div>
-            <div class="stat-card" onclick="showScreen('vc')">
+            <div class="stat-card" onclick="showScreen('vc')" role="button" tabindex="0">
               <div class="stat-icon info"><i class="fa-solid fa-video"></i></div>
-              <div><div class="stat-value" id="statVC">—</div><div class="stat-label">Upcoming VCs</div></div>
+              <div><div class="stat-value skeleton" id="statVC"></div><div class="stat-label">Upcoming VCs</div></div>
             </div>
           </div>
           
@@ -960,49 +1030,21 @@ select[multiple] option:selected {
             <div class="section-title"><span class="heart-dot"></span> Command Centre — Heart Modules</div>
           </div>
           <div class="heart-grid">
-            <div class="heart-module-card" onclick="showScreen('command')">
+            <div class="heart-module-card" onclick="showScreen('hub')" role="button" tabindex="0">
               <div class="heart-module-header">
-                <div class="heart-module-icon"><i class="fa-solid fa-clipboard-list"></i></div>
-                <div><div class="heart-module-title">Command Register</div><div class="heart-module-sub">Work Assignments Hub</div></div>
+                <div class="heart-module-icon"><i class="fa-solid fa-layer-group"></i></div>
+                <div><div class="heart-module-title">Command & Correspondence Hub</div><div class="heart-module-sub">Command Register · Correspondence · IGP Works</div></div>
               </div>
               <div class="heart-module-body">
                 <div class="heart-stat-row">
-                  <div class="heart-stat"><div class="heart-stat-val" id="hCmdTotal">—</div><div class="heart-stat-lbl">Total</div></div>
-                  <div class="heart-stat"><div class="heart-stat-val" id="hCmdPending">—</div><div class="heart-stat-lbl">Pending</div></div>
-                  <div class="heart-stat"><div class="heart-stat-val" id="hCmdDone">—</div><div class="heart-stat-lbl">Completed</div></div>
+                  <div class="heart-stat"><div class="heart-stat-val skeleton" id="hCmdPending"></div><div class="heart-stat-lbl">Tasks</div></div>
+                  <div class="heart-stat"><div class="heart-stat-val skeleton" id="hCorrActive"></div><div class="heart-stat-lbl">Letters</div></div>
+                  <div class="heart-stat"><div class="heart-stat-val skeleton" id="hIGPPending"></div><div class="heart-stat-lbl">IGP Works</div></div>
                 </div>
               </div>
-              <div class="heart-module-footer"><span>Track all work assignments</span><button class="open-btn">Open →</button></div>
+              <div class="heart-module-footer"><span>Unified Operations Tracker</span><button class="open-btn" role="button" tabindex="0">Open →</button></div>
             </div>
-            <div class="heart-module-card" onclick="showScreen('correspondence')">
-              <div class="heart-module-header">
-                <div class="heart-module-icon"><i class="fa-solid fa-envelope-open-text"></i></div>
-                <div><div class="heart-module-title">Correspondence Tracker</div><div class="heart-module-sub">Drafts · Letters · Notes · Radio</div></div>
-              </div>
-              <div class="heart-module-body">
-                <div class="heart-stat-row">
-                  <div class="heart-stat"><div class="heart-stat-val" id="hCorrTotal">—</div><div class="heart-stat-lbl">Total</div></div>
-                  <div class="heart-stat"><div class="heart-stat-val" id="hCorrActive">—</div><div class="heart-stat-lbl">Active</div></div>
-                  <div class="heart-stat"><div class="heart-stat-val" id="hCorrDone">—</div><div class="heart-stat-lbl">Completed</div></div>
-                </div>
-              </div>
-              <div class="heart-module-footer"><span>Full file movement trail</span><button class="open-btn">Open →</button></div>
-            </div>
-            <div class="heart-module-card" onclick="showScreen('igpworks')">
-              <div class="heart-module-header">
-                <div class="heart-module-icon"><i class="fa-solid fa-star"></i></div>
-                <div><div class="heart-module-title">IGP Command Works</div><div class="heart-module-sub">IGP-Allotted Priority Works</div></div>
-              </div>
-              <div class="heart-module-body">
-                <div class="heart-stat-row">
-                  <div class="heart-stat"><div class="heart-stat-val" id="hIGPTotal">—</div><div class="heart-stat-lbl">Total</div></div>
-                  <div class="heart-stat"><div class="heart-stat-val" id="hIGPPending">—</div><div class="heart-stat-lbl">Pending</div></div>
-                  <div class="heart-stat"><div class="heart-stat-val" id="hIGPDone">—</div><div class="heart-stat-lbl">Completed</div></div>
-                </div>
-              </div>
-              <div class="heart-module-footer"><span>Officers & Admin only</span><button class="open-btn">Open →</button></div>
-            </div>
-            <div class="heart-module-card" onclick="showScreen('vc')">
+            <div class="heart-module-card" onclick="showScreen('vc')" role="button" tabindex="0">
               <div class="heart-module-header">
                 <div class="heart-module-icon"><i class="fa-solid fa-video"></i></div>
                 <div><div class="heart-module-title">Conference & Meetings Hub</div><div class="heart-module-sub">VC Schedule · History · Speakers</div></div>
@@ -1014,7 +1056,7 @@ select[multiple] option:selected {
                   <div class="heart-stat"><div class="heart-stat-val" id="hVCPostponed">—</div><div class="heart-stat-lbl">Postponed</div></div>
                 </div>
               </div>
-              <div class="heart-module-footer"><span>All ranks can enter VCs</span><button class="open-btn">Open →</button></div>
+              <div class="heart-module-footer"><span>All ranks can enter VCs</span><button class="open-btn" role="button" tabindex="0">Open →</button></div>
             </div>
           </div>
 
@@ -1058,8 +1100,22 @@ select[multiple] option:selected {
           </div>
         </div>
 
-        <!-- ====== COMMAND REGISTER ====== -->
-        <div class="screen" id="screen-command">
+        <!-- ====== COMMAND & CORRESPONDENCE HUB ====== -->
+        <div class="screen" id="screen-hub">
+          <div class="page-header">
+            <h1><i class="fa-solid fa-layer-group" style="color:var(--heart)"></i> Command & Correspondence Hub</h1>
+            <p>❤ Heart Module — Unified Operations Tracker</p>
+          </div>
+
+          <div class="tab-pills" style="margin-bottom: 20px;">
+            <div class="tab-pill active" id="pill-hub-command" onclick="switchHubTab('command')" role="button" tabindex="0">📋 Command Register</div>
+            <div class="tab-pill" id="pill-hub-correspondence" onclick="switchHubTab('correspondence')" role="button" tabindex="0">✉️ Correspondence</div>
+            <div class="tab-pill" id="pill-hub-igpworks" onclick="switchHubTab('igpworks')" role="button" tabindex="0" style="display:none">⭐ IGP Works</div>
+          </div>
+
+          <!-- Tab Content Sections -->
+          <div id="tab-hub-command" class="hub-tab-content">
+            
           <div class="page-header">
             <h1><i class="fa-solid fa-clipboard-list" style="color:var(--heart)"></i> Command Register</h1>
             <p>❤ Heart Module — All work assignments tracked here</p>
@@ -1082,11 +1138,11 @@ select[multiple] option:selected {
               Export
             </button>
           </div>
-          <div class="tab-pills">
-            <div class="tab-pill heart-pill active" onclick="filterCommand('all',this)">All</div>
-            <div class="tab-pill heart-pill" onclick="filterCommand('Pending',this)">Pending</div>
-            <div class="tab-pill heart-pill" onclick="filterCommand('In Progress',this)">In Progress</div>
-            <div class="tab-pill heart-pill" onclick="filterCommand('Completed',this)">Completed</div>
+          <div class="tab-pills command-pills">
+            <div class="tab-pill heart-pill active" role="button" tabindex="0" onclick="filterCommand('all',this)">All</div>
+            <div class="tab-pill heart-pill" role="button" tabindex="0" onclick="filterCommand('Pending',this)">Pending</div>
+            <div class="tab-pill heart-pill" role="button" tabindex="0" onclick="filterCommand('In Progress',this)">In Progress</div>
+            <div class="tab-pill heart-pill" role="button" tabindex="0" onclick="filterCommand('Completed',this)">Completed</div>
           </div>
           <div class="project-filter-bar" 
             style="display:flex;gap:6px;
@@ -1148,10 +1204,12 @@ select[multiple] option:selected {
               </table>
             </div>
           </div>
-        </div>
+        
+          </div>
 
-        <!-- ====== CORRESPONDENCE TRACKER ====== -->
-        <div class="screen" id="screen-correspondence">
+          <div id="tab-hub-correspondence" class="hub-tab-content" style="display:none">
+            
+        
           <div class="page-header">
             <h1><i class="fa-solid fa-envelope-open-text" style="color:var(--heart)"></i> Correspondence Tracker</h1>
             <p>❤ Heart Module — Drafts · Letters · Notes · Radio Messages · eOffice</p>
@@ -1174,14 +1232,14 @@ select[multiple] option:selected {
               Export
             </button>
           </div>
-          <div class="tab-pills">
-            <div class="tab-pill heart-pill active" onclick="filterCorr('all',this)">All</div>
-            <div class="tab-pill heart-pill" onclick="filterCorr('Active',this)">Active</div>
-            <div class="tab-pill heart-pill" onclick="filterCorr('Completed',this)">Completed</div>
-            <div class="tab-pill heart-pill" onclick="filterCorr('Draft',this)">Drafts</div>
-            <div class="tab-pill heart-pill" onclick="filterCorr('Letter',this)">Letters</div>
-            <div class="tab-pill heart-pill" onclick="filterCorr('Note File',this)">Note Files</div>
-            <div class="tab-pill heart-pill" onclick="filterCorr('Radio Message',this)">Radio Messages</div>
+          <div class="tab-pills corr-pills">
+            <div class="tab-pill heart-pill active" role="button" tabindex="0" onclick="filterCorr('all',this)">All</div>
+            <div class="tab-pill heart-pill" role="button" tabindex="0" onclick="filterCorr('Active',this)">Active</div>
+            <div class="tab-pill heart-pill" role="button" tabindex="0" onclick="filterCorr('Completed',this)">Completed</div>
+            <div class="tab-pill heart-pill" role="button" tabindex="0" onclick="filterCorr('Draft',this)">Drafts</div>
+            <div class="tab-pill heart-pill" role="button" tabindex="0" onclick="filterCorr('Letter',this)">Letters</div>
+            <div class="tab-pill heart-pill" role="button" tabindex="0" onclick="filterCorr('Note File',this)">Note Files</div>
+            <div class="tab-pill heart-pill" role="button" tabindex="0" onclick="filterCorr('Radio Message',this)">Radio Messages</div>
           </div>
           <div class="project-filter-bar" 
             style="display:flex;gap:6px;
@@ -1230,10 +1288,12 @@ select[multiple] option:selected {
               </table>
             </div>
           </div>
-        </div>
+        
+          </div>
 
-        <!-- ====== IGP COMMAND WORKS ====== -->
-        <div class="screen" id="screen-igpworks">
+          <div id="tab-hub-igpworks" class="hub-tab-content" style="display:none">
+            
+        
           <div class="page-header">
             <h1><i class="fa-solid fa-star" style="color:var(--gold)"></i> IGP Command Works</h1>
             <p>❤ Heart Module — Works directly allotted by IGP Sir</p>
@@ -1256,12 +1316,12 @@ select[multiple] option:selected {
               Export
             </button>
           </div>
-          <div class="tab-pills">
-            <div class="tab-pill heart-pill active" onclick="filterIGP('all',this)">All</div>
-            <div class="tab-pill heart-pill" onclick="filterIGP('Pending',this)">Pending</div>
-            <div class="tab-pill heart-pill" onclick="filterIGP('In Progress',this)">In Progress</div>
-            <div class="tab-pill heart-pill" onclick="filterIGP('Completed',this)">Completed</div>
-            <div class="tab-pill heart-pill" onclick="filterIGP('Escalated',this)">Escalated</div>
+          <div class="tab-pills igp-pills">
+            <div class="tab-pill heart-pill active" role="button" tabindex="0" onclick="filterIGP('all',this)">All</div>
+            <div class="tab-pill heart-pill" role="button" tabindex="0" onclick="filterIGP('Pending',this)">Pending</div>
+            <div class="tab-pill heart-pill" role="button" tabindex="0" onclick="filterIGP('In Progress',this)">In Progress</div>
+            <div class="tab-pill heart-pill" role="button" tabindex="0" onclick="filterIGP('Completed',this)">Completed</div>
+            <div class="tab-pill heart-pill" role="button" tabindex="0" onclick="filterIGP('Escalated',this)">Escalated</div>
           </div>
           <div class="project-filter-bar" 
             style="display:flex;gap:6px;
@@ -1310,8 +1370,9 @@ select[multiple] option:selected {
               </table>
             </div>
           </div>
+        
+          </div>
         </div>
-
         <!-- ====== VC SCHEDULE ====== -->
         <div class="screen" id="screen-vc">
           <div class="page-header">
@@ -1836,16 +1897,12 @@ select[multiple] option:selected {
      JAVASCRIPT
      ============================================================ -->
 <script>
-// ============================================================
-// CONFIG
-// ============================================================
+/* === CONFIG & STATE === */
 const RELAY_URL = 'https://script.google.com/macros/s/AKfycbx_TbS9YF-XXnm1wOQVFH7_UveazRuzB-i2LKhNcA5Uvs2KTPiMjMTTGmng1axQuuXc1g/exec';
 const ADMIN_PHONE = '9493946020';
 const ADMIN_PASS  = '8421';
 const STAFF_PASS  = '1111';
-
 const OFFICER_RANKS = ['IGP','DIG','SP','AddSP','DySP','CI','SI','RSI','Inspector'];
-
 let currentUser = null;
 let allData = {};
 let staffListCache = null;
@@ -1860,7 +1917,6 @@ let currentVCProject = 'all';
 let editContext = null;
 let stageContext = null;
 let postponeContext = null;
-
 const CORR_STAGES = [
   'Draft Work Allocated',
   'Draft in Progress',
@@ -1873,75 +1929,89 @@ const CORR_STAGES = [
   'Completed',
   'Filed'
 ];
+const PROJECTS = [
+  'MedLEaPR',
+  'NATGRID',
+  'CCTNS',
+  'Citizen Portal',
+  'eSakshya',
+  'eSummons',
+  'CriMAC',
+  'CEIR',
+  'ICJS',
+  'eOffice',
+  'APOLIS',
+  'Drone',
+  'Dial112',
+  'CCTV360AI',
+  'News360AI',
+  'General/Other'
+];
+const PROJECT_COLORS = {
+  'MedLEaPR':       '#0d3b7a',
+  'NATGRID':        '#7b0d0d',
+  'CCTNS':          '#1a5276',
+  'Citizen Portal': '#145a32',
+  'eSakshya':       '#6e2fa0',
+  'eSummons':       '#784212',
+  'CriMAC':         '#922b21',
+  'CEIR':           '#1a5276',
+  'ICJS':           '#0e6655',
+  'eOffice':        '#b7770d',
+  'APOLIS':         '#1f618d',
+  'Drone':          '#117a65',
+  'Dial112':        '#c0392b',
+  'CCTV360AI':      '#616a6b',
+  'News360AI':      '#2e4057',
+  'General/Other':  '#555555'
+};
+const DASHBOARD_STAFF = [["S1101", "Md. Anwar", "PC", "1773", "Male", "anwar1773@gmail.com", "8639399057", "", "Active", "", "CCTNS Req/Modifications; CCTNS-NCRB/TCS; CCTNS Reports; AP Smart Cops; APCOPS; BSNL DLT; AP Website; Trainings", "Krishna District", "", "2024-01-01"], ["S1102", "L. Trinadha Rao", "PC", "1722", "Male", "trinadh_pcs@appolice.gov.in", "9652881207", "", "Active", "", "CCTNS BSNL Connectivity; iRAD Reports; XDR+SASE; GeM Bid Evaluations; Dispatch; District Coordination", "Tirupati District", "", "2024-01-01"], ["S1103", "A. Ganeswara Rao", "PC", "1705", "Male", "arnipalli17051@gmail.com", "9704347908", "", "Active", "", "CCTNS & Pragathi Reports; AP Website/Suraksha; XDR+SASE; GeM Bid Evaluations; Dispatch; District Coordination", "Tirupati District", "", "2024-01-01"], ["S1104", "B. Siva Srinivas Rao", "PC", "5122", "Male", "sssvas05@gmail.com", "7386104098", "", "Active", "", "CCTNS Application Statistics; AP Smart Cops; AI4AP; GeM Bid Evaluations; Dispatch; District Coordination", "Guntur", "", "2024-01-01"], ["S1105", "D. Aashik", "PC", "3582", "Male", "aashiqkhaleja1@gmail.com", "8639592237", "", "Active", "", "CEIR; GeM Bid Evaluations; District Coordination; Trainings", "NTR District", "", "2024-01-01"], ["S1106", "M. Suneetha", "WPC", "2546", "Female", "suneethacctns@gmail.com", "9948255139", "", "Active", "", "PM Gati Shakti Portal; BSNL DLT & eSMS; GeM Bid Evaluations; Drafting; Trainings; eOffice Follow-up", "Krishna District", "", "2024-01-01"], ["S1107", "PVK. Prasad", "HC(C)", "1649", "Male", "iampvkprasad@gmail.com", "9110300554", "", "Active", "", "NATGRID - Gandiva Portal; E-Forms Approvals; GeM Bid Evaluations; Drafting; Trainings; District Coordination", "Communication", "", "2024-01-01"], ["S1108", "N. Bhanu Hari", "PC(C)", "1871", "Male", "bhanuhari.123@gmail.com", "8309578086", "", "Active", "", "NATGRID - Sudarshan Portal; E-Forms Approvals; GeM Bid Evaluations; Drafting; Trainings; District Coordination", "Communication", "", "2024-01-01"], ["S1109", "Sk. Lal John Basha", "HC(C)", "1806", "Male", "laljanibasha99@gmail.com", "9573180827", "", "Active", "", "NATGRID Gandiva & Sudarshan; Case Approvals/MHA Coordination; GeM Bid Evaluations; Trainings", "Communication", "", "2024-01-01"], ["S1110", "E. Sai Sowmya", "WPC(C)", "1884", "Female", "sowmyacctns@gmail.com", "8317554950", "", "Active", "", "CEIR; GeM Bid Evaluations; Drafting; Office Inward/Outward; Meetings Coordination", "Communication", "", "2024-01-01"], ["S1111", "L. Naveen Babu", "PC", "2950", "Male", "naveenbabu.lingam@gmail.com", "8712345058", "", "Active", "", "CEIR; GeM Bid Evaluations; Drafting; VC/Training Video Uploads; District Coordination; Trainings", "Krishna District", "", "2024-01-01"], ["S1112", "S. Rajasekhar Rao", "PC(C)", "1817", "Male", "rajasekhararao27@gmail.com", "9849583594", "", "Active", "", "CCTNS Helpdesk 24/7; JTrac Bug Tracking; DG DSR; Deletions/Modifications via DSP Login", "Communication", "", "2024-01-01"], ["S1113", "K. Gopi", "PC", "4300", "Male", "gopikavuris43@gmail.com", "9553312439", "", "Active", "", "CCTNS Helpdesk 24/7 Monitoring", "Guntur District", "", "2024-01-01"], ["S1114", "L. Rahul", "PC", "2885", "Male", "rahullanka2@gmail.com", "7095233770", "", "Active", "", "CCTNS Helpdesk 24/7 Monitoring", "Krishna District", "", "2024-01-01"], ["S1115", "K. Sreenu", "PC", "1644", "Male", "sreenu.kellakarrothu@gmail.com", "6301615193", "", "Active", "", "CCTNS Helpdesk 24/7 Monitoring", "Tirupathi", "", "2024-01-01"], ["S1116", "N. Ramanjaneyulu", "PC", "2401", "Male", "nayuduramu332@gmail.com", "9603557975", "", "Active", "", "CriMAC; APCOPS 2.0; eSakshya & eSummons; GeM Bid Evaluations; NCRB Coordination", "Prakasam District", "", "2024-01-01"], ["S1117", "J. Mounika", "WPC", "3786", "Female", "mounikajonnalagadda@gmail.com", "6281029399", "", "Active", "", "eSakshya & eSummons; GeM Bid Evaluations; NCRB Coordination; District Coordination", "NTR District", "", "2024-01-01"], ["S1118", "E. Vasantha Kumari", "WPC", "3762", "Female", "vasu92028@gmail.com", "8730267046", "", "Active", "", "eSakshya & eSummons; GeM Bid Evaluations; NCRB Coordination; District Coordination", "NTR District", "", "2024-01-01"]]
+;
+const DUTIES_MAP = {"8639399057": {"d": "1. Handle CCTNS application requirements and bug reports. 2. Coordinate with NCRB & TCS team on CCTNS issues. 3. Prepare CCTNS reports and presentations as required. 4. Monitor BSNL DLT & eSMS service issues.", "w": "1. Weekly Teleconference Report submission. 2. Update CCTNS statistics. 3. GeM bid evaluation (Pre-Qualification/Technical).", "m": "1. Compile monthly CCTNS performance report. 2. Update project master sheet."}, "9652881207": {"d": "1. Check email dig_pcs@appolice.gov.in and disseminate important mails. 2. Monitor CCTNS BSNL connectivity status. 3. Handle dispatch works and outward correspondence.", "w": "1. Prepare and submit Weekly Teleconference Report. 2. GeM bid evaluation (Pre-Qualification/Technical). 3. Submit iRAD reports.", "m": "1. Update XDR+SASE project status. 2. Review GeM procurement progress."}, "9704347908": {"d": "1. Check email dsp_cctns@appolice.gov.in and cctns_ap@appolice.gov.in; disseminate important mails. 2. Prepare CCTNS & Pragathi daily/status reports. 3. Testing Citizen Portal. 4. Handle dispatch works.", "w": "1. Weekly Teleconference Report on CCTNS and Citizen Portal. 2. GeM bid evaluation (Pre-Qualification/Technical). 3. Update AP Police Website/Suraksha data.", "m": "1. Monthly Pragathi Reports preparation. 2. Update XDR+SASE project details."}, "7386104098": {"d": "1. Check email apsmartcops@appolice.gov.in and disseminate important mails. 2. Compile CCTNS application statistics. 3. Prepare data for News360AI clippings delay reasons. 4. Submit News360AI district-wise Relevant/Not-Relevant feedback DSR. 5. Co-ordinate with PROs and paper clipping persons.", "w": "1. Conduct CCTNS Training classes at APSP 6th BN (3-4 days). 2. Prepare Smart Policing report based on district-wise CCTNS performance evaluation. 3. GeM bid evaluation (Pre-Qualification/Technical).", "m": "1. Co-ordinate and collect data from districts. 2. Co-ordinate and submit data with Sparity Technical Team. 3. AI4AP Police File correspondence."}, "8639592237": {"d": "1. Transfer CEIR requests to other states via CEIR portal. 2. Access CEIR portal to review statistics and generate daily reports. 3. Monitor CEIR NIC email (ceir@appolice.gov.in). 4. Review CEIR Nodal Officers' WhatsApp group for field-level issues. 5. Update CEIR project Excel sheet with progress.", "w": "1. Prepare Smart Policing report based on district-wise CEIR performance. 2. Communicate reports to low-performing and top-performing units. 3. GeM bid evaluation (Pre-Qualification/Technical). 4. Submit Weekly Teleconference Report.", "m": "1. Conduct comparative assessment of state-level CEIR statistics with other states. 2. Update CEIR project master sheet."}, "9948255139": {"d": "1. Maintain and monitor eOffice system for smooth workflow. 2. Handle email cctns_ap@ncrb.gov.in - review, respond, follow up. 3. Monitor PM GatiShakti Portal: track District IT Core Members' user creation; coordinate with NCRB. 4. Check email pmgatishakti@appolice.gov.in and disseminate important mails. 5. Update PM GatiShakti project Excel sheet.", "w": "1. Monitor PM GatiShakti Portal for GIS layer deletions, integration failures, system discrepancies. 2. Monitor BSNL DLT Portal: verify/create templates in ESMS, track message delivery/rejection, resolve issues. 3. Weekly Teleconference Report. 4. GeM bid evaluation.", "m": "1. Update Google Sheets project tracker for PM GatiShakti, BSNL DLT and ESMS."}, "9110300554": {"d": "1. Approval of cases and sensitive searches in GANDIVA portal. 2. Examine and approve VPN service requests under e-forms. 3. Onboard new users: role assignment and MAC ID whitelisting. 4. Resolve user issues and technical problems. 5. Coordinate with NIC VPN team via Service Desk. 6. Prepare and submit daily NATGRID status report. 7. Check emails nodal_pcs@ and asstnodal_pcs@; disseminate important mails. 8. Update NATGRID Gandiva project Excel sheet.", "w": "1. Compile GANDIVA usage data and interact with low-performing units. 2. Monitor inactive/old cases and inform units. 3. Collect and forward system improvement suggestions to NATGRID New Delhi. 4. Weekly Teleconference Report. 5. GeM bid evaluation.", "m": "1. Update Gandiva project master sheet (first week of every month). 2. Collect and share success stories with NATGRID/MHA. 3. Conduct training and refresher sessions for Gandiva users."}, "8309578086": {"d": "1. Check email success_stories_pcs@appolice.gov.in and disseminate important mails. 2. Address NATGRID Sudarshan account and VPN-related issues. 3. Resolve Sudarshan application issues posted in NATGRID State WhatsApp group. 4. Update Sudarshan project Excel sheet.", "w": "1. Coordinate with least-performing units every Thursday to enhance Sudarshan usage. 2. Weekly Teleconference Report. 3. GeM bid evaluation.", "m": "1. Update Sudarshan project master sheet (first week of every month). 2. Prepare list of inactive users in Sudarshan application. 3. Check and action VPN renewals for Sudarshan users."}, "9573180827": {"d": "1. Approval of cases and sensitive searches in GANDIVA. 2. Onboard new users: role assignment and MAC ID whitelisting. 3. Resolve user issues in coordination with NATGRID Delhi. 4. Prepare and submit daily NATGRID status report. 5. Check email natgrid@appolice.gov.in and disseminate important mails. 6. Update NATGRID project Excel sheet.", "w": "1. Generate Gandiva usage report for Smart Policing Dashboard. 2. Review low-performing units; assess performance; ensure corrective measures. 3. Weekly Teleconference Report. 4. GeM bid evaluation.", "m": "1. Update Gandiva project master sheet (first week of every month). 2. Conduct training and refresher sessions for Gandiva users."}, "8317554950": {"d": "1. Check email cctns_ap@ncrb.gov.in and disseminate important mails. 2. Update Meetings Sheet and inform concerned officers about important meetings. 3. Process office inward and outward correspondence. 4. Update CEIR project Excel sheet.", "w": "1. Weekly Teleconference Report. 2. GeM bid evaluation (Pre-Qualification/Technical). 3. Review and clear pending correspondence.", "m": "1. Monthly CEIR project status update. 2. Compile inward/outward register summary."}, "8712345058": {"d": "1. Maintain and monitor eOffice systems for smooth workflow. 2. Handle emails cctns_ap@ncrb.gov.in and technical_services@appolice.gov.in. 3. Verify status of pending/old correspondence; update and dispose per office procedures. 4. Process and transfer CEIR requests to concerned states/UTs. 5. Upload VC/Training/Webinar videos to Google Drive daily. 6. Update CEIR project Excel sheet.", "w": "1. Weekly Teleconference Report. 2. GeM bid evaluation. 3. Dispatch works and drafting. 4. Conduct trainings to units as scheduled.", "m": "1. Monthly CEIR transfer status update in master sheet. 2. Review pending correspondence and close items."}, "9849583594": {"d": "1. Raise CCTNS bugs in JTrac based on user feedback; coordinate with TCS for resolution; inform users. 2. Carry out approved deletions/modifications via DSP login per SOP; log enhancement/change requests. 3. Inform higher officers about important application updates and issues. 4. Prepare and submit Helpdesk daily DSR. 5. Update DG DSR in Google Sheet (ITSSO, NATGRID, E-Summons, E-Sakshya). 6. Check email helpdesk_pcs@appolice.gov.in and disseminate important mails. 7. Update CCTNS Helpdesk project Excel sheet.", "w": "1. Generate weekly report of raised issues in JTrac. 2. Follow up on open/pending bugs with TCS team.", "m": "1. Generate monthly report of raised issues in JTrac. 2. Prepare monthly Helpdesk performance summary."}, "9553312439": {"d": "1. Monitor CCTNS application 24/7 during assigned shift. 2. Log and escalate incidents to Rajasekhar Rao/TCS team. 3. Verify CCTNS portal uptime and respond to user queries.", "w": "1. Handover shift briefing and update helpdesk register.", "m": "1. Submit shift-wise performance note."}, "7095233770": {"d": "1. Monitor CCTNS application 24/7 during assigned shift. 2. Log and escalate incidents to Rajasekhar Rao/TCS team. 3. Verify CCTNS portal uptime and respond to user queries.", "w": "1. Handover shift briefing and update helpdesk register.", "m": "1. Submit shift-wise performance note."}, "6301615193": {"d": "1. Monitor CCTNS application 24/7 during assigned shift. 2. Log and escalate incidents to Rajasekhar Rao/TCS team. 3. Verify CCTNS portal uptime and respond to user queries.", "w": "1. Handover shift briefing and update helpdesk register.", "m": "1. Submit shift-wise performance note."}, "9603557975": {"d": "1. Monitor Zero FIR Report in Cri-MAC; identify new Zero FIRs from other states; inform District IT Core Teams. 2. Provide tech support for daily Cri-MAC issues (login, alert count, email ID); coordinate with Cri-MAC Support and NCRB Delhi. 3. Support all districts in APCOPS 2.0: create admin users, update improperly registered users, resolve queries. 4. Check email apcops_pcs@appolice.gov.in; check Zero FIR alerts in DIG mail; inform concerned personnel. 5. Update ICJS/CriMAC/APCOPS project Excel sheets.", "w": "1. Coordinate with low-performing units every Thursday to improve Cri-MAC usage. 2. Prepare and submit weekly Cri-MAC performance report. 3. Weekly Teleconference Report. 4. GeM bid evaluation.", "m": "1. Prepare monthly list of transferred Zero FIRs; update project master sheet (first week). 2. Update APCOPS 2.0 project details in master sheet (first week)."}, "6281029399": {"d": "1. Coordinate with districts on eSakshya and eSummons issues. 2. Liaise with NCRB for eSakshya/eSummons queries and updates.", "w": "1. Weekly Teleconference Report. 2. GeM bid evaluation. 3. Review eSakshya/eSummons portal performance.", "m": "1. Update eSakshya project master sheet with monthly progress. 2. Compile NCRB coordination summary."}, "8730267046": {"d": "1. Coordinate with districts on eSakshya and eSummons issues. 2. Liaise with NCRB for eSakshya/eSummons queries and updates.", "w": "1. Weekly Teleconference Report. 2. GeM bid evaluation. 3. Review eSummons portal performance.", "m": "1. Update eSummons project master sheet with monthly progress. 2. Compile NCRB coordination summary."}}
+;
+const STAFF_TEMPLATE = [["S1001","K. Vijaya Kumar","SI","","Male","","9440470479","2018-11-23","Active","","APOLIS, Drones, Mee-seva","Guntur Range","","2024-01-01"],["S1002","V.Sheshanjali","PC","","Female","","","","Active","","APOLIS","Guntur Dist","","2024-01-01"],["S1003","CH.Srinivasa Rao","HC","316","Male","","6281861526","2020-01-15","Active","","Drones, APFRS-Biometric, Meeseva","Guntur Dist","","2024-01-01"],["S1004","M.Mohan","SI","","Male","","","","Active","","Data center","","","2024-01-01"],["S1005","K. Sreekanth","RI","","Male","","9491416025","2021-04-04","Active","","Cloud based CCTVs, CCTV in PS, E-Office","APSP","","2024-01-01"],["S1006","T.Koteswararao","PC","1815","Male","","9000640658","2019-01-23","Active","","CCTV in PS","Communication","","2024-01-01"],["S1007","O.Jyothi","WPC","2067","Female","","7674033487","2019-01-23","Active","","Cloud based CCTVs","Communication","","2024-01-01"],["S1008","CH.Venkatesh","PC","741","Male","","8886885859","2022-09-01","Active","","E-Office","Eluru Dist","","2024-01-01"],["S1009","S.Srinivasulu","HC","1610","Male","","7013677239","2024-09-05","Active","","E-Office","Vizianagaram Dist","","2024-01-01"],["S1010","G.Ravi kiran","SI","","Male","","","","Active","","E-challans, ITMS, ERSS-112, Tabs","","","2024-01-01"],["S1011","R.Ramarao","PC","1615","Male","","9441473964","2022-07-26","Active","","ERSS-112 AND TABS, 48 call takers","Tirupathi Dist","","2024-01-01"],["S1012","K.Kiran Vani","WHC","1982","Female","","8977959518","2019-01-23","Active","","E-challans, Brerath Analyzers, Speed Laser guns","Communication","","2024-01-01"],["S1013","P.Ashok Kumar","PC","444","Male","","9160998444","2022-03-26","Active","","E-challans","Palnadu Dist","","2024-01-01"],["S1014","T. Venkata Naidu","RSI","","Male","","6304218129","2022-10-12","Active","","BWC, Women safety (Disha), LHMS","Kadapa Dist","","2024-01-01"],["S1015","CH.Siva Balakrishna","HC","1639","Male","","9491800714","2023-12-17","Active","","BWC, LHMS","Communication","","2024-01-01"],["S1016","R.Kishore","PC","1435","Male","","9666881292","2023-10-01","Active","","Women Safety","6th Battalion","","2024-01-01"],["S1017","E Prasanna","WPC","6872","Female","","9505328763","2025-04-09","Active","","Women Safety","Guntur Dist","","2024-01-01"],["S1018","V.Sudharshana reddy","IC","","Male","","","","Active","","CCTNS","","","2024-01-01"],["S1019","T. Anoj Kumar","RSI","","Male","","9493946020","2024-01-11","Active","","CCTNS, NATGRID, CEIR, BISAG","DAR Srikakulam","","2024-01-01"],["S1020","Ram Koti Naik","ARSI","","Male","","9951929562","2018-03-15","Active","","MTO, 112 Control Room Shift","SCR CPL Amberpet","","2024-01-01"],["S1021","G. Govinda Rao","PC","1146","Male","","9391211030","2024-12-15","Active","","MTO Writer","Tirupati District","","2024-01-01"],["S1022","D. Raviner Babu","HC","917","Male","","8688887707","2022-06-14","Active","","Driver","PTO","","2024-01-01"],["S1023","SK. Silar Vali","HC","997","Male","","9908069956","2019-06-14","Active","","Driver","PTO","","2024-01-01"],["S1024","SK. Riyaz","PC","554","Male","","9493515387","","Active","","Driver","Nellore","","2024-01-01"],["S1025","S. Ravi Kumar","PC","387","Male","","6303289717","2019-01-14","Active","","Driver - Director FSL","16th Bn. APSP VSKP","","2024-01-01"],["S1026","G. Paramesh","PC","915","Male","","7013574236","2023-04-27","Active","","Driver","Palnadu District","","2024-01-01"],["S1027","A. Syambabu","HG","202","Male","","9010634392","2024-04-10","Active","","112 Control Room (Driver)","Krishna District","","2024-01-01"],["S1028","B. Rani","WASI","","Female","","9247836443","2022-10-07","Active","","112 Control Room Shift","West Godavari District","","2024-01-01"],["S1029","Pallapothu Suresh","PC","6075","Male","","","","Active","","SAKTHI Team","Palnadu","","2024-01-01"],["S1030","Ch.Durga Rao","PC","2669","Male","","","","Active","","SAKTHI Team","Eluru","","2024-01-01"],["S1031","P Harika","WPC","2058","Female","","","","Active","","SAKTHI Team","Communication","","2024-01-01"],["S1032","P.Komala","WPC","2051","Female","","","","Active","","SAKTHI Team","Communication","","2024-01-01"],["S1033","A.Prasanna Lakshmi","WPC","2075","Female","","","","Active","","SAKTHI Team","Communication","","2024-01-01"],["S1034","T.Keerthi","WPC","2057","Female","","","","Active","","SAKTHI Team","Communication","","2024-01-01"],["S1035","Sarojini","AAO","","Female","","","","Active","","AO Section and Staff","","","2024-01-01"],["S1036","L.Venkata Krishna","PC","4159","Male","","","","Active","","CCTNS Reports","Bapatla District","","2024-01-01"],["S1037","Md.Sadhik","RSI","","Male","","","","Active","","Data Center-2","NTR Dist","","2024-01-01"],["S1038","M. Gowri Shankara Rao","PC","198","Male","","","","Active","","Data center","Krishna Dist","","2024-01-01"],["S1039","A. Murali","PC","956","Male","","","","Active","","Data center","16th BN","","2024-01-01"],["S1040","S. Ramu","PC","1891","Male","","","","Active","","Data center","PCO","","2024-01-01"],["S1041","Y. Pardha Saradhi","PC","4344","Male","","","","Active","","Data center","NTR Dist","","2024-01-01"],["S1042","K. Ananth Kumar","PC","1305","Male","","","","Active","","Data center","6th BN","","2024-01-01"],["S1043","P. Sunil Kumar","HC","1826","Male","","","","Active","","DGP Office Team","PCO","","2024-01-01"],["S1044","K. Praveen","PC","8303","Male","","","","Active","","DGP Office Team","PCO","","2024-01-01"],["S1045","K.Sathish","IC","","Male","","9248092990","2021-06-20","Active","","ICJS - eSakshya, eSummons, NDSO, CRIMAC, ITSSO, RTGS","NTR District","","2024-01-01"]];
 
-// Pre-load staff list on page load for fast login
-window.addEventListener('DOMContentLoaded', () => {
-  fetchSheet('Staff_Master').then(data => { staffListCache = data; });
-  // Set today's date as default in all date inputs
-  const today = new Date().toISOString().split('T')[0];
-  ['taskEntryDate','corrEntryDate','igpEntryDate','vcEntryDate'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = today;
-  });
-});
+/* === AUTH === */
 
-// ============================================================
-// THEME
-// ============================================================
-function toggleTheme() {
-  const html = document.documentElement;
-  const isDark = html.getAttribute('data-theme') === 'dark';
-  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
-  const toggle = document.getElementById('themeToggle');
-  const icon   = document.getElementById('themeIcon');
-  toggle.classList.toggle('dark', !isDark);
-  icon.className = isDark ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
-  localStorage.setItem('theme', isDark ? 'light' : 'dark');
-}
-(function() {
-  const saved = localStorage.getItem('theme');
-  if (saved === 'dark') {
-    document.documentElement.setAttribute('data-theme','dark');
-    document.getElementById('themeToggle')?.classList.add('dark');
-  }
-})();
-
-// ============================================================
-// LOGIN — PHONE BASED
-// ============================================================
 async function doLogin() {
-  const phone = document
-    .getElementById('loginEmail')
-    .value.trim();
-  const pass = document
-    .getElementById('loginPass').value;
+  const phone = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value;
 
   if (!phone || !pass) {
     showLoginError('Enter phone and password');
     return;
   }
 
-  if (phone === ADMIN_PHONE && pass === ADMIN_PASS) {
-    currentUser = {
-      phone,
-      name: 'Admin',
-      rank: 'RSI',
-      role: 'admin',
-      email: 'admin@appolice.gov.in'
-    };
-    startApp();
-    return;
-  }
+  setLoginLoading(true);
 
-  if (allData.staff && allData.staff.length > 0) {
+  try {
+    if (phone === ADMIN_PHONE && pass === ADMIN_PASS) {
+      currentUser = {
+        phone,
+        name: 'Admin',
+        rank: 'RSI',
+        role: 'admin',
+        email: 'admin@appolice.gov.in'
+      };
+      startApp();
+      setLoginLoading(false);
+      return;
+    }
+
+    if (allData.staff && allData.staff.length > 0) {
+      loginWithStaffData(phone, pass);
+      return;
+    }
+
+    showToast('Loading staff data...', 'info');
+    const staff = await fetchSheet('Staff_Master');
+    allData.staff = staff;
     loginWithStaffData(phone, pass);
-    return;
+  } catch (err) {
+    console.error(err);
+    showLoginError('An error occurred. Please try again.');
+    setLoginLoading(false);
   }
-
-  showToast('Loading staff data...', 'info');
-  const staff = await fetchSheet('Staff_Master');
-  allData.staff = staff;
-  loginWithStaffData(phone, pass);
 }
 
 function loginWithStaffData(phone, pass) {
@@ -1965,14 +2035,237 @@ function loginWithStaffData(phone, pass) {
       staffData: found
     };
     startApp();
+    setLoginLoading(false);
   } else {
-    showLoginError('Invalid phone number or password');
+    showLoginError('Invalid phone number or password. Please try again.');
+    setLoginLoading(false);
   }
 }
 
+function doLogout() {
+  currentUser = null;
+  allData = {};
+  document.getElementById('appShell').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginPass').value  = '';
+  document.getElementById('adminBadge').style.display = 'none';
+}
 function isOfficerRank(rank) {
   return OFFICER_RANKS.includes(rank);
 }
+
+/* === NAVIGATION === */
+
+function showScreen(name) {
+  if (name === 'command' || name === 'correspondence' || name === 'igpworks') {
+    showScreen('hub');
+    switchHubTab(name);
+    return;
+  }
+
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.bottom-nav-item').forEach(n => n.classList.remove('active'));
+
+  const screen = document.getElementById('screen-' + name);
+  if (screen) screen.classList.add('active');
+
+  const titles = {
+    dashboard:'Dashboard', profile:'My Profile',
+    hub:'Command & Correspondence Hub', vc:'Conference & Meetings Hub',
+    staff:'Staff Directory', admin:'Admin Panel',
+    staffmgmt:'Staff Management',
+    'staff-management':'Staff Management'
+  };
+  document.getElementById('topbarTitle').textContent = titles[name] || name;
+
+  // Highlight nav
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick')?.includes(`'${name}'`)) n.classList.add('active');
+  });
+  document.querySelectorAll('.bottom-nav-item').forEach(n => {
+    if (name === 'hub') {
+      const activePill = document.querySelector('#screen-hub .tab-pill.active');
+      const activeTab = activePill ? activePill.id.replace('pill-hub-', '') : 'command';
+      if (n.getAttribute('onclick')?.includes(`'${activeTab}'`)) {
+        n.classList.add('active');
+        return;
+      }
+    }
+    if (n.getAttribute('onclick')?.includes(`'${name}'`)) n.classList.add('active');
+  });
+
+  closeSidebar();
+
+  // Lazy-load screens
+  if (name === 'hub') {
+    const activePill = document.querySelector('#screen-hub .tab-pill.active');
+    const activeTab = activePill ? activePill.id.replace('pill-hub-', '') : 'command';
+    switchHubTab(activeTab);
+  }
+  if (name === 'vc') renderVC();
+  if (name === 'staff') renderStaff();
+  if (name === 'profile') renderProfile();
+  if (name === 'staffmgmt' || name === 'staff-management') renderStaffMgmt();
+  if (name === 'admin') renderAdminCredentials();
+}
+
+function switchHubTab(tabName) {
+  // Hide all tab contents
+  document.querySelectorAll('.hub-tab-content').forEach(el => el.style.display = 'none');
+  const targetTab = document.getElementById('tab-hub-' + tabName);
+  if (targetTab) targetTab.style.display = 'block';
+
+  // Deactivate all tab pills
+  document.querySelectorAll('#screen-hub .tab-pill').forEach(pill => pill.classList.remove('active'));
+  const targetPill = document.getElementById('pill-hub-' + tabName);
+  if (targetPill) targetPill.classList.add('active');
+
+  // Update bottom nav active state
+  document.querySelectorAll('.bottom-nav-item').forEach(n => {
+    n.classList.remove('active');
+    if (n.getAttribute('onclick')?.includes(`'${tabName}'`)) {
+      n.classList.add('active');
+    }
+  });
+
+  // Trigger rendering/fetching for the tab
+  if (tabName === 'command') renderCommand();
+  if (tabName === 'correspondence') renderCorrespondence();
+  if (tabName === 'igpworks') renderIGPWorks();
+}
+
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  const ov = document.getElementById('sidebarOverlay');
+  if (window.innerWidth <= 768) {
+    sb.classList.toggle('mobile-open');
+    ov.classList.toggle('active');
+  } else {
+    sb.classList.toggle('collapsed');
+  }
+}
+function closeSidebar() {
+  if (window.innerWidth <= 768) {
+    document.getElementById('sidebar').classList.remove('mobile-open');
+    document.getElementById('sidebarOverlay').classList.remove('active');
+  }
+}
+
+/* === DATA FETCHERS === */
+async function fetchSheet(sheetName) {
+  try {
+    const url = RELAY_URL
+      + '?sheet=' + encodeURIComponent(sheetName)
+      + '&t=' + Date.now();
+    const res = await fetch(url);
+    const json = await res.json();
+    return json.data || [];
+  } catch(err) {
+    console.error('fetchSheet error:', sheetName, err);
+    return [];
+  }
+}
+async function loadAllData() {
+  try {
+    const [
+      staff, command, correspondence,
+      corrTimeline, igpworks, vcschedule, notices
+    ] = await Promise.all([
+      fetchSheet('Staff_Master'),
+      fetchSheet('Command_Register'),
+      fetchSheet('Correspondence_Tracker'),
+      fetchSheet('Correspondence_Timeline'),
+      fetchSheet('IGP_Command_Works'),
+      fetchSheet('VC_Schedule'),
+      fetchSheet('Notices')
+    ]);
+    // Merge sheet staff with embedded data so profiles always show
+    const mergedStaff = mergeStaffData(staff);
+    allData = { staff: mergedStaff, command, correspondence, corrTimeline, igpworks, vcschedule, notices };
+    staffListCache = mergedStaff;
+    renderDashboard();
+    renderNoticesBanner();
+    updateAllDropdowns();
+    updateApprovalBadges();
+    renderAdminCredentials();
+    return true;
+  } catch(err) {
+    console.error('loadAllData error:', err);
+    showToast('Error loading data', 'error');
+    return false;
+  }
+}
+async function loadStaffList() {
+  try {
+    const staff = await fetchSheet('Staff_Master');
+    allData.staff = mergeStaffData(staff);
+  } catch(e) {
+    allData.staff = mergeStaffData([]);
+  }
+  updateAllDropdowns();
+}
+
+/* === RENDERERS === */
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  const toggle = document.getElementById('themeToggle');
+  const icon   = document.getElementById('themeIcon');
+  toggle.classList.toggle('dark', !isDark);
+  icon.className = isDark ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+  localStorage.setItem('theme', isDark ? 'light' : 'dark');
+}
+
+function setLoginLoading(isLoading) {
+  const btn = document.getElementById('loginBtn');
+  if (!btn) return;
+  if (isLoading) {
+    btn.disabled = true;
+    btn.classList.add('btn-loading');
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> &nbsp;SIGNING IN...';
+  } else {
+    btn.disabled = false;
+    btn.classList.remove('btn-loading');
+    btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> &nbsp;SIGN IN';
+  }
+}
+
+
+function updateValAndRemoveSkeleton(id, val) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.textContent = val;
+    el.classList.remove('skeleton');
+  }
+}
+
+
+function toggleNotifDropdown(event) {
+  event.stopPropagation();
+  const dropdown = document.getElementById('notifDropdown');
+  const dot = document.getElementById('notifDot');
+  if (dropdown.style.display === 'none') {
+    dropdown.style.display = 'block';
+    if (dot) dot.style.display = 'none';
+  } else {
+    dropdown.style.display = 'none';
+  }
+}
+function clearNotifications(event) {
+  event.stopPropagation();
+  const items = document.querySelectorAll('.notif-item');
+  items.forEach(item => {
+    item.style.opacity = '0.5';
+  });
+  showToast('Notifications marked as read', 'success');
+  setTimeout(() => {
+    document.getElementById('notifDropdown').style.display = 'none';
+  }, 300);
+}
+
 
 function showLoginError(msg) {
   const err = document.getElementById('loginError');
@@ -1991,34 +2284,7 @@ function startApp() {
   initApp();
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('loginPass')?.addEventListener('keydown', e => {
-    if (e.key === 'Enter') doLogin();
-  });
-});
 
-window.addEventListener('load', async () => {
-  try {
-    const staff = await fetchSheet('Staff_Master');
-    allData.staff = staff;
-  } catch(e) {
-    allData.staff = [];
-  }
-});
-
-function doLogout() {
-  currentUser = null;
-  allData = {};
-  document.getElementById('appShell').style.display = 'none';
-  document.getElementById('loginScreen').style.display = 'flex';
-  document.getElementById('loginEmail').value = '';
-  document.getElementById('loginPass').value  = '';
-  document.getElementById('adminBadge').style.display = 'none';
-}
-
-// ============================================================
-// INIT APP
-// ============================================================
 function initApp() {
   document.getElementById('sidebarName').textContent = currentUser.name;
   document.getElementById('sidebarRank').textContent = currentUser.rank;
@@ -2038,6 +2304,16 @@ function initApp() {
       addIGPBtn.style.display = 'inline-flex';
     } else {
       addIGPBtn.style.display = 'none';
+    }
+  }
+
+  // Show/Hide IGP Works tab pill based on role/rank
+  const igpTabPill = document.getElementById('pill-hub-igpworks');
+  if (igpTabPill) {
+    if (isOfficer()) {
+      igpTabPill.style.display = 'inline-block';
+    } else {
+      igpTabPill.style.display = 'none';
     }
   }
 
@@ -2063,22 +2339,6 @@ function initApp() {
   showScreen('dashboard');
 }
 
-// ============================================================
-// FETCH DATA FROM SHEET
-// ============================================================
-async function fetchSheet(sheetName) {
-  try {
-    const url = RELAY_URL
-      + '?sheet=' + encodeURIComponent(sheetName)
-      + '&t=' + Date.now();
-    const res = await fetch(url);
-    const json = await res.json();
-    return json.data || [];
-  } catch(err) {
-    console.error('fetchSheet error:', sheetName, err);
-    return [];
-  }
-}
 
 function mergeStaffData(sheetStaff) {
   // Build combined list: DASHBOARD_STAFF (full data) + STAFF_TEMPLATE (duty chart)
@@ -2114,47 +2374,6 @@ function mergeStaffData(sheetStaff) {
   return [...(sheetStaff || []), ...dashExtra, ...tmplExtra];
 }
 
-async function loadAllData() {
-  try {
-    const [
-      staff, command, correspondence,
-      corrTimeline, igpworks, vcschedule, notices
-    ] = await Promise.all([
-      fetchSheet('Staff_Master'),
-      fetchSheet('Command_Register'),
-      fetchSheet('Correspondence_Tracker'),
-      fetchSheet('Correspondence_Timeline'),
-      fetchSheet('IGP_Command_Works'),
-      fetchSheet('VC_Schedule'),
-      fetchSheet('Notices')
-    ]);
-    // Merge sheet staff with embedded data so profiles always show
-    const mergedStaff = mergeStaffData(staff);
-    allData = { staff: mergedStaff, command, correspondence, corrTimeline, igpworks, vcschedule, notices };
-    staffListCache = mergedStaff;
-    renderDashboard();
-    renderNoticesBanner();
-    updateAllDropdowns();
-    updateApprovalBadges();
-    renderAdminCredentials();
-    return true;
-  } catch(err) {
-    console.error('loadAllData error:', err);
-    showToast('Error loading data', 'error');
-    return false;
-  }
-}
-
-async function loadStaffList() {
-  try {
-    const staff = await fetchSheet('Staff_Master');
-    allData.staff = mergeStaffData(staff);
-  } catch(e) {
-    allData.staff = mergeStaffData([]);
-  }
-  updateAllDropdowns();
-}
-
 function buildStaffOptions(multiSelect) {
   const staff = (allData.staff || [])
     .filter(s => s.Status === 'Active')
@@ -2175,44 +2394,6 @@ function buildStaffOptions(multiSelect) {
       '</option>'
     ).join('');
 }
-
-const PROJECTS = [
-  'MedLEaPR',
-  'NATGRID',
-  'CCTNS',
-  'Citizen Portal',
-  'eSakshya',
-  'eSummons',
-  'CriMAC',
-  'CEIR',
-  'ICJS',
-  'eOffice',
-  'APOLIS',
-  'Drone',
-  'Dial112',
-  'CCTV360AI',
-  'News360AI',
-  'General/Other'
-];
-
-const PROJECT_COLORS = {
-  'MedLEaPR':       '#0d3b7a',
-  'NATGRID':        '#7b0d0d',
-  'CCTNS':          '#1a5276',
-  'Citizen Portal': '#145a32',
-  'eSakshya':       '#6e2fa0',
-  'eSummons':       '#784212',
-  'CriMAC':         '#922b21',
-  'CEIR':           '#1a5276',
-  'ICJS':           '#0e6655',
-  'eOffice':        '#b7770d',
-  'APOLIS':         '#1f618d',
-  'Drone':          '#117a65',
-  'Dial112':        '#c0392b',
-  'CCTV360AI':      '#616a6b',
-  'News360AI':      '#2e4057',
-  'General/Other':  '#555555'
-};
 
 function projectBadge(projectName) {
   if (!projectName) return '—';
@@ -2298,48 +2479,6 @@ async function refreshAll() {
   showToast('Data refreshed!', 'success');
 }
 
-// ============================================================
-// NAVIGATION
-// ============================================================
-function showScreen(name) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.querySelectorAll('.bottom-nav-item').forEach(n => n.classList.remove('active'));
-
-  const screen = document.getElementById('screen-' + name);
-  if (screen) screen.classList.add('active');
-
-  const titles = {
-    dashboard:'Dashboard', profile:'My Profile',
-    command:'Command Register', correspondence:'Correspondence Tracker',
-    igpworks:'IGP Command Works', vc:'Conference & Meetings Hub',
-    staff:'Staff Directory', admin:'Admin Panel',
-    staffmgmt:'Staff Management',
-    'staff-management':'Staff Management'
-  };
-  document.getElementById('topbarTitle').textContent = titles[name] || name;
-
-  // Highlight nav
-  document.querySelectorAll('.nav-item').forEach(n => {
-    if (n.getAttribute('onclick')?.includes(`'${name}'`)) n.classList.add('active');
-  });
-  document.querySelectorAll('.bottom-nav-item').forEach(n => {
-    if (n.getAttribute('onclick')?.includes(`'${name}'`)) n.classList.add('active');
-  });
-
-  closeSidebar();
-
-  // Lazy-load screens
-  if (name === 'command') renderCommand();
-  if (name === 'correspondence') renderCorrespondence();
-  if (name === 'igpworks') renderIGPWorks();
-  if (name === 'vc') renderVC();
-  if (name === 'staff') renderStaff();
-  if (name === 'profile') renderProfile();
-  if (name === 'staffmgmt' || name === 'staff-management') renderStaffMgmt();
-  if (name === 'admin') renderAdminCredentials();
-}
-
 function copyToClipboard(text) {
   navigator.clipboard.writeText(text).then(() => {
     showToast('Copied: ' + text, 'success');
@@ -2387,29 +2526,6 @@ function renderAdminCredentials() {
   tbody.innerHTML = html;
 }
 
-// ============================================================
-// SIDEBAR TOGGLE
-// ============================================================
-function toggleSidebar() {
-  const sb = document.getElementById('sidebar');
-  const ov = document.getElementById('sidebarOverlay');
-  if (window.innerWidth <= 768) {
-    sb.classList.toggle('mobile-open');
-    ov.classList.toggle('active');
-  } else {
-    sb.classList.toggle('collapsed');
-  }
-}
-function closeSidebar() {
-  if (window.innerWidth <= 768) {
-    document.getElementById('sidebar').classList.remove('mobile-open');
-    document.getElementById('sidebarOverlay').classList.remove('active');
-  }
-}
-
-// ============================================================
-// CLOCK
-// ============================================================
 function startClock() {
   function update() {
     const now = new Date();
@@ -2422,9 +2538,6 @@ function startClock() {
   setInterval(update, 1000);
 }
 
-// ============================================================
-// NOTICES BANNER
-// ============================================================
 function renderNoticesBanner() {
   const notices = (allData.notices || []).filter(n => n.Status === 'Active');
   if (notices.length === 0) {
@@ -2435,44 +2548,34 @@ function renderNoticesBanner() {
   document.getElementById('noticeText').textContent = text + '  •••  ' + text;
 }
 
-// ============================================================
-// DASHBOARD RENDER
-// ============================================================
+
 function renderDashboard() {
   const pendingTasks = (allData.command || []).filter(t => ['Pending','In Progress'].includes(t.Status)).length;
   const activeCorr = (allData.correspondence || []).filter(c => c.Status === 'Active').length;
   const upcomingVC = (allData.vcschedule || []).filter(v => v.Status === 'Upcoming').length;
   const totalStaff = (allData.staff || []).filter(s => s.Status === 'Active').length;
 
-  document.getElementById('statStaff').textContent    = totalStaff;
-  document.getElementById('statPending').textContent  = pendingTasks;
-  document.getElementById('statCorr').textContent     = activeCorr;
-  document.getElementById('statVC').textContent       = upcomingVC;
+  updateValAndRemoveSkeleton('statStaff', totalStaff);
+  updateValAndRemoveSkeleton('statVC', upcomingVC);
+  updateValAndRemoveSkeleton('statHub', pendingTasks + activeCorr);
 
   // Heart module stats
   const cmd = allData.command || [];
-  document.getElementById('hCmdTotal').textContent   = cmd.length;
-  document.getElementById('hCmdPending').textContent = cmd.filter(t=>t.Status==='Pending').length;
-  document.getElementById('hCmdDone').textContent    = cmd.filter(t=>t.Status==='Completed').length;
+  const cmdPending = cmd.filter(t=>['Pending', 'In Progress'].includes(t.Status)).length;
+  updateValAndRemoveSkeleton('hCmdPending', cmdPending);
 
   const corr = allData.correspondence || [];
-  document.getElementById('hCorrTotal').textContent  = corr.length;
-  document.getElementById('hCorrActive').textContent = corr.filter(c=>c.Status==='Active').length;
-  document.getElementById('hCorrDone').textContent   = corr.filter(c=>c.Status==='Completed').length;
+  const corrActive = corr.filter(c=>c.Status==='Active').length;
+  updateValAndRemoveSkeleton('hCorrActive', corrActive);
 
   const igp = allData.igpworks || [];
-  document.getElementById('hIGPTotal').textContent   = igp.length;
-  document.getElementById('hIGPPending').textContent = igp.filter(i=>i.Status==='Pending').length;
-  document.getElementById('hIGPDone').textContent    = igp.filter(i=>i.Status==='Completed').length;
+  const igpPending = igp.filter(i=>['Pending', 'In Progress'].includes(i.Status)).length;
+  updateValAndRemoveSkeleton('hIGPPending', igpPending);
 
-  const vc = allData.vcschedule || [];
-  document.getElementById('hVCUpcoming').textContent  = vc.filter(v=>v.Status==='Upcoming').length;
-  document.getElementById('hVCDone').textContent      = vc.filter(v=>v.Status==='Completed').length;
-  document.getElementById('hVCPostponed').textContent = vc.filter(v=>v.Status==='Postponed').length;
-
-  // Nav badges
-  document.getElementById('cmdBadge').textContent  = pendingTasks;
-  document.getElementById('corrBadge').textContent = activeCorr;
+  // Combined Hub badge count
+  const hubCombinedCount = pendingTasks + activeCorr + igpPending;
+  const hubBadge = document.getElementById('hubBadge');
+  if (hubBadge) hubBadge.textContent = hubCombinedCount;
 
   // Recent tasks
   const recent = cmd.slice(0, 8);
@@ -2493,6 +2596,7 @@ function renderDashboard() {
 
   renderPendingApprovals();
 }
+
 
 function renderPendingApprovals() {
   const allTasks = [
@@ -2573,97 +2677,6 @@ function renderPendingApprovals() {
   ).join('');
 }
 
-async function approveTask(taskId, module) {
-  const confirmed = confirm(
-    'Approve completion of this task?'
-  );
-  if (!confirmed) return;
-
-  const sheetName = module === 'igpworks'
-    ? 'IGP_Command_Works'
-    : 'Command_Register';
-
-  const data = allData[
-    module === 'igpworks' 
-      ? 'igpworks' 
-      : 'command'
-  ] || [];
-
-  const taskIndex = data.findIndex(t =>
-    (t.Task_ID || t.Work_ID) === taskId
-  );
-
-  if (taskIndex === -1) {
-    showToast('Task not found', 'error');
-    return;
-  }
-
-  showToast('Approving...', 'info');
-
-  await fetch(RELAY_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 
-      'Content-Type': 'application/json' 
-    },
-    body: JSON.stringify({
-      sheet: sheetName,
-      action: 'updateField',
-      taskId: taskId,
-      fields: {
-        Status: 'Completed',
-        Approved_By: currentUser.name,
-        Completion_Date: new Date()
-          .toISOString().split('T')[0],
-        Last_Updated: new Date().toISOString()
-      }
-    })
-  });
-
-  await new Promise(r => setTimeout(r, 2500));
-  await loadAllData();
-  renderDashboard();
-  showToast('Task approved and completed!',
-    'success');
-}
-
-async function rejectTask(taskId, module) {
-  const reason = prompt(
-    'Reason for returning this task:'
-  );
-  if (reason === null) return;
-
-  const sheetName = module === 'igpworks'
-    ? 'IGP_Command_Works'
-    : 'Command_Register';
-
-  showToast('Returning task...', 'info');
-
-  await fetch(RELAY_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 
-      'Content-Type': 'application/json' 
-    },
-    body: JSON.stringify({
-      sheet: sheetName,
-      action: 'updateField',
-      taskId: taskId,
-      fields: {
-        Status: 'Returned for Correction',
-        Officer_Remarks: reason,
-        Last_Updated: new Date().toISOString()
-      }
-    })
-  });
-
-  await new Promise(r => setTimeout(r, 2500));
-  await loadAllData();
-  renderDashboard();
-  showToast('Task returned for correction',
-    'info');
-}
-
 function updateApprovalBadges() {
   const pending = [
     ...(allData.command || []),
@@ -2687,9 +2700,6 @@ function updateApprovalBadges() {
   });
 }
 
-// ============================================================
-// COMMAND REGISTER
-// ============================================================
 function renderCommand() {
   let data = allData.command || [];
   if (currentCmdFilter !== 'all') data = data.filter(t => t.Status === currentCmdFilter);
@@ -2728,12 +2738,28 @@ function renderCommand() {
       <td>${renderCommandActions(i)}</td>
     </tr>`).join('');
 }
+
+
 function filterCommand(f, el) {
   currentCmdFilter = f;
-  document.querySelectorAll('#screen-command .tab-pill').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('#screen-hub .command-pills .tab-pill').forEach(p => p.classList.remove('active'));
   el.classList.add('active');
   renderCommand();
 }
+function filterCorr(f, el) {
+  currentCorrFilter = f;
+  document.querySelectorAll('#screen-hub .corr-pills .tab-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  renderCorrespondence();
+}
+function filterIGP(f, el) {
+  currentIGPFilter = f;
+  document.querySelectorAll('#screen-hub .igp-pills .tab-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  renderIGPWorks();
+}
+
+
 function searchCommand() { renderCommand(); }
 
 function filterByProject(module, project) {
@@ -2762,9 +2788,6 @@ function clearProjectFilter(module) {
   filterByProject(module, 'all');
 }
 
-// ============================================================
-// CORRESPONDENCE TRACKER
-// ============================================================
 function renderCorrespondence() {
   let data = allData.correspondence || [];
   if (currentCorrFilter === 'Active' || currentCorrFilter === 'Completed') {
@@ -2798,17 +2821,9 @@ function renderCorrespondence() {
       <td>${renderCorrActions(i)}</td>
     </tr>`).join('');
 }
-function filterCorr(f, el) {
-  currentCorrFilter = f;
-  document.querySelectorAll('#screen-correspondence .tab-pill').forEach(p => p.classList.remove('active'));
-  el.classList.add('active');
-  renderCorrespondence();
-}
+
 function searchCorr() { renderCorrespondence(); }
 
-// ============================================================
-// IGP COMMAND WORKS
-// ============================================================
 function renderIGPWorks() {
   let data = allData.igpworks || [];
   if (currentIGPFilter !== 'all') data = data.filter(w => w.Status === currentIGPFilter);
@@ -2838,16 +2853,7 @@ function renderIGPWorks() {
       <td>${renderIGPActions(i)}</td>
     </tr>`).join('');
 }
-function filterIGP(f, el) {
-  currentIGPFilter = f;
-  document.querySelectorAll('#screen-igpworks .tab-pill').forEach(p => p.classList.remove('active'));
-  el.classList.add('active');
-  renderIGPWorks();
-}
 
-// ============================================================
-// VC SCHEDULE
-// ============================================================
 function renderVC() {
   let data = allData.vcschedule || [];
   if (currentVCFilter !== 'all') data = data.filter(v => v.Status === currentVCFilter);
@@ -2881,6 +2887,7 @@ function renderVC() {
       </tr>`;
   }).join('');
 }
+
 function filterVC(f, el) {
   currentVCFilter = f;
   document.querySelectorAll('#screen-vc .tab-pill').forEach(p => p.classList.remove('active'));
@@ -2888,9 +2895,6 @@ function filterVC(f, el) {
   renderVC();
 }
 
-// ============================================================
-// STAFF DIRECTORY
-// ============================================================
 function renderStaff() {
   const staff = allData.staff || [];
   const search = document.getElementById('staffSearch')?.value?.toLowerCase() || '';
@@ -2924,25 +2928,24 @@ function renderStaff() {
       </div>
     </div>`).join('');
 }
+
 function searchStaff() { renderStaff(); }
 
-// ============================================================
-// MY PROFILE
-// ============================================================
-
-// ============================================================
-// HEART MODULE ACTIONS
-// ============================================================
 function isAdmin() { return currentUser?.role === 'admin'; }
+
 function isOfficer() { return isAdmin() || OFFICER_RANKS.includes(currentUser?.rank || ''); }
+
 function rowNumber(row, index) { return Number(row?._rowNumber || row?.rowNumber || row?.Row_Number || row?.RowNo || row?.row || index + 2); }
+
 function field(row, keys, fallback='') {
   for (const key of keys) if (row && row[key] !== undefined && row[key] !== null && row[key] !== '') return row[key];
   return fallback;
 }
+
 function renderActionBtn(title, icon, fn, danger=false) {
   return `<button class="action-btn" title="${title}" onclick="${fn}" style="${danger?'color:var(--danger)':''}"><i class="fa-solid ${icon}"></i></button>`;
 }
+
 function renderCommandActions(i) {
   const t = (allData.command || [])[i];
   if (!t) return '';
@@ -2959,15 +2962,6 @@ function renderCommandActions(i) {
     }
   }
   return `<div class="row-actions">${html}</div>`;
-}
-
-async function submitTaskForApproval(i) {
-  const t = (allData.command || [])[i];
-  if (!t) return;
-  t.Status = 'Pending for Approval';
-  showToast('Submitting task for approval...', 'info');
-  await postAction('Command_Register', 'update', commandRow(t), rowNumber(t, i));
-  await refreshHeartScreen(renderCommand, 'Task submitted for officer approval');
 }
 
 function renderCorrActions(i) {
@@ -3005,20 +2999,12 @@ function renderIGPActions(i) {
   return `<div class="row-actions">${html}</div>`;
 }
 
-async function submitIGPForApproval(i) {
-  const w = (allData.igpworks || [])[i];
-  if (!w) return;
-  w.Status = 'Pending for Approval';
-  showToast('Submitting work for approval...', 'info');
-  await postAction('IGP_Command_Works', 'update', igpRow(w), rowNumber(w, i));
-  await refreshHeartScreen(renderIGPWorks, 'IGP Work submitted for officer approval');
-}
-
 function renderVCActions(i) {
   let html = renderActionBtn('View', 'fa-eye', `viewVC(${i})`);
   if (isAdmin()) html += renderActionBtn('Mark Completed', 'fa-check', `updateVCStatus(${i}, 'Completed')`) + renderActionBtn('Postpone', 'fa-clock', `openPostponeModal(${i})`) + renderActionBtn('Edit', 'fa-pen', `editVC(${i})`) + renderActionBtn('Delete', 'fa-trash', `deleteVC(${i})`, true);
   return `<div class="row-actions">${html}</div>`;
 }
+
 function exportToCSV(filename, headers, rows) {
   const escapeCSV = (val) => {
     if (val === undefined || val === null) return '""';
@@ -3110,18 +3096,6 @@ function exportData(module) {
   showToast(`Exported ${res.rows.length} rows to ${filename}`, 'success');
 }
 
-async function postAction(sheetName, action, data={}, row=null) {
-  try {
-    await fetch(RELAY_URL, { method:'POST', mode:'no-cors', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ sheet:sheetName, action, row, rowNumber:row, data }) });
-    await new Promise(r => setTimeout(r, 1800));
-    return true;
-  } catch(err) {
-    console.error('sheet action error:', err);
-    showToast('Sheet operation failed', 'error');
-    return false;
-  }
-}
-async function refreshHeartScreen(renderFn, msg) { await loadAllData(); renderFn(); showToast(msg, 'success'); }
 function ensureDynamicModal(id, title) {
   let modal = document.getElementById(id);
   if (!modal) {
@@ -3134,301 +3108,17 @@ function ensureDynamicModal(id, title) {
   modal.querySelector('.modal-title').textContent = title;
   return modal;
 }
-function detailRows(rows) {
-  return `<div style="display:grid;gap:10px">${rows.map(([l,v]) => `<div style="display:grid;grid-template-columns:150px 1fr;gap:10px;border-bottom:1px solid var(--border);padding-bottom:8px"><strong style="color:var(--text2)">${l}</strong><span>${v || '—'}</span></div>`).join('')}</div>`;
-}
-function showDetails(title, html) {
-  const modal = ensureDynamicModal('detailsModal', title);
-  modal.querySelector('.modal-body').innerHTML = html;
-  modal.querySelector('.modal-footer').innerHTML = `<button class="btn-secondary" onclick="closeModal('detailsModal')">Close</button>`;
-  openModal('detailsModal');
-}
-function commandRow(t) { return [field(t,['Task_ID','ID'],`T${Date.now()}`),field(t,['Serial_No']),field(t,['Created_Date','Date']),field(t,['Task_Title']),field(t,['Description','Task_Description','Remarks']),field(t,['Category']),field(t,['Category_Code','Category_ID']),field(t,['Project_Name']),field(t,['Priority']),field(t,['Assigned_To']),field(t,['Assigned_By']),field(t,['Due_Date']),field(t,['Status'],'Pending'),field(t,['Completion_Date']),field(t,['Officer_Remarks']),field(t,['Staff_Remarks']),field(t,['Points_Awarded'],0),field(t,['Approved_By']),field(t,['Risk_Level','Risk_Status'],'No Risk'),field(t,['Last_Updated','Timestamp'],new Date().toISOString())]; }
-function corrRow(c) { return [field(c,['Corr_ID','ID'],`C${Date.now()}`),field(c,['Serial_No']),field(c,['Date','Created_Date']),field(c,['Type']),field(c,['Subject']),field(c,['Allocated_To']),field(c,['Allocated_By']),field(c,['Current_Stage'],'Draft Work Allocated'),field(c,['Submission_Mode']),field(c,['Reference_No']),field(c,['Status'],'Active'),field(c,['Remarks']),field(c,['Project_Name']),field(c,['Timestamp'],new Date().toISOString())]; }
-function igpRow(w) { return [field(w,['Work_ID','ID'],`I${Date.now()}`),field(w,['Serial_No']),field(w,['Date','Created_Date']),field(w,['Work_Title']),field(w,['Project_Name']),field(w,['Description','Work_Description']),field(w,['Assigned_To']),field(w,['Priority']),field(w,['Status'],'Pending'),field(w,['Due_Date']),field(w,['Completed_Date']),field(w,['Remarks']),field(w,['Approved_By']),field(w,['Timestamp'],new Date().toISOString())]; }
-function vcRow(v) { return [field(v,['VC_ID','ID'],`V${Date.now()}`),field(v,['Serial_No']),field(v,['Subject']),field(v,['Date']),field(v,['Time']),field(v,['Platform']),field(v,['Project_Name']),field(v,['VC_Link']),field(v,['Organiser']),field(v,['Speaker']),field(v,['Allotted_Persons']),field(v,['Status'],'Upcoming'),field(v,['Linked_Postponed_ID']),field(v,['Postpone_Reason']),field(v,['Created_By'],currentUser?.name),field(v,['Remarks']),field(v,['Entry_Date','Timestamp'],new Date().toISOString())]; }
-function formatPersonBadges(str) {
-  return (str || '').split(',').map(n => n.trim()).filter(Boolean).map(n => `<span class="badge" style="background:var(--navy);color:#fff;margin:2px;font-size:10px">${n}</span>`).join('') || '—';
-}
 
-function viewCommand(i) {
-  const t = (allData.command || [])[i];
-  if (!t) return;
-  showDetails('Command Register Details', detailRows([
-    ['Serial No', t.Serial_No],
-    ['Date', formatDate(t.Created_Date || t.Date)],
-    ['Project', projectBadge(t.Project_Name)],
-    ['Title', t.Task_Title],
-    ['Description', t.Description || t.Task_Description || t.Remarks],
-    ['Category', t.Category],
-    ['Priority', t.Priority],
-    ['Assigned To', formatPersonBadges(t.Assigned_To)],
-    ['Assigned By', t.Assigned_By],
-    ['Due Date', formatDate(t.Due_Date)],
-    ['Status', statusBadge(t.Status)],
-    ['Officer Remarks', t.Officer_Remarks],
-    ['Staff Remarks', t.Staff_Remarks],
-    ['Points Awarded', t.Points_Awarded],
-    ['Approved By', t.Approved_By]
-  ]));
-}
-
-function editCommand(i) {
-  const t = (allData.command || [])[i];
-  if (!t) return;
-  editContext = { module: 'command', index: i, row: rowNumber(t, i), id: field(t, ['Task_ID', 'ID']) };
-  document.querySelector('#addTaskModal .modal-title').textContent = 'Edit Command Task';
-  document.getElementById('taskTitle').value = t.Task_Title || '';
-  document.getElementById('taskEntryDate').value = String(t.Created_Date || t.Date || '').split('T')[0];
-  document.getElementById('taskDesc').value = t.Description || t.Task_Description || t.Remarks || '';
-  document.getElementById('taskPriority').value = t.Priority || 'Medium';
-  document.getElementById('taskAssignedBy').value = t.Assigned_By || '';
-  document.getElementById('taskDueDate').value = String(t.Due_Date || '').split('T')[0];
-  document.getElementById('taskProject').value = t.Project_Name || '';
-  
-  // Set multi-select value
-  const assignedOptions = (t.Assigned_To || '').split(',').map(s => s.trim());
-  const selectEl = document.getElementById('taskAssignedTo');
-  Array.from(selectEl.options).forEach(opt => {
-    opt.selected = assignedOptions.includes(opt.value);
-  });
-  
-  openModal('addTaskModal');
-}
-
-async function markCommandComplete(i) {
-  const t = (allData.command || [])[i];
-  if (!t) return;
-  t.Status = 'Completed';
-  t.Completion_Date = new Date().toISOString().split('T')[0];
-  showToast('Updating task...', 'info');
-  await postAction('Command_Register', 'update', commandRow(t), rowNumber(t, i));
-  await refreshHeartScreen(renderCommand, 'Task marked as completed');
-}
-
-async function deleteCommand(i) {
-  const t = (allData.command || [])[i];
-  if (!t || !confirm('Delete this task?')) return;
-  showToast('Deleting task...', 'info');
-  await postAction('Command_Register', 'delete', {}, rowNumber(t, i));
-  await refreshHeartScreen(renderCommand, 'Task deleted');
-}
-
-function viewCorrTimeline(i) {
-  const c = (allData.correspondence || [])[i];
-  if (!c) return;
-  const id = field(c, ['Corr_ID', 'ID']);
-  const stages = (allData.corrTimeline || []).filter(t => field(t, ['Corr_ID', 'ID']) === id || t.Serial_No === c.Serial_No);
-  const timeline = stages.length ? stages.map(s => `<div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-content"><div class="timeline-stage">${s.Stage || s.Current_Stage || 'Stage Update'}</div><div class="timeline-meta">${formatDate(s.Date || s.Timestamp)} · ${s.Updated_By || s.By || '—'} · ${s.Submission_Mode || ''}</div><div class="timeline-remarks">${s.Remarks || '—'}</div></div></div>`).join('') : '<div class="empty-state"><i class="fa-solid fa-timeline"></i><p>No timeline updates yet.</p></div>';
-  showDetails('Correspondence Timeline', detailRows([
-    ['Serial No', c.Serial_No],
-    ['Date', formatDate(c.Date)],
-    ['Project', projectBadge(c.Project_Name)],
-    ['Type', c.Type],
-    ['Subject', c.Subject],
-    ['Allocated To', formatPersonBadges(c.Allocated_To)],
-    ['Allocated By', c.Allocated_By],
-    ['Current Stage', stageBadge(c.Current_Stage)],
-    ['Submission Mode', c.Submission_Mode],
-    ['Status', statusBadge(c.Status)],
-    ['Remarks', c.Remarks]
-  ]) + `<div class="section-title" style="margin:16px 0 10px">Stage History</div><div class="timeline">${timeline}</div>`);
-}
-
-function openStageModal(i) {
-  const c = (allData.correspondence || [])[i];
-  if (!c) return;
-  stageContext = { index: i, row: rowNumber(c, i) };
-  const modal = ensureDynamicModal('stageModal', 'Update Correspondence Stage');
-  modal.querySelector('.modal-body').innerHTML = `<div class="form-group"><label>Current Stage</label><input type="text" value="${c.Current_Stage || '—'}" readonly></div><div class="form-group" style="margin-top:12px"><label>Next Stage</label><select id="stageNext">${CORR_STAGES.map(s => `<option ${s === c.Current_Stage ? 'selected' : ''}>${s}</option>`).join('')}</select></div><div class="form-group" style="margin-top:12px"><label>Submission Mode</label><select id="stageMode"><option>WhatsApp</option><option>Hardcopy</option><option>eOffice</option><option>Email</option><option>Other</option></select></div><div class="form-group" style="margin-top:12px"><label>Remarks</label><textarea id="stageRemarks"></textarea></div>`;
-  modal.querySelector('.modal-footer').innerHTML = `<button class="btn-secondary" onclick="closeModal('stageModal')">Cancel</button><button class="btn-heart" onclick="saveStageUpdate()">Save</button>`;
-  openModal('stageModal');
-}
-
-async function saveStageUpdate() {
-  const c = (allData.correspondence || [])[stageContext?.index];
-  if (!c) return;
-  const next = document.getElementById('stageNext').value;
-  const mode = document.getElementById('stageMode').value;
-  const remarks = document.getElementById('stageRemarks').value;
-  showToast('Updating stage...', 'info');
-  await postAction('Correspondence_Timeline', 'append', [field(c, ['Corr_ID', 'ID']), c.Serial_No, new Date().toISOString().split('T')[0], next, currentUser.name, remarks, mode, new Date().toISOString()]);
-  c.Current_Stage = next;
-  c.Submission_Mode = mode;
-  c.Status = next === 'Completed' ? 'Completed' : 'Active';
-  await postAction('Correspondence_Tracker', 'update', corrRow(c), stageContext.row);
-  closeModal('stageModal');
-  await refreshHeartScreen(renderCorrespondence, 'Stage updated successfully');
-}
-
-function editCorr(i) {
-  const c = (allData.correspondence || [])[i];
-  if (!c) return;
-  editContext = { module: 'corr', index: i, row: rowNumber(c, i), id: field(c, ['Corr_ID', 'ID']) };
-  document.querySelector('#addCorrModal .modal-title').textContent = 'Edit Correspondence Entry';
-  document.getElementById('corrEntryDate').value = String(c.Date || c.Created_Date || '').split('T')[0];
-  document.getElementById('corrType').value = c.Type || 'Draft';
-  document.getElementById('corrAllocBy').value = c.Allocated_By || '';
-  document.getElementById('corrMode').value = c.Submission_Mode || 'WhatsApp';
-  document.getElementById('corrSubject').value = c.Subject || '';
-  document.getElementById('corrRemarks').value = c.Remarks || '';
-  document.getElementById('corrProject').value = c.Project_Name || '';
-  
-  // Set multi-select value
-  const allocatedOptions = (c.Allocated_To || '').split(',').map(s => s.trim());
-  const selectEl = document.getElementById('corrAllocTo');
-  Array.from(selectEl.options).forEach(opt => {
-    opt.selected = allocatedOptions.includes(opt.value);
-  });
-  
-  openModal('addCorrModal');
-}
-
-async function deleteCorr(i) {
-  const c = (allData.correspondence || [])[i];
-  if (!c || !confirm('Delete this correspondence entry?')) return;
-  showToast('Deleting correspondence...', 'info');
-  await postAction('Correspondence_Tracker', 'delete', {}, rowNumber(c, i));
-  await refreshHeartScreen(renderCorrespondence, 'Correspondence deleted');
-}
-
-function viewIGP(i) {
-  const w = (allData.igpworks || [])[i];
-  if (!w) return;
-  showDetails('IGP Command Work Details', detailRows([
-    ['Serial No', w.Serial_No],
-    ['Date', formatDate(w.Date)],
-    ['Project', projectBadge(w.Project_Name)],
-    ['Title', w.Work_Title],
-    ['Description', w.Description || w.Work_Description],
-    ['Assigned To', formatPersonBadges(w.Assigned_To)],
-    ['Priority', w.Priority],
-    ['Status', statusBadge(w.Status)],
-    ['Due Date', formatDate(w.Due_Date)],
-    ['Completed Date', formatDate(w.Completed_Date)],
-    ['Remarks', w.Remarks],
-    ['Approved By', w.Approved_By]
-  ]));
-}
-
-function editIGP(i) {
-  const w = (allData.igpworks || [])[i];
-  if (!w) return;
-  editContext = { module: 'igp', index: i, row: rowNumber(w, i), id: field(w, ['Work_ID', 'ID']) };
-  document.querySelector('#addIGPModal .modal-title').textContent = 'Edit IGP Command Work';
-  document.getElementById('igpEntryDate').value = String(w.Date || w.Created_Date || '').split('T')[0];
-  document.getElementById('igpTitle').value = w.Work_Title || '';
-  document.getElementById('igpPriority').value = w.Priority || 'Medium';
-  document.getElementById('igpDueDate').value = String(w.Due_Date || '').split('T')[0];
-  document.getElementById('igpDesc').value = w.Description || w.Work_Description || '';
-  document.getElementById('igpRemarks').value = w.Remarks || '';
-  document.getElementById('igpProject').value = w.Project_Name || '';
-  
-  // Set multi-select value
-  const assignedOptions = (w.Assigned_To || '').split(',').map(s => s.trim());
-  const selectEl = document.getElementById('igpAssignedTo');
-  Array.from(selectEl.options).forEach(opt => {
-    opt.selected = assignedOptions.includes(opt.value);
-  });
-  
-  openModal('addIGPModal');
-}
-
-async function updateIGPStatus(i, status) {
-  const w = (allData.igpworks || [])[i];
-  if (!w) return;
-  w.Status = status;
-  if (status === 'Completed') w.Completed_Date = new Date().toISOString().split('T')[0];
-  showToast('Updating IGP work...', 'info');
-  await postAction('IGP_Command_Works', 'update', igpRow(w), rowNumber(w, i));
-  await refreshHeartScreen(renderIGPWorks, status === 'Completed' ? 'IGP Work marked complete' : 'Work escalated');
-}
-
-async function deleteIGP(i) {
-  const w = (allData.igpworks || [])[i];
-  if (!w || !confirm('Delete this IGP work?')) return;
-  showToast('Deleting IGP work...', 'info');
-  await postAction('IGP_Command_Works', 'delete', {}, rowNumber(w, i));
-  await refreshHeartScreen(renderIGPWorks, 'IGP work deleted');
-}
-
-function viewVC(i) {
-  const v = (allData.vcschedule || [])[i];
-  if (!v) return;
-  const link = v.VC_Link ? `<a href="${v.VC_Link}" target="_blank" style="color:var(--navy);font-weight:700">${v.VC_Link}</a>` : '—';
-  showDetails('VC Schedule Details', detailRows([
-    ['Subject', v.Subject],
-    ['Project', projectBadge(v.Project_Name)],
-    ['Date', formatDate(v.Date)],
-    ['Time', v.Time],
-    ['Platform', v.Platform],
-    ['VC Link', link],
-    ['Organiser', v.Organiser],
-    ['Speaker', v.Speaker],
-    ['Allotted Persons', formatPersonBadges(v.Allotted_Persons)],
-    ['Status', vcStatusBadge(v.Status)],
-    ['Remarks', v.Remarks]
-  ]));
-}
-
-function editVC(i) {
-  const v = (allData.vcschedule || [])[i];
-  if (!v) return;
-  editContext = { module: 'vc', index: i, row: rowNumber(v, i), id: field(v, ['VC_ID', 'ID']) };
-  document.querySelector('#addVCModal .modal-title').textContent = 'Edit VC / Meeting';
-  document.getElementById('vcEntryDate').value = String(v.Entry_Date || '').split('T')[0];
-  document.getElementById('vcSubject').value = v.Subject || '';
-  document.getElementById('vcDate').value = String(v.Date || '').split('T')[0];
-  document.getElementById('vcTime').value = v.Time || '';
-  document.getElementById('vcPlatform').value = v.Platform || 'BharatVC';
-  document.getElementById('vcLink').value = v.VC_Link || '';
-  document.getElementById('vcOrganiser').value = v.Organiser || '';
-  document.getElementById('vcSpeaker').value = v.Speaker || '';
-  document.getElementById('vcRemarks').value = v.Remarks || '';
-  document.getElementById('vcProject').value = v.Project_Name || '';
-  
-  // Set multi-select value
-  const allottedOptions = (v.Allotted_Persons || '').split(',').map(s => s.trim());
-  const selectEl = document.getElementById('vcPersons');
-  Array.from(selectEl.options).forEach(opt => {
-    opt.selected = allottedOptions.includes(opt.value);
-  });
-  
-  openModal('addVCModal');
-}
-function openPostponeModal(i) { const v=(allData.vcschedule||[])[i]; if(!v)return; postponeContext={index:i,row:rowNumber(v,i)}; const modal=ensureDynamicModal('postponeModal','Postpone VC'); modal.querySelector('.modal-body').innerHTML=`<div class="form-grid"><div class="form-group"><label>New Date</label><input type="date" id="postponeDate"></div><div class="form-group"><label>New Time</label><input type="time" id="postponeTime"></div></div><div class="form-group" style="margin-top:12px"><label>Postpone Reason</label><textarea id="postponeReason"></textarea></div>`; modal.querySelector('.modal-footer').innerHTML=`<button class="btn-secondary" onclick="closeModal('postponeModal')">Cancel</button><button class="btn-heart" onclick="savePostponeVC()">Save</button>`; openModal('postponeModal'); }
-async function savePostponeVC() { const v=(allData.vcschedule||[])[postponeContext?.index]; if(!v)return; const newDate=document.getElementById('postponeDate').value; const newTime=document.getElementById('postponeTime').value; const reason=document.getElementById('postponeReason').value; if(!newDate||!newTime){showToast('Please select new date and time','error');return;} const linkedId=field(v,['VC_ID','ID']); const newEntry={...v,VC_ID:`V${Date.now()}`,Serial_No:`${(allData.vcschedule||[]).length+1}/2026`,Date:newDate,Time:newTime,Status:'Upcoming',Linked_Postponed_ID:linkedId,Postpone_Reason:reason}; v.Status='Postponed'; v.Postpone_Reason=reason; showToast('Postponing VC...','info'); await postAction('VC_Schedule','append',vcRow(newEntry)); await postAction('VC_Schedule','update',vcRow(v),postponeContext.row); closeModal('postponeModal'); await refreshHeartScreen(renderVC,'VC postponed'); }
-async function deleteVC(i) { const v=(allData.vcschedule||[])[i]; if(!v || !confirm('Delete this VC schedule?'))return; showToast('Deleting VC...','info'); await postAction('VC_Schedule','delete',{},rowNumber(v,i)); await refreshHeartScreen(renderVC,'VC deleted'); }
-
-// ============================================================
-// FORM SUBMISSIONS (write to sheet via relay POST)
-// ============================================================
-async function postToSheet(sheetName, rowData) {
-  try {
-    await fetch(RELAY_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sheet: sheetName, action: 'append', data: rowData })
-    });
-    return true;
-  } catch(err) {
-    console.error('postToSheet error:', err);
-    return false;
+function openModal(id) {
+  // Always refresh dropdowns when any modal opens so staff/project lists are current
+  if (!allData.staff || allData.staff.length === 0) {
+    allData.staff = mergeStaffData([]);
   }
+  updateAllDropdowns();
+  document.getElementById(id).classList.add('open');
 }
 
-// Immediately add a record to local allData so it shows without waiting for sheet
-function optimisticAdd(sheetKey, obj, renderFn) {
-  if (!allData[sheetKey]) allData[sheetKey] = [];
-  allData[sheetKey].push(obj);
-  renderFn();
-  // Background server refresh after 8 seconds to sync real sheet data
-  setTimeout(async () => {
-    await loadAllData();
-    renderFn();
-  }, 8000);
-}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
 async function submitTask() {
   const title = document.getElementById('taskTitle').value.trim();
@@ -3721,37 +3411,11 @@ async function submitVC() {
   }
 }
 
-// ============================================================
-// MODAL HELPERS
-// ============================================================
-function openModal(id) {
-  // Always refresh dropdowns when any modal opens so staff/project lists are current
-  if (!allData.staff || allData.staff.length === 0) {
-    allData.staff = mergeStaffData([]);
-  }
-  updateAllDropdowns();
-  document.getElementById(id).classList.add('open');
-}
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-document.querySelectorAll('.modal-overlay').forEach(m => {
-  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
-});
-
-// ============================================================
-// TOAST
-// ============================================================
-function showToast(msg, type='info') {
-  const el = document.createElement('div');
-  el.className = `toast toast-${type}`;
-  const icons = { success:'fa-check-circle', error:'fa-circle-exclamation', info:'fa-circle-info' };
-  el.innerHTML = `<i class="fa-solid ${icons[type]||'fa-circle-info'}" style="color:var(--${type==='success'?'success':type==='error'?'danger':'navy'})"></i> ${msg}`;
-  document.getElementById('toastContainer').appendChild(el);
-  setTimeout(() => el.remove(), 3500);
+function priorityBadge(p) {
+  const map = { 'Very High':'badge-urgent','High':'badge-high','Medium':'badge-medium','Low':'badge-low' };
+  return `<span class="badge ${map[p]||'badge-pending'}">${p||'—'}</span>`;
 }
 
-// ============================================================
-// HELPERS — BADGES & FORMAT
-// ============================================================
 function statusBadge(s) {
   const map = {
     'Present':'badge-present','Absent':'badge-absent','Late':'badge-late',
@@ -3769,14 +3433,7 @@ function statusBadge(s) {
   };
   return `<span class="badge ${map[s]||'badge-pending'}">${s||'—'}</span>`;
 }
-function priorityBadge(p) {
-  const map = { 'Very High':'badge-urgent','High':'badge-high','Medium':'badge-medium','Low':'badge-low' };
-  return `<span class="badge ${map[p]||'badge-pending'}">${p||'—'}</span>`;
-}
-function corrTypeBadge(t) {
-  const colors = { 'Draft':'badge-progress','Letter':'badge-active','Note File':'badge-pending','Radio Message':'badge-warning','eOffice':'badge-info','Other':'badge-absent' };
-  return `<span class="badge ${colors[t]||'badge-pending'}">${t||'—'}</span>`;
-}
+
 function stageBadge(s) {
   if (!s) return '—';
   if (s.includes('Completed')) return `<span class="badge badge-completed">${s}</span>`;
@@ -3787,10 +3444,12 @@ function stageBadge(s) {
   if (s.includes('Dispatched') || s.includes('Filing')) return `<span class="badge badge-dispatched">${s}</span>`;
   return `<span class="badge badge-pending">${s}</span>`;
 }
-function vcStatusBadge(s) {
-  const map = { 'Upcoming':'badge-upcoming','Completed':'badge-completed','Postponed':'badge-postponed','Cancelled':'badge-absent' };
-  return `<span class="badge ${map[s]||'badge-pending'}">${s||'—'}</span>`;
+
+function corrTypeBadge(t) {
+  const colors = { 'Draft':'badge-progress','Letter':'badge-active','Note File':'badge-pending','Radio Message':'badge-warning','eOffice':'badge-info','Other':'badge-absent' };
+  return `<span class="badge ${colors[t]||'badge-pending'}">${t||'—'}</span>`;
 }
+
 function formatDate(d) {
   if (!d) return '—';
   const str = typeof d === 'string' ? d : d instanceof Date ? d.toISOString() : String(d);
@@ -3802,139 +3461,26 @@ function formatDate(d) {
   return str.split(' ')[0] || str;
 }
 
-// Dummy loaders for refresh buttons
-function loadCommand() { renderCommand(); }
-function loadCorrespondence() { renderCorrespondence(); }
-function loadIGPWorks() { renderIGPWorks(); }
-function loadVC() { renderVC(); }
-
-// ============================================================
-// ============================================================
-// STAFF MANAGEMENT
-// ============================================================
-function renderStaffManagement() {
-  const staff = allData.staff || [];
-  const tbody = document
-    .getElementById('staffMgmtBody');
-  
-  if (staff.length === 0) {
-    tbody.innerHTML = 
-      '<tr><td colspan="8">' +
-      '<div class="empty-state">' +
-      '<i class="fa-solid fa-users"></i>' +
-      '<p>No staff added yet. ' +
-      'Use form above to add staff.</p>' +
-      '</div></td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = staff.map((s, i) =>
-    '<tr>' +
-    '<td>' + (i + 1) + '</td>' +
-    '<td><strong>' + (s.Full_Name || '—') + '</strong></td>' +
-    '<td>' + (s.Rank || '—') + '</td>' +
-    '<td>' + (s.Phone || '—') + '</td>' +
-    '<td>' + (s.Gender || '—') + '</td>' +
-    '<td>' + (s.Badge_No || '—') + '</td>' +
-    '<td>' + statusBadge(s.Status) + '</td>' +
-    '<td><div class="row-actions">' +
-    '<button class="action-btn" onclick="editStaff(' + i + ',' + JSON.stringify(s).replace(/"/g,'&quot;').replace(/'/g,"\\'") + ')" title="Edit"><i class="fa-solid fa-pen"></i></button>' +
-    '<button class="action-btn" onclick="deleteStaff(' + i + ',\'' + (s.Full_Name||'').replace(/'/g,"\\'") + '\')" title="Delete" style="color:var(--danger)"><i class="fa-solid fa-trash"></i></button>' +
-    '</div></td>' +
-    '</tr>'
-  ).join('');
+function showToast(msg, type='info') {
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  const icons = { success:'fa-check-circle', error:'fa-circle-exclamation', info:'fa-circle-info' };
+  el.innerHTML = `<i class="fa-solid ${icons[type]||'fa-circle-info'}" style="color:var(--${type==='success'?'success':type==='error'?'danger':'navy'})"></i> ${msg}`;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
 }
 
-function renderStaffMgmt() {
-  const search = (document.getElementById('sfSearch')?.value || '').toLowerCase();
-  if (!search) {
-    renderStaffManagement();
-    return;
-  }
-  let data = allData.staff || [];
-  data = data.filter(s =>
-    (s.Full_Name || s.Name || '').toLowerCase().includes(search) ||
-    (s.Rank || '').toLowerCase().includes(search) ||
-    String(s.Phone || '').includes(search)
-  );
-  const tbody = document.getElementById('staffMgmtBody');
-  if (!tbody) return;
-  if (data.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fa-solid fa-users"></i><p>No staff records found</p></div></td></tr>`;
-    return;
-  }
-  tbody.innerHTML = data.map((s, i) => {
-    const realIndex = (allData.staff || []).indexOf(s);
-    return '<tr>' +
-      '<td>' + (i + 1) + '</td>' +
-      '<td><strong>' + 
-        (s.Full_Name || '—') + 
-      '</strong></td>' +
-      '<td>' + (s.Rank || '—') + '</td>' +
-      '<td>' + (s.Phone || '—') + '</td>' +
-      '<td>' + (s.Gender || '—') + '</td>' +
-      '<td>' + (s.Badge_No || '—') + '</td>' +
-      '<td>' + statusBadge(s.Status) + '</td>' +
-      '<td><div class="row-actions">' +
-      '<button class="action-btn" onclick="editStaff(' + (realIndex !== -1 ? realIndex : i) + ',' + JSON.stringify(s).replace(/"/g,'&quot;').replace(/'/g,"\\'") + ')" title="Edit"><i class="fa-solid fa-pen"></i></button>' +
-      '<button class="action-btn" onclick="deleteStaff(' + (realIndex !== -1 ? realIndex : i) + ',\'' + (s.Full_Name||'').replace(/'/g,"\\'") + '\')" title="Delete" style="color:var(--danger)"><i class="fa-solid fa-trash"></i></button>' +
-      '</div></td>' +
-      '</tr>';
-  }).join('');
+function openStageModal(i) {
+  const c = (allData.correspondence || [])[i];
+  if (!c) return;
+  stageContext = { index: i, row: rowNumber(c, i) };
+  const modal = ensureDynamicModal('stageModal', 'Update Correspondence Stage');
+  modal.querySelector('.modal-body').innerHTML = `<div class="form-group"><label>Current Stage</label><input type="text" value="${c.Current_Stage || '—'}" readonly></div><div class="form-group" style="margin-top:12px"><label>Next Stage</label><select id="stageNext">${CORR_STAGES.map(s => `<option ${s === c.Current_Stage ? 'selected' : ''}>${s}</option>`).join('')}</select></div><div class="form-group" style="margin-top:12px"><label>Submission Mode</label><select id="stageMode"><option>WhatsApp</option><option>Hardcopy</option><option>eOffice</option><option>Email</option><option>Other</option></select></div><div class="form-group" style="margin-top:12px"><label>Remarks</label><textarea id="stageRemarks"></textarea></div>`;
+  modal.querySelector('.modal-footer').innerHTML = `<button class="btn-secondary" onclick="closeModal('stageModal')">Cancel</button><button class="btn-heart" onclick="saveStageUpdate()">Save</button>`;
+  openModal('stageModal');
 }
 
-function editStaff(rowIndex, staffObj) {
-  document.getElementById('sfName').value = staffObj.Full_Name || '';
-  document.getElementById('sfRank').value = staffObj.Rank || '';
-  document.getElementById('sfBadge').value = staffObj.Badge_No || '';
-  document.getElementById('sfPhone').value = staffObj.Phone || '';
-  document.getElementById('sfGender').value = staffObj.Gender || 'Male';
-  document.getElementById('sfStatus').value = staffObj.Status || 'Active';
-  document.getElementById('sfGmail').value = staffObj.Gmail || '';
-  document.getElementById('sfProjects').value = staffObj.Assigned_Projects || '';
-  document.getElementById('sfDistrict').value = staffObj.District_Assigned || '';
-  document.getElementById('sfReporting').value = staffObj.Reporting_Officer || '';
-  document.getElementById('sfDaily').value = staffObj.Daily_Duties || '';
-  document.getElementById('sfWeekly').value = staffObj.Weekly_Duties || '';
-  document.getElementById('sfMonthly').value = staffObj.Monthly_Duties || '';
-  document.getElementById('sfYearly').value = staffObj.Yearly_Duties || '';
-
-  const btn = document.getElementById('sfSaveBtn');
-  btn.dataset.editRow = rowIndex + 2;
-  btn.dataset.staffId = staffObj.Staff_ID || '';
-  btn.textContent = 'Update Staff';
-  
-  document.getElementById('staffFormTitle')
-    .textContent = 'Edit Staff';
-  
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-  showToast('Staff loaded for editing', 'info');
-}
-
-function clearStaffForm() {
-  document.getElementById('sfName').value = '';
-  document.getElementById('sfRank').value = '';
-  document.getElementById('sfBadge').value = '';
-  document.getElementById('sfPhone').value = '';
-  document.getElementById('sfGender').value = 'Male';
-  document.getElementById('sfStatus').value = 'Active';
-  document.getElementById('sfGmail').value = '';
-  document.getElementById('sfProjects').value = '';
-  document.getElementById('sfDistrict').value = '';
-  document.getElementById('sfReporting').value = '';
-  document.getElementById('sfDaily').value = '';
-  document.getElementById('sfWeekly').value = '';
-  document.getElementById('sfMonthly').value = '';
-  document.getElementById('sfYearly').value = '';
-  
-  const btn = document.getElementById('sfSaveBtn');
-  btn.dataset.editRow = '';
-  btn.dataset.staffId = '';
-  btn.textContent = 'Save Staff';
-  
-  document.getElementById('staffFormTitle')
-    .textContent = 'Add New Staff';
-}
+function openPostponeModal(i) { const v=(allData.vcschedule||[])[i]; if(!v)return; postponeContext={index:i,row:rowNumber(v,i)}; const modal=ensureDynamicModal('postponeModal','Postpone VC'); modal.querySelector('.modal-body').innerHTML=`<div class="form-grid"><div class="form-group"><label>New Date</label><input type="date" id="postponeDate"></div><div class="form-group"><label>New Time</label><input type="time" id="postponeTime"></div></div><div class="form-group" style="margin-top:12px"><label>Postpone Reason</label><textarea id="postponeReason"></textarea></div>`; modal.querySelector('.modal-footer').innerHTML=`<button class="btn-secondary" onclick="closeModal('postponeModal')">Cancel</button><button class="btn-heart" onclick="savePostponeVC()">Save</button>`; openModal('postponeModal'); }
 
 async function submitStaff() {
   const fullName = document.getElementById('sfName').value.trim();
@@ -4027,367 +3573,67 @@ async function submitStaff() {
   );
 }
 
-async function cleanUpUnusedSheets() {
-  if (!confirm('This will clear all data rows from Attendance, Leave, Rankings, Points_Log, Turn_Duties, Login_Log, Chat_Messages sheets. Headers are kept. Continue?')) return;
-  showToast('Cleaning up unused sheets...', 'info');
-  const sheets = ['Attendance','Leave_Register','Rankings','Points_Log','Turn_Duties','Login_Log','Chat_Messages'];
-  for (const sheet of sheets) {
-    await fetch(RELAY_URL, {
-      method: 'POST', mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sheet, action: 'clearRows' })
-    });
-  }
-  showToast('Unused sheets cleared!', 'success');
-}
-
-// ============================================================
-// MY PROFILE
-// ============================================================
-function switchDutyTab(tabName) {
-  document.querySelectorAll('.duty-tab-btn').forEach(btn => btn.classList.remove('active'));
-  document.querySelectorAll('.duty-tab-panel').forEach(panel => panel.style.display = 'none');
+function clearStaffForm() {
+  document.getElementById('sfName').value = '';
+  document.getElementById('sfRank').value = '';
+  document.getElementById('sfBadge').value = '';
+  document.getElementById('sfPhone').value = '';
+  document.getElementById('sfGender').value = 'Male';
+  document.getElementById('sfStatus').value = 'Active';
+  document.getElementById('sfGmail').value = '';
+  document.getElementById('sfProjects').value = '';
+  document.getElementById('sfDistrict').value = '';
+  document.getElementById('sfReporting').value = '';
+  document.getElementById('sfDaily').value = '';
+  document.getElementById('sfWeekly').value = '';
+  document.getElementById('sfMonthly').value = '';
+  document.getElementById('sfYearly').value = '';
   
-  const activeBtn = document.querySelector(`.duty-tab-btn[data-tab="${tabName}"]`);
-  const activePanel = document.getElementById(`duty-panel-${tabName}`);
-  if (activeBtn) activeBtn.classList.add('active');
-  if (activePanel) activePanel.style.display = 'block';
-}
-
-function formatDutyText(text) {
-  if (!text || !text.trim()) {
-    return `<div style="color:var(--text3);font-style:italic">No duties assigned yet. Contact admin to update.</div>`;
-  }
-  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-  let finalLines = [];
-  if (lines.length <= 1) {
-    const splitBySentences = text.split(/(?<=\.)\s+/);
-    finalLines = splitBySentences.map(s => s.trim()).filter(Boolean);
-  } else {
-    finalLines = lines;
-  }
+  const btn = document.getElementById('sfSaveBtn');
+  btn.dataset.editRow = '';
+  btn.dataset.staffId = '';
+  btn.textContent = 'Save Staff';
   
-  finalLines = finalLines.map(line => {
-    return line.replace(/^\d+[\.\)]\s*/, '').trim();
-  }).filter(Boolean);
-
-  if (finalLines.length === 0) {
-    return `<div style="color:var(--text3);font-style:italic">No duties assigned yet. Contact admin to update.</div>`;
-  }
-
-  return `<ol style="margin:0;padding-left:20px;color:var(--text2);line-height:1.6">
-    ${finalLines.map(line => `<li style="margin-bottom:6px">${line}</li>`).join('')}
-  </ol>`;
+  document.getElementById('staffFormTitle')
+    .textContent = 'Add New Staff';
 }
 
-function renderProfile() {
-  const phone = String(currentUser?.phone || '').trim();
-  const staff = allData.staff || [];
-  const me = staff.find(s => String(s.Phone || '').trim() === phone) || null;
-
-  const myTasks = (allData.command || []).filter(t =>
-    (t.Assigned_To || '').toLowerCase().includes((currentUser?.name || '').toLowerCase())
-  );
-  const myCorr = (allData.correspondence || []).filter(c =>
-    (c.Allocated_To || '').toLowerCase().includes((currentUser?.name || '').toLowerCase())
-  );
-  const myIGP = (allData.igpworks || []).filter(w =>
-    (w.Assigned_To || '').toLowerCase().includes((currentUser?.name || '').toLowerCase())
-  );
-
-  const pending    = myTasks.filter(t => t.Status === 'Pending').length;
-  const completed  = myTasks.filter(t => t.Status === 'Completed').length;
-  const activeCorr = myCorr.filter(c => c.Status === 'Active').length;
-  const avatar     = (currentUser?.name || 'A')[0].toUpperCase();
-
-  const profileCard = me ? `
-    <div class="profile-header" style="position:relative">
-      <div class="profile-avatar">${avatar}</div>
-      <div style="flex:1;min-width:0">
-        <div class="profile-name">${me.Full_Name || currentUser.name}</div>
-        <div class="profile-rank">${me.Rank || currentUser.rank || '—'}${me.Badge_No ? ' &nbsp;•&nbsp; Badge: ' + me.Badge_No : ''}</div>
-        <div class="profile-badge-row" style="flex-wrap:wrap;gap:6px;margin-top:8px">
-          ${me.Phone ? `<span class="profile-tag">📱 ${me.Phone}</span>` : ''}
-          ${me.Gmail ? `<span class="profile-tag">✉️ ${me.Gmail}</span>` : ''}
-          ${me.Gender ? `<span class="profile-tag">👤 ${me.Gender}</span>` : ''}
-          ${me.Status ? `<span class="profile-tag">${statusBadge(me.Status)}</span>` : ''}
-          ${me.Date_Joined ? `<span class="profile-tag">📅 Joined: ${me.Date_Joined}</span>` : ''}
-        </div>
-      </div>
-      <button onclick="openProfileEdit()" style="position:absolute;top:0;right:0;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer;white-space:nowrap">
-        <i class="fa-solid fa-pen"></i> Edit My Details
-      </button>
-    </div>` : `
-    <div class="profile-header">
-      <div class="profile-avatar">${avatar}</div>
-      <div>
-        <div class="profile-name">${currentUser?.name || 'Admin'}</div>
-        <div class="profile-rank">${currentUser?.rank || 'Administrator'}</div>
-        <div class="profile-badge-row" style="margin-top:8px">
-          <span class="profile-tag">📱 ${currentUser?.phone || '—'}</span>
-          ${currentUser?.email ? `<span class="profile-tag">✉️ ${currentUser.email}</span>` : ''}
-        </div>
-        <p style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:8px">Profile not found in Staff Master. Ask admin to add your details, or go to Staff Management to add yourself.</p>
-      </div>
-    </div>`;
-
-  const projectsHtml = (() => {
-    const projStr = me?.Assigned_Projects || '';
-    if (!projStr.trim()) return `<div style="color:var(--text3);font-size:12px">No projects assigned</div>`;
-    const projArr = projStr.split(';').map(p => p.trim()).filter(Boolean);
-    return `
-      <div style="display:flex;flex-wrap:wrap;gap:8px">
-        ${projArr.map(p => `<span class="badge" style="background:var(--navy);color:#fff;font-weight:600;padding:6px 12px;border-radius:20px;font-size:11px;letter-spacing:0.3px"><i class="fa-solid fa-folder-open" style="margin-right:4px"></i> ${p}</span>`).join('')}
-      </div>`;
-  })();
-
-  document.getElementById('profileContent').innerHTML = `
-    ${profileCard}
-
-    <!-- Tabbed Duties Section -->
-    ${me ? `
-    <div class="card navy-card" style="margin:16px 0">
-      <div style="font-weight:700;font-size:16px;color:var(--text1);margin-bottom:12px;display:flex;align-items:center;gap:8px">
-        <i class="fa-solid fa-briefcase" style="color:var(--navy)"></i> My Duties & Responsibilities
-      </div>
-      <div class="tab-pills" style="margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:8px;display:flex;gap:6px">
-        <button class="tab-pill duty-tab-btn active" data-tab="daily" onclick="switchDutyTab('daily')">Daily Duties</button>
-        <button class="tab-pill duty-tab-btn" data-tab="weekly" onclick="switchDutyTab('weekly')">Weekly Duties</button>
-        <button class="tab-pill duty-tab-btn" data-tab="monthly" onclick="switchDutyTab('monthly')">Monthly Duties</button>
-        <button class="tab-pill duty-tab-btn" data-tab="yearly" onclick="switchDutyTab('yearly')">Yearly Duties</button>
-      </div>
-      <div id="duty-panel-daily" class="duty-tab-panel" style="display:block;border-left:4px solid var(--navy);padding:10px 14px;background:var(--bg2);border-radius:0 8px 8px 0;margin-top:8px">
-        ${formatDutyText(me.Daily_Duties)}
-      </div>
-      <div id="duty-panel-weekly" class="duty-tab-panel" style="display:none;border-left:4px solid var(--navy);padding:10px 14px;background:var(--bg2);border-radius:0 8px 8px 0;margin-top:8px">
-        ${formatDutyText(me.Weekly_Duties)}
-      </div>
-      <div id="duty-panel-monthly" class="duty-tab-panel" style="display:none;border-left:4px solid var(--navy);padding:10px 14px;background:var(--bg2);border-radius:0 8px 8px 0;margin-top:8px">
-        ${formatDutyText(me.Monthly_Duties)}
-      </div>
-      <div id="duty-panel-yearly" class="duty-tab-panel" style="display:none;border-left:4px solid var(--navy);padding:10px 14px;background:var(--bg2);border-radius:0 8px 8px 0;margin-top:8px">
-        ${formatDutyText(me.Yearly_Duties)}
-      </div>
-    </div>
-    ` : ''}
-
-    <!-- My Projects Section -->
-    <div class="card navy-card" style="margin-bottom:16px">
-      <div style="font-weight:700;font-size:16px;color:var(--text1);margin-bottom:12px;display:flex;align-items:center;gap:8px">
-        <i class="fa-solid fa-square-poll-horizontal" style="color:var(--navy)"></i> My Assigned Projects
-      </div>
-      ${projectsHtml}
-    </div>
-
-    <!-- District & Contact Info Grid -->
-    <div class="card navy-card" style="margin-bottom:16px">
-      <div style="font-weight:700;font-size:16px;color:var(--text1);margin-bottom:12px;display:flex;align-items:center;gap:8px">
-        <i class="fa-solid fa-address-card" style="color:var(--navy)"></i> District & Contact Info
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
-        <div style="background:var(--bg2);padding:10px 14px;border-radius:8px">
-          <div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">District Assigned</div>
-          <div style="font-size:14px;color:var(--text1);font-weight:600;margin-top:2px">${me?.District_Assigned || '—'}</div>
-        </div>
-        <div style="background:var(--bg2);padding:10px 14px;border-radius:8px">
-          <div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Reporting Officer</div>
-          <div style="font-size:14px;color:var(--text1);font-weight:600;margin-top:2px">${me?.Reporting_Officer || '—'}</div>
-        </div>
-        <div style="background:var(--bg2);padding:10px 14px;border-radius:8px">
-          <div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Personal Email (Gmail)</div>
-          <div style="font-size:14px;color:var(--text1);font-weight:600;margin-top:2px">${me?.Gmail || '—'}</div>
-        </div>
-        <div style="background:var(--bg2);padding:10px 14px;border-radius:8px">
-          <div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Phone Number</div>
-          <div style="font-size:14px;color:var(--text1);font-weight:600;margin-top:2px">${me?.Phone || '—'}</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="stats-grid" style="margin:16px 0">
-      <div class="stat-card">
-        <div class="stat-icon blue"><i class="fa-solid fa-list-check"></i></div>
-        <div><div class="stat-value">${myTasks.length}</div><div class="stat-label">Total Tasks</div></div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon warning"><i class="fa-solid fa-clock"></i></div>
-        <div><div class="stat-value">${pending}</div><div class="stat-label">Pending</div></div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon success"><i class="fa-solid fa-check-circle"></i></div>
-        <div><div class="stat-value">${completed}</div><div class="stat-label">Completed</div></div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon gold"><i class="fa-solid fa-envelope"></i></div>
-        <div><div class="stat-value">${activeCorr}</div><div class="stat-label">Active Files</div></div>
-      </div>
-    </div>
-
-    <div class="section-header"><div class="section-title">My Assigned Tasks (${myTasks.length})</div></div>
-    <div class="card" style="padding:0;margin-bottom:16px">
-      <div class="table-wrap"><table>
-        <thead><tr><th>#</th><th>Task</th><th>Category</th><th>Priority</th><th>Status</th><th>Due Date</th><th>Assigned By</th></tr></thead>
-        <tbody>${myTasks.length === 0
-          ? '<tr><td colspan="7"><div class="empty-state"><i class="fa-solid fa-clipboard"></i><p>No tasks assigned yet</p></div></td></tr>'
-          : myTasks.map((t,i) => `<tr>
-              <td>${i+1}</td><td>${t.Task_Title||'—'}</td><td>${t.Category||'—'}</td>
-              <td>${priorityBadge(t.Priority)}</td><td>${statusBadge(t.Status)}</td>
-              <td>${formatDate(t.Due_Date)}</td><td>${t.Assigned_By||'—'}</td>
-            </tr>`).join('')}
-        </tbody>
-      </table></div>
-    </div>
-
-    <div class="section-header"><div class="section-title">My Correspondence (${myCorr.length})</div></div>
-    <div class="card" style="padding:0;margin-bottom:16px">
-      <div class="table-wrap"><table>
-        <thead><tr><th>#</th><th>Type</th><th>Subject</th><th>Stage</th><th>Status</th><th>Date</th></tr></thead>
-        <tbody>${myCorr.length === 0
-          ? '<tr><td colspan="6"><div class="empty-state"><i class="fa-solid fa-envelope"></i><p>No correspondence allocated</p></div></td></tr>'
-          : myCorr.map((c,i) => `<tr>
-              <td>${i+1}</td><td>${c.Type||'—'}</td>
-              <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.Subject||'—'}</td>
-              <td>${c.Current_Stage||'—'}</td><td>${statusBadge(c.Status)}</td>
-              <td>${formatDate(c.Date)}</td>
-            </tr>`).join('')}
-        </tbody>
-      </table></div>
-    </div>
-
-    ${myIGP.length > 0 ? `
-    <div class="section-header"><div class="section-title">My IGP Works (${myIGP.length})</div></div>
-    <div class="card" style="padding:0;margin-bottom:16px">
-      <div class="table-wrap"><table>
-        <thead><tr><th>#</th><th>Work Title</th><th>Priority</th><th>Status</th><th>Due Date</th></tr></thead>
-        <tbody>${myIGP.map((w,i) => `<tr>
-          <td>${i+1}</td><td>${w.Work_Title||'—'}</td>
-          <td>${priorityBadge(w.Priority)}</td><td>${statusBadge(w.Status)}</td>
-          <td>${formatDate(w.Due_Date)}</td>
-        </tr>`).join('')}</tbody>
-      </table></div>
-    </div>` : ''}
-
-    <!-- Profile Edit Modal -->
-    <div id="profileEditModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9000;align-items:center;justify-content:center;padding:16px">
-      <div class="card" style="width:100%;max-width:500px;max-height:85vh;overflow-y:auto">
-        <div class="section-header" style="margin-bottom:14px">
-          <div class="section-title"><i class="fa-solid fa-pen"></i> Edit My Details</div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:10px">
-          <div><label style="font-size:12px;color:var(--text3);display:block;margin-bottom:4px">Phone (Login ID — read only)</label>
-            <input id="pePhone" value="${me?.Phone||currentUser?.phone||''}" readonly style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text3)"></div>
-          <div><label style="font-size:12px;color:var(--text3);display:block;margin-bottom:4px">Gmail</label>
-            <input id="peGmail" value="${me?.Gmail||currentUser?.email||''}" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text1)"></div>
-          <div><label style="font-size:12px;color:var(--text3);display:block;margin-bottom:4px">District Assigned</label>
-            <input id="peDistrict" value="${me?.District_Assigned||''}" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text1)"></div>
-          <div><label style="font-size:12px;color:var(--text3);display:block;margin-bottom:4px">Daily Duties</label>
-            <textarea id="peDaily" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text1);min-height:70px">${me?.Daily_Duties||''}</textarea></div>
-          <div><label style="font-size:12px;color:var(--text3);display:block;margin-bottom:4px">Weekly Duties</label>
-            <textarea id="peWeekly" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text1);min-height:70px">${me?.Weekly_Duties||''}</textarea></div>
-          <div><label style="font-size:12px;color:var(--text3);display:block;margin-bottom:4px">Monthly Duties</label>
-            <textarea id="peMonthly" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text1);min-height:70px">${me?.Monthly_Duties||''}</textarea></div>
-          <div><label style="font-size:12px;color:var(--text3);display:block;margin-bottom:4px">Yearly Duties</label>
-            <textarea id="peYearly" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text1);min-height:70px">${me?.Yearly_Duties||''}</textarea></div>
-          <div style="display:flex;gap:10px;margin-top:10px">
-            <button onclick="saveProfileEdit()" class="btn-primary" style="flex:1"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
-            <button onclick="document.getElementById('profileEditModal').style.display='none'" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-size:13px">Cancel</button>
-          </div>
-        </div>
-      </div>
-    </div>`;
-}
-
-function openProfileEdit() {
-  document.getElementById('profileEditModal').style.display = 'flex';
-}
-
-async function saveProfileEdit() {
-  const phone  = String(currentUser?.phone || '').trim();
-  const staff  = allData.staff || [];
-  const idx    = staff.findIndex(s => String(s.Phone || '').trim() === phone);
-  if (idx === -1) { showToast('Profile not found in Staff Master', 'error'); return; }
-  const me = staff[idx];
-  me.Gmail             = document.getElementById('peGmail').value.trim();
-  me.District_Assigned = document.getElementById('peDistrict').value.trim();
-  me.Daily_Duties      = document.getElementById('peDaily').value.trim();
-  me.Weekly_Duties     = document.getElementById('peWeekly').value.trim();
-  me.Monthly_Duties    = document.getElementById('peMonthly').value.trim();
-  me.Yearly_Duties     = document.getElementById('peYearly').value.trim();
-  const rowData = [
-    me.Staff_ID||'', me.Full_Name||'', me.Rank||'', me.Badge_No||'',
-    me.Gender||'', me.Gmail, me.Phone||'', me.Date_Joined||'',
-    me.Status||'Active', me.Profile_Photo_URL||'',
-    me.Assigned_Projects||'', me.District_Assigned, me.Reporting_Officer||'',
-    me.Created_Date||'',
-    me.Daily_Duties, me.Weekly_Duties, me.Monthly_Duties, me.Yearly_Duties
-  ];
-  await fetch(RELAY_URL, {
-    method:'POST', mode:'no-cors',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ sheet:'Staff_Master', action:'update', row: idx+2, col:1, data: rowData })
-  });
-  document.getElementById('profileEditModal').style.display = 'none';
-  showToast('Profile updated!', 'success');
-  currentUser.email = me.Gmail;
-  await loadAllData();
-  renderProfile();
-}
-
-// ============================================================
-// STAFF DATA — AP POLICE TS DASHBOARD EXCEL + DUTY CHART
-// ============================================================
-const DASHBOARD_STAFF = [["S1101", "Md. Anwar", "PC", "1773", "Male", "anwar1773@gmail.com", "8639399057", "", "Active", "", "CCTNS Req/Modifications; CCTNS-NCRB/TCS; CCTNS Reports; AP Smart Cops; APCOPS; BSNL DLT; AP Website; Trainings", "Krishna District", "", "2024-01-01"], ["S1102", "L. Trinadha Rao", "PC", "1722", "Male", "trinadh_pcs@appolice.gov.in", "9652881207", "", "Active", "", "CCTNS BSNL Connectivity; iRAD Reports; XDR+SASE; GeM Bid Evaluations; Dispatch; District Coordination", "Tirupati District", "", "2024-01-01"], ["S1103", "A. Ganeswara Rao", "PC", "1705", "Male", "arnipalli17051@gmail.com", "9704347908", "", "Active", "", "CCTNS & Pragathi Reports; AP Website/Suraksha; XDR+SASE; GeM Bid Evaluations; Dispatch; District Coordination", "Tirupati District", "", "2024-01-01"], ["S1104", "B. Siva Srinivas Rao", "PC", "5122", "Male", "sssvas05@gmail.com", "7386104098", "", "Active", "", "CCTNS Application Statistics; AP Smart Cops; AI4AP; GeM Bid Evaluations; Dispatch; District Coordination", "Guntur", "", "2024-01-01"], ["S1105", "D. Aashik", "PC", "3582", "Male", "aashiqkhaleja1@gmail.com", "8639592237", "", "Active", "", "CEIR; GeM Bid Evaluations; District Coordination; Trainings", "NTR District", "", "2024-01-01"], ["S1106", "M. Suneetha", "WPC", "2546", "Female", "suneethacctns@gmail.com", "9948255139", "", "Active", "", "PM Gati Shakti Portal; BSNL DLT & eSMS; GeM Bid Evaluations; Drafting; Trainings; eOffice Follow-up", "Krishna District", "", "2024-01-01"], ["S1107", "PVK. Prasad", "HC(C)", "1649", "Male", "iampvkprasad@gmail.com", "9110300554", "", "Active", "", "NATGRID - Gandiva Portal; E-Forms Approvals; GeM Bid Evaluations; Drafting; Trainings; District Coordination", "Communication", "", "2024-01-01"], ["S1108", "N. Bhanu Hari", "PC(C)", "1871", "Male", "bhanuhari.123@gmail.com", "8309578086", "", "Active", "", "NATGRID - Sudarshan Portal; E-Forms Approvals; GeM Bid Evaluations; Drafting; Trainings; District Coordination", "Communication", "", "2024-01-01"], ["S1109", "Sk. Lal John Basha", "HC(C)", "1806", "Male", "laljanibasha99@gmail.com", "9573180827", "", "Active", "", "NATGRID Gandiva & Sudarshan; Case Approvals/MHA Coordination; GeM Bid Evaluations; Trainings", "Communication", "", "2024-01-01"], ["S1110", "E. Sai Sowmya", "WPC(C)", "1884", "Female", "sowmyacctns@gmail.com", "8317554950", "", "Active", "", "CEIR; GeM Bid Evaluations; Drafting; Office Inward/Outward; Meetings Coordination", "Communication", "", "2024-01-01"], ["S1111", "L. Naveen Babu", "PC", "2950", "Male", "naveenbabu.lingam@gmail.com", "8712345058", "", "Active", "", "CEIR; GeM Bid Evaluations; Drafting; VC/Training Video Uploads; District Coordination; Trainings", "Krishna District", "", "2024-01-01"], ["S1112", "S. Rajasekhar Rao", "PC(C)", "1817", "Male", "rajasekhararao27@gmail.com", "9849583594", "", "Active", "", "CCTNS Helpdesk 24/7; JTrac Bug Tracking; DG DSR; Deletions/Modifications via DSP Login", "Communication", "", "2024-01-01"], ["S1113", "K. Gopi", "PC", "4300", "Male", "gopikavuris43@gmail.com", "9553312439", "", "Active", "", "CCTNS Helpdesk 24/7 Monitoring", "Guntur District", "", "2024-01-01"], ["S1114", "L. Rahul", "PC", "2885", "Male", "rahullanka2@gmail.com", "7095233770", "", "Active", "", "CCTNS Helpdesk 24/7 Monitoring", "Krishna District", "", "2024-01-01"], ["S1115", "K. Sreenu", "PC", "1644", "Male", "sreenu.kellakarrothu@gmail.com", "6301615193", "", "Active", "", "CCTNS Helpdesk 24/7 Monitoring", "Tirupathi", "", "2024-01-01"], ["S1116", "N. Ramanjaneyulu", "PC", "2401", "Male", "nayuduramu332@gmail.com", "9603557975", "", "Active", "", "CriMAC; APCOPS 2.0; eSakshya & eSummons; GeM Bid Evaluations; NCRB Coordination", "Prakasam District", "", "2024-01-01"], ["S1117", "J. Mounika", "WPC", "3786", "Female", "mounikajonnalagadda@gmail.com", "6281029399", "", "Active", "", "eSakshya & eSummons; GeM Bid Evaluations; NCRB Coordination; District Coordination", "NTR District", "", "2024-01-01"], ["S1118", "E. Vasantha Kumari", "WPC", "3762", "Female", "vasu92028@gmail.com", "8730267046", "", "Active", "", "eSakshya & eSummons; GeM Bid Evaluations; NCRB Coordination; District Coordination", "NTR District", "", "2024-01-01"]];
-const DUTIES_MAP = {"8639399057": {"d": "1. Handle CCTNS application requirements and bug reports. 2. Coordinate with NCRB & TCS team on CCTNS issues. 3. Prepare CCTNS reports and presentations as required. 4. Monitor BSNL DLT & eSMS service issues.", "w": "1. Weekly Teleconference Report submission. 2. Update CCTNS statistics. 3. GeM bid evaluation (Pre-Qualification/Technical).", "m": "1. Compile monthly CCTNS performance report. 2. Update project master sheet."}, "9652881207": {"d": "1. Check email dig_pcs@appolice.gov.in and disseminate important mails. 2. Monitor CCTNS BSNL connectivity status. 3. Handle dispatch works and outward correspondence.", "w": "1. Prepare and submit Weekly Teleconference Report. 2. GeM bid evaluation (Pre-Qualification/Technical). 3. Submit iRAD reports.", "m": "1. Update XDR+SASE project status. 2. Review GeM procurement progress."}, "9704347908": {"d": "1. Check email dsp_cctns@appolice.gov.in and cctns_ap@appolice.gov.in; disseminate important mails. 2. Prepare CCTNS & Pragathi daily/status reports. 3. Testing Citizen Portal. 4. Handle dispatch works.", "w": "1. Weekly Teleconference Report on CCTNS and Citizen Portal. 2. GeM bid evaluation (Pre-Qualification/Technical). 3. Update AP Police Website/Suraksha data.", "m": "1. Monthly Pragathi Reports preparation. 2. Update XDR+SASE project details."}, "7386104098": {"d": "1. Check email apsmartcops@appolice.gov.in and disseminate important mails. 2. Compile CCTNS application statistics. 3. Prepare data for News360AI clippings delay reasons. 4. Submit News360AI district-wise Relevant/Not-Relevant feedback DSR. 5. Co-ordinate with PROs and paper clipping persons.", "w": "1. Conduct CCTNS Training classes at APSP 6th BN (3-4 days). 2. Prepare Smart Policing report based on district-wise CCTNS performance evaluation. 3. GeM bid evaluation (Pre-Qualification/Technical).", "m": "1. Co-ordinate and collect data from districts. 2. Co-ordinate and submit data with Sparity Technical Team. 3. AI4AP Police File correspondence."}, "8639592237": {"d": "1. Transfer CEIR requests to other states via CEIR portal. 2. Access CEIR portal to review statistics and generate daily reports. 3. Monitor CEIR NIC email (ceir@appolice.gov.in). 4. Review CEIR Nodal Officers' WhatsApp group for field-level issues. 5. Update CEIR project Excel sheet with progress.", "w": "1. Prepare Smart Policing report based on district-wise CEIR performance. 2. Communicate reports to low-performing and top-performing units. 3. GeM bid evaluation (Pre-Qualification/Technical). 4. Submit Weekly Teleconference Report.", "m": "1. Conduct comparative assessment of state-level CEIR statistics with other states. 2. Update CEIR project master sheet."}, "9948255139": {"d": "1. Maintain and monitor eOffice system for smooth workflow. 2. Handle email cctns_ap@ncrb.gov.in - review, respond, follow up. 3. Monitor PM GatiShakti Portal: track District IT Core Members' user creation; coordinate with NCRB. 4. Check email pmgatishakti@appolice.gov.in and disseminate important mails. 5. Update PM GatiShakti project Excel sheet.", "w": "1. Monitor PM GatiShakti Portal for GIS layer deletions, integration failures, system discrepancies. 2. Monitor BSNL DLT Portal: verify/create templates in ESMS, track message delivery/rejection, resolve issues. 3. Weekly Teleconference Report. 4. GeM bid evaluation.", "m": "1. Update Google Sheets project tracker for PM GatiShakti, BSNL DLT and ESMS."}, "9110300554": {"d": "1. Approval of cases and sensitive searches in GANDIVA portal. 2. Examine and approve VPN service requests under e-forms. 3. Onboard new users: role assignment and MAC ID whitelisting. 4. Resolve user issues and technical problems. 5. Coordinate with NIC VPN team via Service Desk. 6. Prepare and submit daily NATGRID status report. 7. Check emails nodal_pcs@ and asstnodal_pcs@; disseminate important mails. 8. Update NATGRID Gandiva project Excel sheet.", "w": "1. Compile GANDIVA usage data and interact with low-performing units. 2. Monitor inactive/old cases and inform units. 3. Collect and forward system improvement suggestions to NATGRID New Delhi. 4. Weekly Teleconference Report. 5. GeM bid evaluation.", "m": "1. Update Gandiva project master sheet (first week of every month). 2. Collect and share success stories with NATGRID/MHA. 3. Conduct training and refresher sessions for Gandiva users."}, "8309578086": {"d": "1. Check email success_stories_pcs@appolice.gov.in and disseminate important mails. 2. Address NATGRID Sudarshan account and VPN-related issues. 3. Resolve Sudarshan application issues posted in NATGRID State WhatsApp group. 4. Update Sudarshan project Excel sheet.", "w": "1. Coordinate with least-performing units every Thursday to enhance Sudarshan usage. 2. Weekly Teleconference Report. 3. GeM bid evaluation.", "m": "1. Update Sudarshan project master sheet (first week of every month). 2. Prepare list of inactive users in Sudarshan application. 3. Check and action VPN renewals for Sudarshan users."}, "9573180827": {"d": "1. Approval of cases and sensitive searches in GANDIVA. 2. Onboard new users: role assignment and MAC ID whitelisting. 3. Resolve user issues in coordination with NATGRID Delhi. 4. Prepare and submit daily NATGRID status report. 5. Check email natgrid@appolice.gov.in and disseminate important mails. 6. Update NATGRID project Excel sheet.", "w": "1. Generate Gandiva usage report for Smart Policing Dashboard. 2. Review low-performing units; assess performance; ensure corrective measures. 3. Weekly Teleconference Report. 4. GeM bid evaluation.", "m": "1. Update Gandiva project master sheet (first week of every month). 2. Conduct training and refresher sessions for Gandiva users."}, "8317554950": {"d": "1. Check email cctns_ap@ncrb.gov.in and disseminate important mails. 2. Update Meetings Sheet and inform concerned officers about important meetings. 3. Process office inward and outward correspondence. 4. Update CEIR project Excel sheet.", "w": "1. Weekly Teleconference Report. 2. GeM bid evaluation (Pre-Qualification/Technical). 3. Review and clear pending correspondence.", "m": "1. Monthly CEIR project status update. 2. Compile inward/outward register summary."}, "8712345058": {"d": "1. Maintain and monitor eOffice systems for smooth workflow. 2. Handle emails cctns_ap@ncrb.gov.in and technical_services@appolice.gov.in. 3. Verify status of pending/old correspondence; update and dispose per office procedures. 4. Process and transfer CEIR requests to concerned states/UTs. 5. Upload VC/Training/Webinar videos to Google Drive daily. 6. Update CEIR project Excel sheet.", "w": "1. Weekly Teleconference Report. 2. GeM bid evaluation. 3. Dispatch works and drafting. 4. Conduct trainings to units as scheduled.", "m": "1. Monthly CEIR transfer status update in master sheet. 2. Review pending correspondence and close items."}, "9849583594": {"d": "1. Raise CCTNS bugs in JTrac based on user feedback; coordinate with TCS for resolution; inform users. 2. Carry out approved deletions/modifications via DSP login per SOP; log enhancement/change requests. 3. Inform higher officers about important application updates and issues. 4. Prepare and submit Helpdesk daily DSR. 5. Update DG DSR in Google Sheet (ITSSO, NATGRID, E-Summons, E-Sakshya). 6. Check email helpdesk_pcs@appolice.gov.in and disseminate important mails. 7. Update CCTNS Helpdesk project Excel sheet.", "w": "1. Generate weekly report of raised issues in JTrac. 2. Follow up on open/pending bugs with TCS team.", "m": "1. Generate monthly report of raised issues in JTrac. 2. Prepare monthly Helpdesk performance summary."}, "9553312439": {"d": "1. Monitor CCTNS application 24/7 during assigned shift. 2. Log and escalate incidents to Rajasekhar Rao/TCS team. 3. Verify CCTNS portal uptime and respond to user queries.", "w": "1. Handover shift briefing and update helpdesk register.", "m": "1. Submit shift-wise performance note."}, "7095233770": {"d": "1. Monitor CCTNS application 24/7 during assigned shift. 2. Log and escalate incidents to Rajasekhar Rao/TCS team. 3. Verify CCTNS portal uptime and respond to user queries.", "w": "1. Handover shift briefing and update helpdesk register.", "m": "1. Submit shift-wise performance note."}, "6301615193": {"d": "1. Monitor CCTNS application 24/7 during assigned shift. 2. Log and escalate incidents to Rajasekhar Rao/TCS team. 3. Verify CCTNS portal uptime and respond to user queries.", "w": "1. Handover shift briefing and update helpdesk register.", "m": "1. Submit shift-wise performance note."}, "9603557975": {"d": "1. Monitor Zero FIR Report in Cri-MAC; identify new Zero FIRs from other states; inform District IT Core Teams. 2. Provide tech support for daily Cri-MAC issues (login, alert count, email ID); coordinate with Cri-MAC Support and NCRB Delhi. 3. Support all districts in APCOPS 2.0: create admin users, update improperly registered users, resolve queries. 4. Check email apcops_pcs@appolice.gov.in; check Zero FIR alerts in DIG mail; inform concerned personnel. 5. Update ICJS/CriMAC/APCOPS project Excel sheets.", "w": "1. Coordinate with low-performing units every Thursday to improve Cri-MAC usage. 2. Prepare and submit weekly Cri-MAC performance report. 3. Weekly Teleconference Report. 4. GeM bid evaluation.", "m": "1. Prepare monthly list of transferred Zero FIRs; update project master sheet (first week). 2. Update APCOPS 2.0 project details in master sheet (first week)."}, "6281029399": {"d": "1. Coordinate with districts on eSakshya and eSummons issues. 2. Liaise with NCRB for eSakshya/eSummons queries and updates.", "w": "1. Weekly Teleconference Report. 2. GeM bid evaluation. 3. Review eSakshya/eSummons portal performance.", "m": "1. Update eSakshya project master sheet with monthly progress. 2. Compile NCRB coordination summary."}, "8730267046": {"d": "1. Coordinate with districts on eSakshya and eSummons issues. 2. Liaise with NCRB for eSakshya/eSummons queries and updates.", "w": "1. Weekly Teleconference Report. 2. GeM bid evaluation. 3. Review eSummons portal performance.", "m": "1. Update eSummons project master sheet with monthly progress. 2. Compile NCRB coordination summary."}};
-const STAFF_TEMPLATE = [["S1001","K. Vijaya Kumar","SI","","Male","","9440470479","2018-11-23","Active","","APOLIS, Drones, Mee-seva","Guntur Range","","2024-01-01"],["S1002","V.Sheshanjali","PC","","Female","","","","Active","","APOLIS","Guntur Dist","","2024-01-01"],["S1003","CH.Srinivasa Rao","HC","316","Male","","6281861526","2020-01-15","Active","","Drones, APFRS-Biometric, Meeseva","Guntur Dist","","2024-01-01"],["S1004","M.Mohan","SI","","Male","","","","Active","","Data center","","","2024-01-01"],["S1005","K. Sreekanth","RI","","Male","","9491416025","2021-04-04","Active","","Cloud based CCTVs, CCTV in PS, E-Office","APSP","","2024-01-01"],["S1006","T.Koteswararao","PC","1815","Male","","9000640658","2019-01-23","Active","","CCTV in PS","Communication","","2024-01-01"],["S1007","O.Jyothi","WPC","2067","Female","","7674033487","2019-01-23","Active","","Cloud based CCTVs","Communication","","2024-01-01"],["S1008","CH.Venkatesh","PC","741","Male","","8886885859","2022-09-01","Active","","E-Office","Eluru Dist","","2024-01-01"],["S1009","S.Srinivasulu","HC","1610","Male","","7013677239","2024-09-05","Active","","E-Office","Vizianagaram Dist","","2024-01-01"],["S1010","G.Ravi kiran","SI","","Male","","","","Active","","E-challans, ITMS, ERSS-112, Tabs","","","2024-01-01"],["S1011","R.Ramarao","PC","1615","Male","","9441473964","2022-07-26","Active","","ERSS-112 AND TABS, 48 call takers","Tirupathi Dist","","2024-01-01"],["S1012","K.Kiran Vani","WHC","1982","Female","","8977959518","2019-01-23","Active","","E-challans, Brerath Analyzers, Speed Laser guns","Communication","","2024-01-01"],["S1013","P.Ashok Kumar","PC","444","Male","","9160998444","2022-03-26","Active","","E-challans","Palnadu Dist","","2024-01-01"],["S1014","T. Venkata Naidu","RSI","","Male","","6304218129","2022-10-12","Active","","BWC, Women safety (Disha), LHMS","Kadapa Dist","","2024-01-01"],["S1015","CH.Siva Balakrishna","HC","1639","Male","","9491800714","2023-12-17","Active","","BWC, LHMS","Communication","","2024-01-01"],["S1016","R.Kishore","PC","1435","Male","","9666881292","2023-10-01","Active","","Women Safety","6th Battalion","","2024-01-01"],["S1017","E Prasanna","WPC","6872","Female","","9505328763","2025-04-09","Active","","Women Safety","Guntur Dist","","2024-01-01"],["S1018","V.Sudharshana reddy","IC","","Male","","","","Active","","CCTNS","","","2024-01-01"],["S1019","T. Anoj Kumar","RSI","","Male","","9493946020","2024-01-11","Active","","CCTNS, NATGRID, CEIR, BISAG","DAR Srikakulam","","2024-01-01"],["S1020","Ram Koti Naik","ARSI","","Male","","9951929562","2018-03-15","Active","","MTO, 112 Control Room Shift","SCR CPL Amberpet","","2024-01-01"],["S1021","G. Govinda Rao","PC","1146","Male","","9391211030","2024-12-15","Active","","MTO Writer","Tirupati District","","2024-01-01"],["S1022","D. Raviner Babu","HC","917","Male","","8688887707","2022-06-14","Active","","Driver","PTO","","2024-01-01"],["S1023","SK. Silar Vali","HC","997","Male","","9908069956","2019-06-14","Active","","Driver","PTO","","2024-01-01"],["S1024","SK. Riyaz","PC","554","Male","","9493515387","","Active","","Driver","Nellore","","2024-01-01"],["S1025","S. Ravi Kumar","PC","387","Male","","6303289717","2019-01-14","Active","","Driver - Director FSL","16th Bn. APSP VSKP","","2024-01-01"],["S1026","G. Paramesh","PC","915","Male","","7013574236","2023-04-27","Active","","Driver","Palnadu District","","2024-01-01"],["S1027","A. Syambabu","HG","202","Male","","9010634392","2024-04-10","Active","","112 Control Room (Driver)","Krishna District","","2024-01-01"],["S1028","B. Rani","WASI","","Female","","9247836443","2022-10-07","Active","","112 Control Room Shift","West Godavari District","","2024-01-01"],["S1029","Pallapothu Suresh","PC","6075","Male","","","","Active","","SAKTHI Team","Palnadu","","2024-01-01"],["S1030","Ch.Durga Rao","PC","2669","Male","","","","Active","","SAKTHI Team","Eluru","","2024-01-01"],["S1031","P Harika","WPC","2058","Female","","","","Active","","SAKTHI Team","Communication","","2024-01-01"],["S1032","P.Komala","WPC","2051","Female","","","","Active","","SAKTHI Team","Communication","","2024-01-01"],["S1033","A.Prasanna Lakshmi","WPC","2075","Female","","","","Active","","SAKTHI Team","Communication","","2024-01-01"],["S1034","T.Keerthi","WPC","2057","Female","","","","Active","","SAKTHI Team","Communication","","2024-01-01"],["S1035","Sarojini","AAO","","Female","","","","Active","","AO Section and Staff","","","2024-01-01"],["S1036","L.Venkata Krishna","PC","4159","Male","","","","Active","","CCTNS Reports","Bapatla District","","2024-01-01"],["S1037","Md.Sadhik","RSI","","Male","","","","Active","","Data Center-2","NTR Dist","","2024-01-01"],["S1038","M. Gowri Shankara Rao","PC","198","Male","","","","Active","","Data center","Krishna Dist","","2024-01-01"],["S1039","A. Murali","PC","956","Male","","","","Active","","Data center","16th BN","","2024-01-01"],["S1040","S. Ramu","PC","1891","Male","","","","Active","","Data center","PCO","","2024-01-01"],["S1041","Y. Pardha Saradhi","PC","4344","Male","","","","Active","","Data center","NTR Dist","","2024-01-01"],["S1042","K. Ananth Kumar","PC","1305","Male","","","","Active","","Data center","6th BN","","2024-01-01"],["S1043","P. Sunil Kumar","HC","1826","Male","","","","Active","","DGP Office Team","PCO","","2024-01-01"],["S1044","K. Praveen","PC","8303","Male","","","","Active","","DGP Office Team","PCO","","2024-01-01"],["S1045","K.Sathish","IC","","Male","","9248092990","2021-06-20","Active","","ICJS - eSakshya, eSummons, NDSO, CRIMAC, ITSSO, RTGS","NTR District","","2024-01-01"]];
-
-async function bulkImportStaff() {
-  if (!confirm('Import all TS staff into Staff_Master sheet?\n\n18 complete records (email + duties) + 45 duty chart staff.\nPhone = Login ID | Password = 1111\nExisting records skipped.\n\nProceed?')) return;
-
-  const existing = new Set((allData.staff || []).map(s => String(s.Phone || '').trim()).filter(Boolean));
-  const dashPhones = new Set(DASHBOARD_STAFF.map(r => String(r[6]).trim()).filter(Boolean));
-
-  const dashNew = DASHBOARD_STAFF.filter(r => !existing.has(String(r[6]).trim()));
-  const tmplNew = STAFF_TEMPLATE.filter(r => {
-    const ph = String(r[6]).trim();
-    return !existing.has(ph) && !dashPhones.has(ph);
-  });
-
-  const all = [...dashNew, ...tmplNew];
-  showToast('Importing ' + all.length + ' staff records...', 'info');
-
-  let count = 0;
-  for (const row of all) {
-    await fetch(RELAY_URL, {
-      method: 'POST', mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sheet: 'Staff_Master', action: 'append', data: row })
-    });
-    count++;
-    if (count % 5 === 0) showToast('Imported ' + count + '/' + all.length + '...', 'info');
-    await new Promise(r => setTimeout(r, 350));
-  }
-
-  showToast('Import complete! ' + count + ' staff added. Reloading...', 'success');
-  setTimeout(async () => {
-    await loadAllData();
+function renderStaffMgmt() {
+  const search = (document.getElementById('sfSearch')?.value || '').toLowerCase();
+  if (!search) {
     renderStaffManagement();
-    updateAllDropdowns();
-  }, 4000);
-}
-
-async function clearAllStaff() {
-  if (!confirm('This will delete ALL staff records. Are you sure?')) return;
-  showToast('Clearing all staff...', 'info');
-  await fetch(RELAY_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sheet: 'Staff_Master', action: 'clearRows' })
-  });
-  allData.staff = [];
-  renderStaffManagement();
-  await loadStaffList();
-  showToast('All staff cleared. Please add staff again.', 'success');
+    return;
+  }
+  let data = allData.staff || [];
+  data = data.filter(s =>
+    (s.Full_Name || s.Name || '').toLowerCase().includes(search) ||
+    (s.Rank || '').toLowerCase().includes(search) ||
+    String(s.Phone || '').includes(search)
+  );
+  const tbody = document.getElementById('staffMgmtBody');
+  if (!tbody) return;
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fa-solid fa-users"></i><p>No staff records found</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.map((s, i) => {
+    const realIndex = (allData.staff || []).indexOf(s);
+    return '<tr>' +
+      '<td>' + (i + 1) + '</td>' +
+      '<td><strong>' + 
+        (s.Full_Name || '—') + 
+      '</strong></td>' +
+      '<td>' + (s.Rank || '—') + '</td>' +
+      '<td>' + (s.Phone || '—') + '</td>' +
+      '<td>' + (s.Gender || '—') + '</td>' +
+      '<td>' + (s.Badge_No || '—') + '</td>' +
+      '<td>' + statusBadge(s.Status) + '</td>' +
+      '<td><div class="row-actions">' +
+      '<button class="action-btn" onclick="editStaff(' + (realIndex !== -1 ? realIndex : i) + ',' + JSON.stringify(s).replace(/"/g,'&quot;').replace(/'/g,"\\'") + ')" title="Edit"><i class="fa-solid fa-pen"></i></button>' +
+      '<button class="action-btn" onclick="deleteStaff(' + (realIndex !== -1 ? realIndex : i) + ',\'' + (s.Full_Name||'').replace(/'/g,"\\'") + '\')" title="Delete" style="color:var(--danger)"><i class="fa-solid fa-trash"></i></button>' +
+      '</div></td>' +
+      '</tr>';
+  }).join('');
 }
 
 async function deleteStaff(rowIndex, staffName) {
@@ -4412,6 +3658,21 @@ async function deleteStaff(rowIndex, staffName) {
   } catch(err) {
     showToast('Delete failed. Try again.', 'error');
   }
+}
+
+async function clearAllStaff() {
+  if (!confirm('This will delete ALL staff records. Are you sure?')) return;
+  showToast('Clearing all staff...', 'info');
+  await fetch(RELAY_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sheet: 'Staff_Master', action: 'clearRows' })
+  });
+  allData.staff = [];
+  renderStaffManagement();
+  await loadStaffList();
+  showToast('All staff cleared. Please add staff again.', 'success');
 }
 
 async function toggleStaffStatus(index) {
@@ -4441,6 +3702,78 @@ async function toggleStaffStatus(index) {
   renderStaffMgmt();
   showToast('Status updated', 'success');
 }
+
+
+/* === EVENT LISTENERS === */
+// Theme initialization on load
+(function() {
+  const saved = localStorage.getItem('theme');
+  if (saved === 'dark') {
+    document.documentElement.setAttribute('data-theme','dark');
+    document.getElementById('themeToggle')?.classList.add('dark');
+  }
+})();
+
+// DOMContentLoaded listener for defaults and state
+window.addEventListener('DOMContentLoaded', () => {
+  fetchSheet('Staff_Master').then(data => { staffListCache = data; });
+  const today = new Date().toISOString().split('T')[0];
+  ['taskEntryDate','corrEntryDate','igpEntryDate','vcEntryDate'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = today;
+  });
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('loginPass')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+});
+
+window.addEventListener('load', async () => {
+  try {
+    const staff = await fetchSheet('Staff_Master');
+    allData.staff = staff;
+  } catch(e) {
+    allData.staff = [];
+  }
+});
+
+// Close modals when clicking outside
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+// Outer click handler for notifications dropdown
+document.addEventListener('click', (e) => {
+  const dropdown = document.getElementById('notifDropdown');
+  if (dropdown && !dropdown.contains(e.target) && e.target.id !== 'notifBellBtn' && !e.target.closest('#notifBellBtn')) {
+    dropdown.style.display = 'none';
+  }
+});
+
+// Keyboard accessibility global keydown listener (Enter & Space trigger click)
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    const target = e.target;
+    if (target && target.getAttribute('role') === 'button' && target.getAttribute('tabindex') === '0') {
+      target.click();
+      e.preventDefault();
+    }
+  }
+});
+
+// Programmatically apply accessibility attributes to any interactive elements with onclick
+document.addEventListener('DOMContentLoaded', () => {
+  const interactiveSelectors = '.nav-item, .stat-card, .heart-module-card, .action-btn, .tab-pill, .open-btn, .view-all-btn';
+  document.querySelectorAll(interactiveSelectors).forEach(el => {
+    if (el.hasAttribute('onclick') || el.classList.contains('open-btn')) {
+      if (!el.hasAttribute('role')) el.setAttribute('role', 'button');
+      if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
+    }
+  });
+});
+
 </script>
 
 <script>
