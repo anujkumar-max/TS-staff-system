@@ -1151,253 +1151,62 @@ select[multiple] option:selected {
           </div>
         </div>
 
-        <!-- ====== COMMAND REGISTER ====== -->
-        <div class="screen" id="screen-command">
+        <!-- ====== COMMAND & CORRESPONDENCE HUB ====== -->
+        <div class="screen" id="screen-hub">
           <div class="page-header">
-            <h1><i class="fa-solid fa-clipboard-list" style="color:var(--heart)"></i> Command Register</h1>
-            <p>❤ Heart Module — All work assignments tracked here</p>
+            <h1><i class="fa-solid fa-layer-group" style="color:var(--navy)"></i> Command & Correspondence Hub</h1>
+            <p>Unified Management Portal for all work assignments and communications</p>
           </div>
+          
           <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
-            <button class="btn-heart" onclick="openModal('addTaskModal')">
-              <i class="fa-solid fa-plus"></i> Add Task
+            <button onclick="openAddHubEntryModal()" style="background:var(--navy);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;border:none;cursor:pointer">
+              <i class="fa-solid fa-plus"></i> Add Entry
             </button>
-            <button onclick="refreshAll()" style="background:var(--navy);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;border:none;cursor:pointer">
+            <button onclick="refreshAll()" style="background:var(--bg2);color:var(--text1);border:1px solid var(--border);padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;cursor:pointer">
               <i class="fa-solid fa-rotate-right"></i> Refresh Data
             </button>
-            <button onclick="exportData('command')"
-              style="background:var(--success);
-              color:#fff;padding:8px 16px;
-              border-radius:8px;font-size:12px;
-              font-weight:600;border:none;
-              cursor:pointer;display:flex;
-              align-items:center;gap:6px">
-              <i class="fa-solid fa-download"></i>
-              Export
+            <button onclick="exportHubData()" style="background:var(--success);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;border:none;cursor:pointer;display:flex;align-items:center;gap:6px">
+              <i class="fa-solid fa-download"></i> Export
             </button>
           </div>
-          <div class="tab-pills">
-            <div class="tab-pill heart-pill active" onclick="filterCommand('all',this)">All</div>
-            <div class="tab-pill heart-pill" onclick="filterCommand('Pending',this)">Pending</div>
-            <div class="tab-pill heart-pill" onclick="filterCommand('In Progress',this)">In Progress</div>
-            <div class="tab-pill heart-pill" onclick="filterCommand('Completed',this)">Completed</div>
-          </div>
-          <div class="project-filter-bar" 
-            style="display:flex;gap:6px;
-            flex-wrap:wrap;margin-bottom:12px;
-            align-items:center">
-            <span style="font-size:11px;
-            font-weight:600;color:var(--text3)">
-            PROJECT:
-            </span>
-            <select id="commandProjectFilter"
-              onchange="filterByProject('command', this.value)"
-              style="padding:6px 10px;
-              border-radius:8px;
-              border:1px solid var(--border);
-              background:var(--bg);
-              color:var(--text1);
-              font-size:12px;
-              font-weight:500">
-              <option value="all">All Projects</option>
-            </select>
-            <button onclick="clearProjectFilter('command')"
-              style="padding:6px 12px;
-              border-radius:8px;
-              background:var(--bg3);
-              color:var(--text2);
-              font-size:11px;
-              font-weight:600;
-              border:1px solid var(--border)">
-              Clear Filter
-            </button>
-          </div>
-          <div class="date-filter-row">
-            <label>From:</label>
-            <input type="date" id="cmdFromDate">
-            <label>To:</label>
-            <input type="date" id="cmdToDate">
-            <button class="btn-primary" style="padding:7px 14px;font-size:12px" onclick="renderCommand()">
-              <i class="fa-solid fa-filter"></i> Filter
-            </button>
-            <button class="btn-secondary" style="padding:7px 14px;font-size:12px" onclick="document.getElementById('cmdFromDate').value='';document.getElementById('cmdToDate').value='';renderCommand()">
-              Clear
-            </button>
-          </div>
-          <div class="search-bar">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" placeholder="Search tasks, assigned to..." id="cmdSearch" oninput="searchCommand()">
-          </div>
-          <div class="card" style="padding:0;overflow:hidden">
-            <div class="table-wrap">
-              <table>
-                <thead class="heart-thead"><tr>
-                  <th>S.No</th><th>Date</th><th>Task Title</th><th>Project</th><th>Category</th>
-                  <th>Assigned To</th><th>Assigned By</th><th>Priority</th>
-                  <th>Status</th><th>Due Date</th><th>Actions</th>
-                </tr></thead>
-                <tbody id="commandBody">
-                  <tr><td colspan="10"><div class="loading"><div class="spinner"></div></div></td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
 
-        <!-- ====== CORRESPONDENCE TRACKER ====== -->
-        <div class="screen" id="screen-correspondence">
-          <div class="page-header">
-            <h1><i class="fa-solid fa-envelope-open-text" style="color:var(--heart)"></i> Correspondence Tracker</h1>
-            <p>❤ Heart Module — Drafts · Letters · Notes · Radio Messages · eOffice</p>
-          </div>
-          <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
-            <button class="btn-heart" onclick="openModal('addCorrModal')">
-              <i class="fa-solid fa-plus"></i> New Correspondence
-            </button>
-            <button onclick="refreshAll()" style="background:var(--navy);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;border:none;cursor:pointer">
-              <i class="fa-solid fa-rotate-right"></i> Refresh Data
-            </button>
-            <button onclick="exportData('correspondence')"
-              style="background:var(--success);
-              color:#fff;padding:8px 16px;
-              border-radius:8px;font-size:12px;
-              font-weight:600;border:none;
-              cursor:pointer;display:flex;
-              align-items:center;gap:6px">
-              <i class="fa-solid fa-download"></i>
-              Export
-            </button>
-          </div>
-          <div class="tab-pills">
-            <div class="tab-pill heart-pill active" onclick="filterCorr('all',this)">All</div>
-            <div class="tab-pill heart-pill" onclick="filterCorr('Active',this)">Active</div>
-            <div class="tab-pill heart-pill" onclick="filterCorr('Completed',this)">Completed</div>
-            <div class="tab-pill heart-pill" onclick="filterCorr('Draft',this)">Drafts</div>
-            <div class="tab-pill heart-pill" onclick="filterCorr('Letter',this)">Letters</div>
-            <div class="tab-pill heart-pill" onclick="filterCorr('Note File',this)">Note Files</div>
-            <div class="tab-pill heart-pill" onclick="filterCorr('Radio Message',this)">Radio Messages</div>
-          </div>
-          <div class="project-filter-bar" 
-            style="display:flex;gap:6px;
-            flex-wrap:wrap;margin-bottom:12px;
-            align-items:center">
-            <span style="font-size:11px;
-            font-weight:600;color:var(--text3)">
-            PROJECT:
-            </span>
-            <select id="correspondenceProjectFilter"
-              onchange="filterByProject('correspondence', this.value)"
-              style="padding:6px 10px;
-              border-radius:8px;
-              border:1px solid var(--border);
-              background:var(--bg);
-              color:var(--text1);
-              font-size:12px;
-              font-weight:500">
-              <option value="all">All Projects</option>
+          <!-- Filters -->
+          <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+            <input type="text" placeholder="Search by subject, description or user..." id="hubSearch" oninput="renderHub()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text1);font-size:13px;width:240px;outline:none;">
+            
+            <select id="hubTypeFilter" onchange="renderHub()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text1);font-size:13px;outline:none;">
+              <option value="all">All Types</option>
+              <option value="Command Register">Command Register</option>
+              <option value="Correspondence">Correspondence</option>
+              <option value="IGP Works">IGP Works</option>
             </select>
-            <button onclick="clearProjectFilter('correspondence')"
-              style="padding:6px 12px;
-              border-radius:8px;
-              background:var(--bg3);
-              color:var(--text2);
-              font-size:11px;
-              font-weight:600;
-              border:1px solid var(--border)">
-              Clear Filter
-            </button>
+            
+            <select id="hubStatusFilter" onchange="renderHub()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text1);font-size:13px;outline:none;">
+              <option value="all">All Statuses</option>
+              <option value="Pending">Pending</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Completed">Completed</option>
+            </select>
           </div>
-          <div class="search-bar">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" placeholder="Search by subject, serial no, allocated to..." id="corrSearch" oninput="searchCorr()">
-          </div>
-          <div class="card" style="padding:0;overflow:hidden">
-            <div class="table-wrap">
-              <table>
-                <thead class="heart-thead"><tr>
-                  <th>S.No</th><th>Date</th><th>Type</th><th>Subject</th><th>Project</th>
-                  <th>Allocated To</th><th>Current Stage</th><th>Status</th><th>Actions</th>
-                </tr></thead>
-                <tbody id="corrBody">
-                  <tr><td colspan="9"><div class="loading"><div class="spinner"></div></div></td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
 
-        <!-- ====== IGP COMMAND WORKS ====== -->
-        <div class="screen" id="screen-igpworks">
-          <div class="page-header">
-            <h1><i class="fa-solid fa-star" style="color:var(--gold)"></i> IGP Command Works</h1>
-            <p>❤ Heart Module — Works directly allotted by IGP Sir</p>
-          </div>
-          <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
-            <button class="btn-heart" id="addIGPBtn" onclick="openModal('addIGPModal')">
-              <i class="fa-solid fa-plus"></i> Add IGP Work
-            </button>
-            <button onclick="refreshAll()" style="background:var(--navy);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;border:none;cursor:pointer">
-              <i class="fa-solid fa-rotate-right"></i> Refresh Data
-            </button>
-            <button onclick="exportData('igp')"
-              style="background:var(--success);
-              color:#fff;padding:8px 16px;
-              border-radius:8px;font-size:12px;
-              font-weight:600;border:none;
-              cursor:pointer;display:flex;
-              align-items:center;gap:6px">
-              <i class="fa-solid fa-download"></i>
-              Export
-            </button>
-          </div>
-          <div class="tab-pills">
-            <div class="tab-pill heart-pill active" onclick="filterIGP('all',this)">All</div>
-            <div class="tab-pill heart-pill" onclick="filterIGP('Pending',this)">Pending</div>
-            <div class="tab-pill heart-pill" onclick="filterIGP('In Progress',this)">In Progress</div>
-            <div class="tab-pill heart-pill" onclick="filterIGP('Completed',this)">Completed</div>
-            <div class="tab-pill heart-pill" onclick="filterIGP('Escalated',this)">Escalated</div>
-          </div>
-          <div class="project-filter-bar" 
-            style="display:flex;gap:6px;
-            flex-wrap:wrap;margin-bottom:12px;
-            align-items:center">
-            <span style="font-size:11px;
-            font-weight:600;color:var(--text3)">
-            PROJECT:
-            </span>
-            <select id="igpProjectFilter"
-              onchange="filterByProject('igp', this.value)"
-              style="padding:6px 10px;
-              border-radius:8px;
-              border:1px solid var(--border);
-              background:var(--bg);
-              color:var(--text1);
-              font-size:12px;
-              font-weight:500">
-              <option value="all">All Projects</option>
-            </select>
-            <button onclick="clearProjectFilter('igp')"
-              style="padding:6px 12px;
-              border-radius:8px;
-              background:var(--bg3);
-              color:var(--text2);
-              font-size:11px;
-              font-weight:600;
-              border:1px solid var(--border)">
-              Clear Filter
-            </button>
-          </div>
-          <div class="search-bar">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" placeholder="Search by title, assigned to..." id="igpSearch" oninput="renderIGPWorks()">
-          </div>
+          <!-- Table Card -->
           <div class="card" style="padding:0;overflow:hidden">
             <div class="table-wrap">
               <table>
-                <thead style="background:linear-gradient(90deg,#7b0d0d,#c0392b)"><tr style="background:none">
-                  <th>S.No</th><th>Date</th><th>Work Title</th><th>Project</th><th>Assigned To</th>
-                  <th>Priority</th><th>Status</th><th>Due Date</th><th>Remarks</th><th>Actions</th>
-                </tr></thead>
-                <tbody id="igpBody">
+                <thead class="heart-thead">
+                  <tr>
+                    <th>S.No</th>
+                    <th>Type</th>
+                    <th>Subject</th>
+                    <th>Assigned To</th>
+                    <th>Priority</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                    <th>Added On</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="hubBody">
                   <tr><td colspan="9"><div class="loading"><div class="spinner"></div></div></td></tr>
                 </tbody>
               </table>
