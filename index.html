@@ -1347,7 +1347,82 @@ select[multiple] option:selected {
             <p>Your details, assigned tasks and correspondence</p>
           </div>
           <div id="profileContent">
-            <div class="loading"><div class="spinner"></div></div>
+            <!-- Profile header card -->
+            <div class="card navy-card" style="margin-bottom:16px">
+              <div class="profile-header" style="position:relative; display:flex; align-items:center; gap:16px; margin-bottom:16px;">
+                <div class="profile-avatar" id="profileAvatar" style="width:60px; height:60px; border-radius:50%; background:var(--navy); color:#fff; display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:700;"></div>
+                <div style="flex:1;min-width:0">
+                  <h2 id="profileName" style="font-size:20px; font-weight:700;"></h2>
+                  <p id="profileRank" style="font-size:14px; color:var(--text3);"></p>
+                </div>
+              </div>
+              
+              <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px;">
+                <div><strong>Phone:</strong> <span id="profilePhone"></span></div>
+                <div><strong>Email:</strong> <span id="profileEmail"></span></div>
+                <div><strong>Staff ID:</strong> <span id="profileStaffId"></span></div>
+                <div><strong>Department:</strong> <span id="profileDept"></span></div>
+                <div><strong>Joined:</strong> <span id="profileJoined"></span></div>
+                <div><strong>Status:</strong> <span id="profileStatus" class="badge" style="background:var(--bg3); color:var(--navy); padding:3px 8px; border-radius:6px; font-size:11px;"></span></div>
+              </div>
+              <div style="margin-top:16px;">
+                <strong>Address:</strong>
+                <p id="profileAddress" style="margin-top:4px; color:var(--text2);"></p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ADD THIS INSIDE screen-profile, below the profile header card -->
+          <div class="card navy-card" id="profileEditCard">
+            <div class="section-header">
+              <div class="section-title">
+                <i class="fa-solid fa-user-pen"></i> Edit My Profile
+              </div>
+            </div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="editName" placeholder="Your full name">
+              </div>
+              <div class="form-group">
+                <label>Rank / Designation</label>
+                <input type="text" id="editRank" placeholder="Your rank">
+              </div>
+              <div class="form-group">
+                <label>Phone Number</label>
+                <input type="tel" id="editPhone" placeholder="Phone number" readonly
+                       style="opacity:0.6;cursor:not-allowed">
+              </div>
+              <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" id="editEmail" placeholder="Email address">
+              </div>
+              <div class="form-group">
+                <label>Staff ID / Badge No</label>
+                <input type="text" id="editStaffId" placeholder="Staff ID" readonly
+                       style="opacity:0.6;cursor:not-allowed">
+              </div>
+              <div class="form-group">
+                <label>Department</label>
+                <input type="text" id="editDept" placeholder="Department">
+              </div>
+              <div class="form-group">
+                <label>Date of Joining</label>
+                <input type="date" id="editDOJ">
+              </div>
+              <div class="form-group" style="grid-column:1/-1">
+                <label>Address</label>
+                <textarea id="editAddress" placeholder="Residential address"></textarea>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn-primary" onclick="saveProfileToSheet()">
+                <i class="fa-solid fa-floppy-disk"></i> Save Changes
+              </button>
+              <button class="btn-secondary" onclick="loadMyProfile()">
+                <i class="fa-solid fa-rotate-left"></i> Reset
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1473,7 +1548,7 @@ select[multiple] option:selected {
           <div class="section-header" style="margin-top:8px">
             <div class="section-title">All Staff (loaded from sheet)</div>
             <div style="display:flex;gap:8px">
-              <button class="view-all-btn" onclick="renderStaffMgmt()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+              <button class="view-all-btn" onclick="loadStaffFromSheet()"><i class="fa-solid fa-rotate-right"></i> Refresh Staff</button>
               <button onclick="clearAllStaff()" style="background:var(--danger);color:#fff;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;border:none;cursor:pointer">
                 <i class="fa-solid fa-trash"></i> Clear All Staff (Admin Only)
               </button>
@@ -1490,7 +1565,7 @@ select[multiple] option:selected {
                   <th>S.No</th><th>Name</th><th>Rank</th><th>Phone</th><th>Gender</th>
                   <th>Badge No</th><th>Status</th><th>Actions</th>
                 </tr></thead>
-                <tbody id="staffMgmtBody">
+                <tbody id="staffTableBody">
                   <tr><td colspan="8"><div class="loading"><div class="spinner"></div></div></td></tr>
                 </tbody>
               </table>
@@ -1649,6 +1724,8 @@ select[multiple] option:selected {
 // SECTION 1: CONFIGURATION & GLOBAL VARIABLES
 // ============================================================
 const RELAY_URL = 'https://script.google.com/macros/s/AKfycbyvRj92oTee3sR3rL5sU7bV2gA9j51bYf6pXW3XwXwXwXwXwXwX/exec';
+const APPS_SCRIPT_URL = RELAY_URL;
+let staffCache = []; // global cache
 const ADMIN_PHONE = '9493946020';
 const ADMIN_PASS  = '8421';
 const STAFF_PASS  = '1111';
@@ -1922,6 +1999,7 @@ function showScreen(name) {
 
   // Lazy-load screens
   if (name === 'hub') {
+    loadStaffFromSheet();
     if (!commandEntriesListenerActive) {
       commandEntriesListenerActive = true;
       onSnapshot(collection(db, "commandEntries"), (snapshot) => {
@@ -1935,27 +2013,13 @@ function showScreen(name) {
   }
   if (name === 'vc') renderVC();
   if (name === 'staff') {
-    if (!staffListenerActive) {
-      staffListenerActive = true;
-      onSnapshot(query(collection(db, "staff"), orderBy('name', 'asc')), (snapshot) => {
-        const staffList = [];
-        snapshot.forEach(doc => staffList.push({ id: doc.id, ...doc.data() }));
-        renderStaffTable(staffList);
-      });
-    }
-    renderStaff();
+    loadStaffFromSheet();
   }
-  if (name === 'profile') renderProfile();
+  if (name === 'profile') {
+    loadMyProfile();
+  }
   if (name === 'staffmgmt' || name === 'staff-management') {
-    if (!staffListenerActive) {
-      staffListenerActive = true;
-      onSnapshot(query(collection(db, "staff"), orderBy('name', 'asc')), (snapshot) => {
-        const staffList = [];
-        snapshot.forEach(doc => staffList.push({ id: doc.id, ...doc.data() }));
-        renderStaffTable(staffList);
-      });
-    }
-    renderStaffMgmt();
+    loadStaffFromSheet();
   }
   if (name === 'admin') renderAdminCredentials();
 }
@@ -2349,15 +2413,13 @@ async function doLogin() {
         role: 'admin',
         email: 'admin@appolice.gov.in'
       };
+      localStorage.setItem('userPhone', phone);
+      await loadStaffFromSheet();
       startApp();
       return;
     }
 
-    if (!allData.staff || allData.staff.length === 0) {
-      const staff = await fetchSheet('Staff_Master');
-      allData.staff = mergeStaffData(staff);
-    }
-
+    await loadStaffFromSheet();
     loginWithStaffData(phone, pass);
   } catch (err) {
     console.error('Login error:', err);
@@ -2375,24 +2437,27 @@ async function doLogin() {
 function loginWithStaffData(phone, pass) {
   const staff = allData.staff || [];
   const found = staff.find(s => 
-    String(s.Phone).trim() === String(phone).trim()
-    && s.Status === 'Active'
+    String(s.Phone || s.phone || s.Mobile || '').trim() === String(phone).trim()
+    && (s.Status || 'Active') === 'Active'
   );
 
   if (found && pass === STAFF_PASS) {
     currentUser = {
       phone,
-      name: found.Full_Name,
-      rank: found.Rank,
-      role: isOfficerRank(found.Rank) ? 'officer' : 'staff',
-      email: found.Gmail || '',
+      name: found.Full_Name || found.Name || found.name || 'Staff',
+      rank: found.Rank || found.rank || found.Designation || 'PC',
+      role: isOfficerRank(found.Rank || found.rank || found.Designation) ? 'officer' : 'staff',
+      email: found.Gmail || found.Email || found.email || '',
       Daily_Duties: found.Daily_Duties || '',
       Weekly_Duties: found.Weekly_Duties || '',
       Monthly_Duties: found.Monthly_Duties || '',
       Yearly_Duties: found.Yearly_Duties || '',
       staffData: found
     };
-    startApp();
+    localStorage.setItem('userPhone', phone);
+    loadStaffFromSheet().then(() => {
+      startApp();
+    });
   } else {
     showLoginError('Invalid phone number or password. Please try again.');
   }
@@ -2437,6 +2502,7 @@ function startApp() {
 }
 
 function initApp() {
+  loadStaffFromSheet();
   loadStaffList();
   loadAllData();
   showScreen('dashboard');
@@ -2549,145 +2615,153 @@ function formatDutyText(dutiesStr) {
   </ol>`;
 }
 
-async function renderProfile() {
-  try {
-    const el = document.getElementById('profileContent');
-    if (!el) return;
-
-    // Get current user from auth or firebase auth
-    const user = auth.currentUser || currentUser;
-    if (!user) {
-      el.innerHTML = '<p>Please log in to view your profile.</p>';
-      return;
-    }
-
-    let data = null;
-    // Fetch by UID
-    if (user.uid) {
-      const docSnap = await getDoc(doc(db, 'staff', user.uid));
-      if (docSnap.exists()) {
-        data = docSnap.data();
-        console.log("Fetched profile by UID:", data);
-      }
-    }
-
-    // Fetch by phone/phoneNumber if not found by UID
-    if (!data) {
-      const phone = String(user.phone || user.phoneNumber || '').trim();
-      if (phone) {
-        const q = query(collection(db, "staff"), where("phone", "==", phone));
-        const snap = await getDocs(q);
-        if (!snap.empty) {
-          data = snap.docs[0].data();
-          console.log("Fetched profile by phone:", data);
-        } else {
-          const q2 = query(collection(db, "staff"), where("phoneNumber", "==", phone));
-          const snap2 = await getDocs(q2);
-          if (!snap2.empty) {
-            data = snap2.docs[0].data();
-            console.log("Fetched profile by phoneNumber:", data);
-          }
-        }
-      }
-    }
-
-    if (!data) {
-      // Fallback to local user state if not in firestore
-      data = {
-        name: user.name || 'Admin',
-        rank: user.rank || 'Administrator',
-        phone: user.phone || '—',
-        email: user.email || ''
-      };
-    }
-
-    // Print to console for debugging as required:
-    console.log(data);
-
-    // Build template shell
-    el.innerHTML = `
-      <div class="profile-header" style="position:relative">
-        <div class="profile-avatar" id="profileAvatar"></div>
-        <div style="flex:1;min-width:0">
-          <div class="profile-name" id="profileName"></div>
-          <div class="profile-rank" id="profileRank"></div>
-          <div class="profile-badge-row" style="flex-wrap:wrap;gap:6px;margin-top:8px" id="profileBadges"></div>
-        </div>
-        <button onclick="openProfileEdit()" style="position:absolute;top:0;right:0;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer;white-space:nowrap">
-          <i class="fa-solid fa-pen"></i> Edit My Details
-        </button>
-      </div>
-      
-      <div class="card navy-card" style="margin:16px 0">
-        <div style="font-weight:700;font-size:16px;color:var(--text1);margin-bottom:12px;display:flex;align-items:center;gap:8px">
-          <i class="fa-solid fa-folder-open" style="color:var(--navy)"></i> Assigned Projects
-        </div>
-        <div id="profileProjects"></div>
-      </div>
-      
-      <div class="card navy-card" style="margin:16px 0">
-        <div style="font-weight:700;font-size:16px;color:var(--text1);margin-bottom:12px;display:flex;align-items:center;gap:8px">
-          <i class="fa-solid fa-briefcase" style="color:var(--navy)"></i> My Duties & Responsibilities
-        </div>
-        <div class="tab-pills" style="margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:8px;display:flex;gap:6px">
-          <button class="tab-pill duty-tab-btn active" data-tab="daily" onclick="switchDutyTab('daily')">Daily Duties</button>
-          <button class="tab-pill duty-tab-btn" data-tab="weekly" onclick="switchDutyTab('weekly')">Weekly Duties</button>
-          <button class="tab-pill duty-tab-btn" data-tab="monthly" onclick="switchDutyTab('monthly')">Monthly Duties</button>
-          <button class="tab-pill duty-tab-btn" data-tab="yearly" onclick="switchDutyTab('yearly')">Yearly Duties</button>
-        </div>
-        <div id="duty-panel-daily" class="duty-tab-panel" style="display:block;border-left:4px solid var(--navy);padding:10px 14px;background:var(--bg2);border-radius:0 8px 8px 0;margin-top:8px"></div>
-        <div id="duty-panel-weekly" class="duty-tab-panel" style="display:none;border-left:4px solid var(--navy);padding:10px 14px;background:var(--bg2);border-radius:0 8px 8px 0;margin-top:8px"></div>
-        <div id="duty-panel-monthly" class="duty-tab-panel" style="display:none;border-left:4px solid var(--navy);padding:10px 14px;background:var(--bg2);border-radius:0 8px 8px 0;margin-top:8px"></div>
-        <div id="duty-panel-yearly" class="duty-tab-panel" style="display:none;border-left:4px solid var(--navy);padding:10px 14px;background:var(--bg2);border-radius:0 8px 8px 0;margin-top:8px"></div>
-      </div>
-    `;
-
-    // 3. NULL SAFETY — Add fallback for every field displayed
-    const name = data.name || data.fullName || data.Full_Name || '—';
-    const rank = data.rank || data.designation || data.post || data.Rank || '—';
-    const phone = data.phone || data.mobile || data.phoneNumber || data.Phone || '—';
-    const badge = data.badge || data.badgeNo || data.staffId || data.Badge_No || '—';
-    const email = data.email || data.gmail || data.Gmail || '—';
-    const gender = data.gender || data.Gender || '—';
-    const status = data.status || data.Status || '—';
-    const joined = data.dateJoined || data.Joined || data.Date_Joined || '—';
-    const projects = data.projects || data.Assigned_Projects || '';
-    const dailyDuties = data.dailyDuties || data.Daily_Duties || '';
-    const weeklyDuties = data.weeklyDuties || data.Weekly_Duties || '';
-    const monthlyDuties = data.monthlyDuties || data.Monthly_Duties || '';
-    const yearlyDuties = data.yearlyDuties || data.Yearly_Duties || '';
-
-    document.getElementById('profileName').textContent = name;
-    document.getElementById('profileRank').textContent = `${rank}${badge !== '—' ? '  •  Badge: ' + badge : ''}`;
-    document.getElementById('profileAvatar').textContent = name[0].toUpperCase();
-
-    const badges = [];
-    if (phone !== '—') badges.push(`<span class="profile-tag">📱 ${phone}</span>`);
-    if (email !== '—') badges.push(`<span class="profile-tag">✉️ ${email}</span>`);
-    if (gender !== '—') badges.push(`<span class="profile-tag">👤 ${gender}</span>`);
-    if (status !== '—') badges.push(`<span class="profile-tag">${statusBadge(status)}</span>`);
-    if (joined !== '—') badges.push(`<span class="profile-tag">📅 Joined: ${joined}</span>`);
-    document.getElementById('profileBadges').innerHTML = badges.join('');
-
-    // Projects list
-    const projContainer = document.getElementById('profileProjects');
-    if (projects.trim()) {
-      const projArr = projects.split(';').map(p => p.trim()).filter(Boolean);
-      projContainer.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:8px">${projArr.map(p => `<span class="badge" style="background:var(--navy);color:#fff;font-weight:600;padding:6px 12px;border-radius:20px;font-size:11px;letter-spacing:0.3px"><i class="fa-solid fa-folder-open" style="margin-right:4px"></i> ${p}</span>`).join('')}</div>`;
-    } else {
-      projContainer.innerHTML = `<div style="color:var(--text3);font-size:12px">No projects assigned</div>`;
-    }
-
-    // Duties panels
-    document.getElementById('duty-panel-daily').innerHTML = formatDutyText(dailyDuties);
-    document.getElementById('duty-panel-weekly').innerHTML = formatDutyText(weeklyDuties);
-    document.getElementById('duty-panel-monthly').innerHTML = formatDutyText(monthlyDuties);
-    document.getElementById('duty-panel-yearly').innerHTML = formatDutyText(yearlyDuties);
-
-  } catch (error) {
-    console.error('Error fetching profile:', error);
-    showToast('Could not load profile data.', 'error');
+function loadMyProfile() {
+  const currentPhone = String(localStorage.getItem('userPhone') || '').trim();
+  const staffCacheToUse = allData.staff || staffCache || [];
+  const myRecord = staffCacheToUse.find(s =>
+    String(s['Phone'] || s['phone'] || s['Mobile'] || '').trim() === currentPhone
+  );
+  if (!myRecord) {
+    showToast('Profile not found in staff sheet. Contact admin.', 'error');
+    return;
   }
+  renderProfileView(myRecord);
+}
+
+function renderProfileView(data) {
+  const name   = data['Full_Name']   || data['Full Name']   || data['Name']        || data['name']        || '—';
+  const rank   = data['Rank']        || data['rank']        || data['Designation'] || '—';
+  const phone  = data['Phone']       || data['phone']       || data['Mobile']      || '—';
+  const email  = data['Gmail']       || data['Gmail']       || data['Email']       || data['email']       || '—';
+  const staffId= data['Staff_ID']    || data['Staff ID']    || data['Badge_No']    || data['Badge No']    || data['BadgeNo']     || '—';
+  const dept   = data['District_Assigned'] || data['District Assigned'] || data['Department']  || data['Dept']        || '—';
+  const joined = data['Date_Joined'] || data['Date Joined'] || data['Date of Join']|| data['DOJ']         || '—';
+  const address= data['Address']     || data['address']     || '—';
+  const status = data['Status']      || data['status']      || 'Active';
+
+  document.getElementById('profileName').textContent    = name;
+  document.getElementById('profileRank').textContent    = rank;
+  document.getElementById('profilePhone').textContent   = phone;
+  document.getElementById('profileEmail').textContent   = email;
+  document.getElementById('profileStaffId').textContent = staffId;
+  document.getElementById('profileDept').textContent    = dept;
+  document.getElementById('profileJoined').textContent  = joined;
+  document.getElementById('profileAddress').textContent = address;
+  document.getElementById('profileStatus').textContent  = status;
+  document.getElementById('profileAvatar').textContent  = name.charAt(0).toUpperCase();
+  
+  const sidebarAvatar = document.getElementById('sidebarAvatar');
+  const sidebarName = document.getElementById('sidebarName');
+  const sidebarRank = document.getElementById('sidebarRank');
+  if (sidebarAvatar) sidebarAvatar.textContent  = name.charAt(0).toUpperCase();
+  if (sidebarName) sidebarName.textContent    = name;
+  if (sidebarRank) sidebarRank.textContent    = rank;
+
+  // Pre-fill the edit form fields when profile loads:
+  if (document.getElementById('editName')) document.getElementById('editName').value    = name;
+  if (document.getElementById('editRank')) document.getElementById('editRank').value    = rank;
+  if (document.getElementById('editPhone')) document.getElementById('editPhone').value   = phone;
+  if (document.getElementById('editEmail')) document.getElementById('editEmail').value   = email;
+  if (document.getElementById('editStaffId')) document.getElementById('editStaffId').value = staffId;
+  if (document.getElementById('editDept')) document.getElementById('editDept').value    = dept;
+  if (document.getElementById('editDOJ')) document.getElementById('editDOJ').value     = joined;
+  if (document.getElementById('editAddress')) document.getElementById('editAddress').value = address;
+}
+
+async function saveProfileToSheet() {
+  const updatedData = {
+    action:    'updateStaff',
+    phone:     document.getElementById('editPhone').value,
+    name:      document.getElementById('editName').value,
+    rank:      document.getElementById('editRank').value,
+    email:     document.getElementById('editEmail').value,
+    dept:      document.getElementById('editDept').value,
+    doj:       document.getElementById('editDOJ').value,
+    address:   document.getElementById('editAddress').value
+  };
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify(updatedData)
+    });
+    const result = await res.json();
+    if (result.success) {
+      showToast('Profile updated successfully!', 'success');
+      await loadStaffFromSheet();
+      loadMyProfile();
+    } else {
+      showToast('Update failed: ' + (result.error || 'Unknown error'), 'error');
+    }
+  } catch(err) {
+    showToast('Could not save profile. Check connection.', 'error');
+  }
+}
+
+async function loadStaffFromSheet() {
+  try {
+    const res = await fetch(APPS_SCRIPT_URL + '?action=getStaff', { redirect: 'follow' });
+    const data = await res.json();
+    staffCache = data.staff || data || [];
+    allData.staff = staffCache;
+    renderStaffManagement(staffCache);
+    renderStaff();
+    populateAllStaffDropdowns(staffCache);
+  } catch(err) {
+    console.error('Staff load error:', err);
+    showToast('Failed to load staff list from Google Sheet.', 'error');
+  }
+}
+
+function renderStaffManagement(staffList) {
+  const tbody = document.getElementById('staffTableBody');
+  if (!tbody) return;
+  if (!staffList || staffList.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><i class="fa-solid fa-users-slash"></i><p>No staff records found in Google Sheet.</p></td></tr>';
+    return;
+  }
+  tbody.innerHTML = staffList.map((s, i) => {
+    const staffId = s['Staff ID'] || s['staffId'] || s['BadgeNo'] || s['Staff_ID'] || s['Badge_No'] || '—';
+    const name = s['Name'] || s['name'] || s['fullName'] || s['Full_Name'] || '—';
+    const rank = s['Rank'] || s['rank'] || s['Designation'] || '—';
+    const phone = s['Phone'] || s['phone'] || s['Mobile'] || '—';
+    const email = s['Email'] || s['email'] || s['Gmail'] || '—';
+    const status = s['Status'] || s['status'] || 'Active';
+    return `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${staffId}</td>
+        <td>${name}</td>
+        <td>${rank}</td>
+        <td>${phone}</td>
+        <td>${email}</td>
+        <td>${status}</td>
+        <td>
+          <div class="row-actions">
+            <button class="action-btn" title="View"><i class="fa-solid fa-eye"></i></button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+  
+  const statStaff = document.getElementById('statStaff');
+  if (statStaff) statStaff.textContent = staffList.length;
+}
+
+function populateAllStaffDropdowns(staffList) {
+  const dropdowns = document.querySelectorAll(
+    '#assignedTo, #taskAssignedTo, #hubAssignedTo, ' +
+    '#vcSpeaker, #vcOrganiser, #vcPersons, #sfReporting, ' +
+    '#corrAllocBy, #corrAllocTo, ' +
+    'select[name="assignedTo"], select[data-staff-dropdown]'
+  );
+  const options = '<option value="">-- Select Staff --</option>' +
+    staffList.map(s => {
+      const name = s['Full_Name'] || s['Full Name'] || s['Name'] || s['name'] || s['fullName'] || 'Unknown';
+      const rank = s['Rank'] || s['rank'] || s['Designation'] || '';
+      return `<option value="${name}">${rank ? rank + ' - ' : ''}${name}</option>`;
+    }).join('');
+  dropdowns.forEach(sel => sel.innerHTML = options);
 }
 
 function switchDutyTab(tabName) {
