@@ -2885,6 +2885,47 @@ async function cleanUpUnusedSheets() {
 }
 
 // --- COMMAND & CORRESPONDENCE HUB ---
+// --- COMMAND & CORRESPONDENCE HUB ---
+function updateHubCategoryDropdown(type, selectedValue) {
+  const group = document.getElementById('hubCategoryGroup');
+  const label = document.getElementById('hubCategoryLabel');
+  const select = document.getElementById('hubCategory');
+  if (!group || !select) return;
+
+  if (type === 'Command Register') {
+    group.style.display = 'block';
+    label.textContent = 'Category *';
+    select.innerHTML = `
+      <option value="District Coordination">District Coordination</option>
+      <option value="Letters">Letters</option>
+      <option value="Miscellaneous">Miscellaneous</option>
+      <option value="Note Files">Note Files</option>
+      <option value="Office Work">Office Work</option>
+      <option value="Project Related">Project Related</option>
+      <option value="Reports">Reports</option>
+      <option value="Training">Training</option>
+      <option value="Video Conference">Video Conference</option>
+      <option value="eOffice">eOffice</option>
+    `;
+    if (selectedValue) select.value = selectedValue;
+  } else if (type === 'Correspondence') {
+    group.style.display = 'block';
+    label.textContent = 'Correspondence Type *';
+    select.innerHTML = `
+      <option value="Draft">Draft</option>
+      <option value="Letter">Letter</option>
+      <option value="Note File">Note File</option>
+      <option value="Radio Message">Radio Message</option>
+      <option value="eOffice">eOffice</option>
+      <option value="Other">Other</option>
+    `;
+    if (selectedValue) select.value = selectedValue;
+  } else {
+    group.style.display = 'none';
+    select.innerHTML = '';
+  }
+}
+
 function renderHub() {
   try {
     const tbody = document.getElementById('hubBody');
@@ -2902,7 +2943,8 @@ function renderHub() {
         (h.Subject || '').toLowerCase().includes(search) ||
         (h.Description || '').toLowerCase().includes(search) ||
         (h.Assigned_To || '').toLowerCase().includes(search) ||
-        (h.Added_By || '').toLowerCase().includes(search)
+        (h.Added_By || '').toLowerCase().includes(search) ||
+        (h.Category || '').toLowerCase().includes(search)
       );
     }
 
@@ -2930,7 +2972,8 @@ function renderHub() {
       return '<tr>' +
         '<td>' + (i + 1) + '</td>' +
         '<td><span class="badge ' + typeClass + '">' + (t.Type || '—') + '</span></td>' +
-        '<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis"><strong>' + (t.Subject || '—') + '</strong></td>' +
+        '<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis"><strong>' + (t.Subject || '—') + '</strong>' +
+        (t.Category ? '<div style="font-size:11px;color:var(--text3);margin-top:2px"><i class="fa-solid fa-tag"></i> ' + t.Category + '</div>' : '') + '</td>' +
         '<td>' + (t.Assigned_To || '—') + '</td>' +
         '<td>' + priorityBadge(t.Priority) + '</td>' +
         '<td>' + formatDate(t.Due_Date) + '</td>' +
@@ -2951,8 +2994,13 @@ function renderHub() {
 function viewHubEntry(i) {
   const t = (allData.hub_entries || [])[i];
   if (!t) return;
-  showDetails('Hub Entry Details', detailRows([
-    ['Type', t.Type],
+  const rows = [
+    ['Type', t.Type]
+  ];
+  if (t.Category) {
+    rows.push(['Category', t.Category]);
+  }
+  rows.push(
     ['Subject/Title', t.Subject],
     ['Assigned To', formatPersonBadges(t.Assigned_To)],
     ['Priority', t.Priority],
@@ -2961,7 +3009,8 @@ function viewHubEntry(i) {
     ['Description', t.Description],
     ['Added By', t.Added_By],
     ['Added On', formatDate(t.Added_On)]
-  ]));
+  );
+  showDetails('Hub Entry Details', detailRows(rows));
 }
 
 let hubEditContext = null;
@@ -2982,6 +3031,10 @@ function editHubEntry(i) {
           <option value="Correspondence">Correspondence</option>
           <option value="IGP Works">IGP Works</option>
         </select>
+      </div>
+      <div class="form-group" id="hubCategoryGroup">
+        <label id="hubCategoryLabel">Category *</label>
+        <select id="hubCategory"></select>
       </div>
       <div class="form-group">
         <label>Subject/Title *</label>
@@ -3030,8 +3083,16 @@ function editHubEntry(i) {
       .map(s => `<option value="${s.Full_Name}">${s.Full_Name} (${s.Rank})</option>`).join('');
   }
 
+  const typeSelect = document.getElementById('hubType');
+  if (typeSelect) {
+    typeSelect.addEventListener('change', (e) => {
+      updateHubCategoryDropdown(e.target.value);
+    });
+  }
+
   // Populate values
   document.getElementById('hubType').value = t.Type || 'Command Register';
+  updateHubCategoryDropdown(t.Type || 'Command Register', t.Category);
   document.getElementById('hubSubject').value = t.Subject || '';
   document.getElementById('hubAssignedTo').value = t.Assigned_To || '';
   document.getElementById('hubPriority').value = t.Priority || 'Medium';
@@ -3054,6 +3115,10 @@ function openAddHubEntryModal() {
           <option value="Correspondence">Correspondence</option>
           <option value="IGP Works">IGP Works</option>
         </select>
+      </div>
+      <div class="form-group" id="hubCategoryGroup">
+        <label id="hubCategoryLabel">Category *</label>
+        <select id="hubCategory"></select>
       </div>
       <div class="form-group">
         <label>Subject/Title *</label>
@@ -3101,6 +3166,14 @@ function openAddHubEntryModal() {
       .map(s => `<option value="${s.Full_Name}">${s.Full_Name} (${s.Rank})</option>`).join('');
   }
 
+  const typeSelect = document.getElementById('hubType');
+  if (typeSelect) {
+    typeSelect.addEventListener('change', (e) => {
+      updateHubCategoryDropdown(e.target.value);
+    });
+  }
+  updateHubCategoryDropdown(typeSelect.value);
+
   // Set default due date to today
   document.getElementById('hubDueDate').value = new Date().toISOString().split('T')[0];
 
@@ -3115,6 +3188,7 @@ async function submitHubEntry() {
   const dueDate = document.getElementById('hubDueDate').value;
   const description = document.getElementById('hubDescription').value.trim();
   const status = document.getElementById('hubStatus').value;
+  const category = (type === 'Command Register' || type === 'Correspondence') ? document.getElementById('hubCategory').value : '';
 
   if (!subject) {
     showToast('Please enter a subject/title', 'error');
@@ -3135,7 +3209,8 @@ async function submitHubEntry() {
     status,
     description,
     addedBy,
-    addedOn
+    addedOn,
+    category
   ];
 
   closeModal('addHubEntryModal');
@@ -3151,7 +3226,8 @@ async function submitHubEntry() {
     Status: status,
     Description: description,
     Added_By: addedBy,
-    Added_On: addedOn
+    Added_On: addedOn,
+    Category: category
   };
 
   if (hubEditContext) {
