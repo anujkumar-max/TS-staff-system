@@ -4,19 +4,27 @@ function doGet(e) {
     const sheetParam = e.parameter.sheet || '';
     const ss = SpreadsheetApp.getActiveSpreadsheet();
 
+    // Helper to find sheets dynamically
+    const getStaffSheet = () => getSheetByPossibleNames(ss, ['Staff_Directory', 'Staff', 'Staff_Master', 'All Staff'], 'staff');
+    const getHubSheet = () => getSheetByPossibleNames(ss, ['hub_entries', 'Hub', 'Hub Entries', 'Command Register'], 'hub');
+    const getVcSheet = () => getSheetByPossibleNames(ss, ['VC_Schedule', 'VC', 'VC Schedule', 'VC_entries', 'Meetings'], 'vc');
+    const getNoticesSheet = () => getSheetByPossibleNames(ss, ['Notices', 'Notice'], 'notice');
+
     // Specific Action: Verify Login
     if (action === 'login') {
       const phone    = e.parameter.phone || '';
       const password = e.parameter.password || '';
-      const sheet = ss.getSheetByName('Staff') || ss.getSheetByName('Staff_Master');
+      const sheet = getStaffSheet();
       if (!sheet) return jsonOut({ success: false, error: 'Staff sheet not found' });
       const rows    = sheet.getDataRange().getValues();
       const headers = rows[0];
-      const phoneCol = headers.indexOf('Phone');
-      const passCol  = headers.indexOf('Password');
+      const phoneCol = findColIndex(headers, ['Phone', 'Mobile']);
+      const passCol  = findColIndex(headers, ['Password']);
+      if (phoneCol === -1) return jsonOut({ success: false, error: 'Phone column not found in sheet' });
+      
       for (let i = 1; i < rows.length; i++) {
         if (String(rows[i][phoneCol]).trim() === phone.trim()) {
-          const storedPass = String(rows[i][passCol]).trim() || '1111';
+          const storedPass = passCol >= 0 ? String(rows[i][passCol]).trim() : '1111';
           if (storedPass === password.trim()) {
             const obj = {};
             headers.forEach((h, j) => obj[h] = rows[i][j] || '');
@@ -31,13 +39,13 @@ function doGet(e) {
 
     // Specific Action: getStaff
     if (action === 'getStaff') {
-      const sheet = ss.getSheetByName('Staff') || ss.getSheetByName('Staff_Master');
+      const sheet = getStaffSheet();
       if (!sheet) return jsonOut({ error: 'Staff sheet not found' });
       const rows = sheet.getDataRange().getValues();
       if (rows.length < 2) return jsonOut({ staff: [], data: [] });
       const headers = rows[0];
       const staff = rows.slice(1)
-        .filter(r => r[0] !== '')
+        .filter(r => r[0] !== '' || r[1] !== '')
         .map((row, idx) => {
           const obj = { _rowNumber: idx + 2 };
           headers.forEach((h, i) => obj[h] = row[i] || '');
@@ -57,16 +65,14 @@ function doGet(e) {
     }
 
     if (targetSheetName) {
-      let sheet = ss.getSheetByName(targetSheetName);
-      if (!sheet) {
-        if (targetSheetName === 'Staff' || targetSheetName === 'Staff_Master') {
-          sheet = ss.getSheetByName('Staff') || ss.getSheetByName('Staff_Master');
-        } else if (targetSheetName === 'Hub' || targetSheetName === 'hub_entries') {
-          sheet = ss.getSheetByName('Hub') || ss.getSheetByName('hub_entries');
-        } else if (targetSheetName === 'VC' || targetSheetName === 'VC_Schedule') {
-          sheet = ss.getSheetByName('VC') || ss.getSheetByName('VC_Schedule');
-        }
-      }
+      let sheet = null;
+      const lowerTarget = targetSheetName.toLowerCase();
+      if (lowerTarget.indexOf('staff') >= 0) sheet = getStaffSheet();
+      else if (lowerTarget.indexOf('hub') >= 0 || lowerTarget.indexOf('entry') >= 0 || lowerTarget.indexOf('command') >= 0) sheet = getHubSheet();
+      else if (lowerTarget.indexOf('vc') >= 0 || lowerTarget.indexOf('meeting') >= 0 || lowerTarget.indexOf('conference') >= 0) sheet = getVcSheet();
+      else if (lowerTarget.indexOf('notice') >= 0) sheet = getNoticesSheet();
+      
+      if (!sheet) sheet = ss.getSheetByName(targetSheetName);
       if (!sheet) return jsonOut({ error: 'Sheet not found: ' + targetSheetName });
       
       const rows = sheet.getDataRange().getValues();
@@ -102,13 +108,21 @@ function doPost(e) {
     const action = postData.action || '';
     const sheetName = postData.sheet || '';
 
+    // Helpers to find sheets dynamically
+    const getStaffSheet = () => getSheetByPossibleNames(ss, ['Staff_Directory', 'Staff', 'Staff_Master', 'All Staff'], 'staff');
+    const getHubSheet = () => getSheetByPossibleNames(ss, ['hub_entries', 'Hub', 'Hub Entries', 'Command Register'], 'hub');
+    const getVcSheet = () => getSheetByPossibleNames(ss, ['VC_Schedule', 'VC', 'VC Schedule', 'VC_entries', 'Meetings'], 'vc');
+    const getNoticesSheet = () => getSheetByPossibleNames(ss, ['Notices', 'Notice'], 'notice');
+
     // Specific Action: updateStaff
     if (action === 'updateStaff') {
-      const sheet = ss.getSheetByName('Staff') || ss.getSheetByName('Staff_Master');
+      const sheet = getStaffSheet();
       if (!sheet) return jsonOut({ error: 'Staff sheet not found' });
       const rows = sheet.getDataRange().getValues();
       const headers = rows[0];
-      const phoneCol = headers.indexOf('Phone');
+      const phoneCol = findColIndex(headers, ['Phone', 'Mobile']);
+      if (phoneCol === -1) return jsonOut({ error: 'Phone column not found in sheet' });
+
       for (let i = 1; i < rows.length; i++) {
         if (String(rows[i][phoneCol]).trim() === String(postData.phone).trim()) {
           const fieldMap = {
@@ -131,16 +145,14 @@ function doPost(e) {
 
     // Generic database operations by sheet name
     if (sheetName) {
-      let sheet = ss.getSheetByName(sheetName);
-      if (!sheet) {
-        if (sheetName === 'Staff' || sheetName === 'Staff_Master') {
-          sheet = ss.getSheetByName('Staff') || ss.getSheetByName('Staff_Master');
-        } else if (sheetName === 'Hub' || sheetName === 'hub_entries') {
-          sheet = ss.getSheetByName('Hub') || ss.getSheetByName('hub_entries');
-        } else if (sheetName === 'VC' || sheetName === 'VC_Schedule') {
-          sheet = ss.getSheetByName('VC') || ss.getSheetByName('VC_Schedule');
-        }
-      }
+      let sheet = null;
+      const lowerSheet = sheetName.toLowerCase();
+      if (lowerSheet.indexOf('staff') >= 0) sheet = getStaffSheet();
+      else if (lowerSheet.indexOf('hub') >= 0 || lowerSheet.indexOf('entry') >= 0 || lowerSheet.indexOf('command') >= 0) sheet = getHubSheet();
+      else if (lowerSheet.indexOf('vc') >= 0 || lowerSheet.indexOf('meeting') >= 0 || lowerSheet.indexOf('conference') >= 0) sheet = getVcSheet();
+      else if (lowerSheet.indexOf('notice') >= 0) sheet = getNoticesSheet();
+      
+      if (!sheet) sheet = ss.getSheetByName(sheetName);
       if (!sheet) return jsonOut({ error: 'Sheet not found: ' + sheetName });
 
       // Append row
@@ -191,6 +203,43 @@ function doPost(e) {
   } catch(err) {
     return jsonOut({ error: err.message });
   }
+}
+
+// Helper: case-insensitive match for possible sheet names, fallback to substring match
+function getSheetByPossibleNames(ss, possibleNames, fallbackKeyword) {
+  for (let name of possibleNames) {
+    let sheet = ss.getSheetByName(name);
+    if (sheet) return sheet;
+  }
+  const sheets = ss.getSheets();
+  for (let sheet of sheets) {
+    const sName = sheet.getName().toLowerCase();
+    for (let name of possibleNames) {
+      if (sName === name.toLowerCase()) return sheet;
+    }
+  }
+  if (fallbackKeyword) {
+    for (let sheet of sheets) {
+      const sName = sheet.getName().toLowerCase();
+      if (sName.indexOf(fallbackKeyword.toLowerCase()) >= 0) return sheet;
+    }
+  }
+  return null;
+}
+
+// Helper: case-insensitive column lookup
+function findColIndex(headers, possibleNames) {
+  for (let name of possibleNames) {
+    const idx = headers.indexOf(name);
+    if (idx >= 0) return idx;
+  }
+  for (let i = 0; i < headers.length; i++) {
+    const headerLower = String(headers[i]).toLowerCase();
+    for (let name of possibleNames) {
+      if (headerLower === name.toLowerCase()) return i;
+    }
+  }
+  return -1;
 }
 
 function jsonOut(obj) {
