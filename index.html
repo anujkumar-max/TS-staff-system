@@ -2091,7 +2091,7 @@ async function fetchSheet(sheetName) {
     const url = RELAY_URL
       + '?sheet=' + encodeURIComponent(sheetName)
       + '&t=' + Date.now();
-    const res = await fetch(url);
+    const res = await fetch(url, { redirect: 'follow' });
     const json = await res.json();
     return json.data || [];
   } catch(err) {
@@ -2104,8 +2104,7 @@ async function postToSheet(sheetName, rowData) {
   try {
     await fetch(RELAY_URL, {
       method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
+      redirect: 'follow',
       body: JSON.stringify({ sheet: sheetName, action: 'append', data: rowData })
     });
     return true;
@@ -2119,8 +2118,7 @@ async function postAction(sheetName, action, data={}, row=null) {
   try {
     await fetch(RELAY_URL, {
       method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
+      redirect: 'follow',
       body: JSON.stringify({ sheet: sheetName, action, row, rowNumber: row, data })
     });
     await new Promise(r => setTimeout(r, 1800));
@@ -2686,6 +2684,7 @@ async function saveProfileToSheet() {
   try {
     const res = await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
+      redirect: 'follow',
       body: JSON.stringify(updatedData)
     });
     const result = await res.json();
