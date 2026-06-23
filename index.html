@@ -1370,6 +1370,23 @@ select[multiple] option:selected {
                 <p id="profileAddress" style="margin-top:4px; color:var(--text2);"></p>
               </div>
             </div>
+
+            <!-- Duties & Responsibilities Card -->
+            <div class="card navy-card" style="margin:16px 0">
+              <div style="font-weight:700;font-size:16px;color:var(--text1);margin-bottom:12px;display:flex;align-items:center;gap:8px">
+                <i class="fa-solid fa-briefcase" style="color:var(--navy)"></i> My Duties & Responsibilities
+              </div>
+              <div class="tab-pills" style="margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:8px;display:flex;gap:6px">
+                <button class="tab-pill duty-tab-btn active" data-tab="daily" onclick="switchDutyTab('daily')">Daily Duties</button>
+                <button class="tab-pill duty-tab-btn" data-tab="weekly" onclick="switchDutyTab('weekly')">Weekly Duties</button>
+                <button class="tab-pill duty-tab-btn" data-tab="monthly" onclick="switchDutyTab('monthly')">Monthly Duties</button>
+                <button class="tab-pill duty-tab-btn" data-tab="yearly" onclick="switchDutyTab('yearly')">Yearly Duties</button>
+              </div>
+              <div id="duty-panel-daily" class="duty-tab-panel" style="display:block;border-left:4px solid var(--navy);padding:10px 14px;background:var(--bg2);border-radius:0 8px 8px 0;margin-top:8px"></div>
+              <div id="duty-panel-weekly" class="duty-tab-panel" style="display:none;border-left:4px solid var(--navy);padding:10px 14px;background:var(--bg2);border-radius:0 8px 8px 0;margin-top:8px"></div>
+              <div id="duty-panel-monthly" class="duty-tab-panel" style="display:none;border-left:4px solid var(--navy);padding:10px 14px;background:var(--bg2);border-radius:0 8px 8px 0;margin-top:8px"></div>
+              <div id="duty-panel-yearly" class="duty-tab-panel" style="display:none;border-left:4px solid var(--navy);padding:10px 14px;background:var(--bg2);border-radius:0 8px 8px 0;margin-top:8px"></div>
+            </div>
           </div>
 
           <!-- ADD THIS INSIDE screen-profile, below the profile header card -->
@@ -2159,31 +2176,7 @@ async function loadStaffList() {
 }
 
 function mergeStaffData(sheetStaff) {
-  const sheetPhones = new Set((sheetStaff || []).map(s => String(s.Phone || '').trim()).filter(Boolean));
-  const sheetNames  = new Set((sheetStaff || []).map(s => String(s.Full_Name || s.Name || '').trim().toLowerCase()).filter(Boolean));
-
-  const toObj = (r) => ({
-    Staff_ID: r[0], Full_Name: r[1], Rank: r[2], Badge_No: r[3],
-    Gender: r[4], Gmail: r[5], Phone: r[6], Date_Joined: r[7],
-    Status: r[8], Profile_Photo_URL: r[9], Assigned_Projects: r[10],
-    District_Assigned: r[11], Reporting_Officer: r[12], Created_Date: r[13]
-  });
-
-  const dashPhones = new Set(DASHBOARD_STAFF.map(r => String(r[6]).trim()).filter(Boolean));
-
-  const dashExtra = DASHBOARD_STAFF
-    .filter(r => !sheetPhones.has(String(r[6]).trim()) && !sheetNames.has(String(r[1]).trim().toLowerCase()))
-    .map(toObj);
-
-  const tmplExtra = STAFF_TEMPLATE
-    .filter(r => {
-      const ph = String(r[6]).trim();
-      const nm = String(r[1]).trim().toLowerCase();
-      return !sheetPhones.has(ph) && !dashPhones.has(ph) && !sheetNames.has(nm);
-    })
-    .map(toObj);
-
-  return [...(sheetStaff || []), ...dashExtra, ...tmplExtra];
+  return sheetStaff || [];
 }
 
 function refreshData() {
@@ -2666,6 +2659,17 @@ function renderProfileView(data) {
   if (document.getElementById('editDept')) document.getElementById('editDept').value    = dept;
   if (document.getElementById('editDOJ')) document.getElementById('editDOJ').value     = joined;
   if (document.getElementById('editAddress')) document.getElementById('editAddress').value = address;
+
+  // Load duties from record or fallback static mappings
+  const dailyDuties   = data['Daily_Duties']   || data['Daily Duties']   || (DUTIES_MAP[phone] ? DUTIES_MAP[phone].d : '') || '';
+  const weeklyDuties  = data['Weekly_Duties']  || data['Weekly Duties']  || (DUTIES_MAP[phone] ? DUTIES_MAP[phone].w : '') || '';
+  const monthlyDuties = data['Monthly_Duties'] || data['Monthly Duties'] || (DUTIES_MAP[phone] ? DUTIES_MAP[phone].m : '') || '';
+  const yearlyDuties  = data['Yearly_Duties']  || data['Yearly Duties']  || (DUTIES_MAP[phone] ? DUTIES_MAP[phone].y : '') || '';
+
+  if (document.getElementById('duty-panel-daily')) document.getElementById('duty-panel-daily').innerHTML = formatDutyText(dailyDuties);
+  if (document.getElementById('duty-panel-weekly')) document.getElementById('duty-panel-weekly').innerHTML = formatDutyText(weeklyDuties);
+  if (document.getElementById('duty-panel-monthly')) document.getElementById('duty-panel-monthly').innerHTML = formatDutyText(monthlyDuties);
+  if (document.getElementById('duty-panel-yearly')) document.getElementById('duty-panel-yearly').innerHTML = formatDutyText(yearlyDuties);
 }
 
 async function saveProfileToSheet() {
