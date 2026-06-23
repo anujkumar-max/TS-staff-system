@@ -16,6 +16,38 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script type="module">
+  import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, getDoc, getDocs, where, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+  // Firebase Rules must allow: authenticated users can read/write
+  const firebaseConfig = {
+    apiKey: "placeholder-api-key",
+    authDomain: "placeholder.firebaseapp.com",
+    projectId: "placeholder-project",
+    storageBucket: "placeholder.appspot.com",
+    messagingSenderId: "placeholder-sender",
+    appId: "placeholder-appid"
+  };
+
+  const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+
+  window.db = db;
+  window.auth = auth;
+  window.collection = collection;
+  window.addDoc = addDoc;
+  window.onSnapshot = onSnapshot;
+  window.query = query;
+  window.orderBy = orderBy;
+  window.doc = doc;
+  window.getDoc = getDoc;
+  window.getDocs = getDocs;
+  window.where = where;
+  window.setDoc = setDoc;
+</script>
 <style>
 /* ============================================================
    DESIGN TOKENS — AP POLICE TS SYSTEM
@@ -1767,6 +1799,8 @@ let allData = {
 };
 
 let currentUser = null;
+let commandEntriesListenerActive = false;
+let staffListenerActive = false;
 let editContext = null;
 let staffListCache = [];
 let activeDutyTab = 'daily';
@@ -1887,11 +1921,42 @@ function showScreen(name) {
   closeSidebar();
 
   // Lazy-load screens
-  if (name === 'hub') renderHub();
+  if (name === 'hub') {
+    if (!commandEntriesListenerActive) {
+      commandEntriesListenerActive = true;
+      onSnapshot(collection(db, "commandEntries"), (snapshot) => {
+        const entries = [];
+        snapshot.forEach(doc => entries.push({ id: doc.id, ...doc.data() }));
+        console.log('Fetched entries:', entries.length);
+        renderEntriesTable(entries);
+      });
+    }
+    renderHub();
+  }
   if (name === 'vc') renderVC();
-  if (name === 'staff') renderStaff();
+  if (name === 'staff') {
+    if (!staffListenerActive) {
+      staffListenerActive = true;
+      onSnapshot(query(collection(db, "staff"), orderBy('name', 'asc')), (snapshot) => {
+        const staffList = [];
+        snapshot.forEach(doc => staffList.push({ id: doc.id, ...doc.data() }));
+        renderStaffTable(staffList);
+      });
+    }
+    renderStaff();
+  }
   if (name === 'profile') renderProfile();
-  if (name === 'staffmgmt' || name === 'staff-management') renderStaffMgmt();
+  if (name === 'staffmgmt' || name === 'staff-management') {
+    if (!staffListenerActive) {
+      staffListenerActive = true;
+      onSnapshot(query(collection(db, "staff"), orderBy('name', 'asc')), (snapshot) => {
+        const staffList = [];
+        snapshot.forEach(doc => staffList.push({ id: doc.id, ...doc.data() }));
+        renderStaffTable(staffList);
+      });
+    }
+    renderStaffMgmt();
+  }
   if (name === 'admin') renderAdminCredentials();
 }
 
@@ -2484,80 +2549,82 @@ function formatDutyText(dutiesStr) {
   </ol>`;
 }
 
-function renderProfile() {
+async function renderProfile() {
   try {
     const el = document.getElementById('profileContent');
     if (!el) return;
 
-    const phone = String(currentUser?.phone || '').trim();
-    const staff = allData.staff || [];
-    const me = staff.find(s => String(s.Phone || '').trim() === phone) || null;
+    // Get current user from auth or firebase auth
+    const user = auth.currentUser || currentUser;
+    if (!user) {
+      el.innerHTML = '<p>Please log in to view your profile.</p>';
+      return;
+    }
 
-    // Use safe/defensive fallback checks for all fields and defaults
-    const name = me?.Full_Name || currentUser?.name || '—';
-    const rank = me?.Rank || currentUser?.rank || '—';
-    const badgeNo = me?.Badge_No || '—';
-    const gmail = me?.Gmail || currentUser?.email || '—';
-    const gender = me?.Gender || '—';
-    const status = me?.Status || '—';
-    const dateJoined = me?.Date_Joined || '—';
+    let data = null;
+    // Fetch by UID
+    if (user.uid) {
+      const docSnap = await getDoc(doc(db, 'staff', user.uid));
+      if (docSnap.exists()) {
+        data = docSnap.data();
+        console.log("Fetched profile by UID:", data);
+      }
+    }
 
-    const myHubItems = (allData.hub_entries || []).filter(item => 
-      (item.Assigned_To || '').toLowerCase().includes(name.toLowerCase()) || 
-      (item.Added_By || '').toLowerCase().includes(name.toLowerCase())
-    );
+    // Fetch by phone/phoneNumber if not found by UID
+    if (!data) {
+      const phone = String(user.phone || user.phoneNumber || '').trim();
+      if (phone) {
+        const q = query(collection(db, "staff"), where("phone", "==", phone));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          data = snap.docs[0].data();
+          console.log("Fetched profile by phone:", data);
+        } else {
+          const q2 = query(collection(db, "staff"), where("phoneNumber", "==", phone));
+          const snap2 = await getDocs(q2);
+          if (!snap2.empty) {
+            data = snap2.docs[0].data();
+            console.log("Fetched profile by phoneNumber:", data);
+          }
+        }
+      }
+    }
 
-    const pending    = myHubItems.filter(t => t.Status === 'Pending').length;
-    const inProgress = myHubItems.filter(t => t.Status === 'In Progress').length;
-    const completed  = myHubItems.filter(t => t.Status === 'Completed').length;
-    const avatar     = (name || 'A')[0].toUpperCase();
+    if (!data) {
+      // Fallback to local user state if not in firestore
+      data = {
+        name: user.name || 'Admin',
+        rank: user.rank || 'Administrator',
+        phone: user.phone || '—',
+        email: user.email || ''
+      };
+    }
 
-    const profileCard = me ? `
+    // Print to console for debugging as required:
+    console.log(data);
+
+    // Build template shell
+    el.innerHTML = `
       <div class="profile-header" style="position:relative">
-        <div class="profile-avatar">${avatar}</div>
+        <div class="profile-avatar" id="profileAvatar"></div>
         <div style="flex:1;min-width:0">
-          <div class="profile-name">${name}</div>
-          <div class="profile-rank">${rank}${badgeNo !== '—' ? ' &nbsp;•&nbsp; Badge: ' + badgeNo : ''}</div>
-          <div class="profile-badge-row" style="flex-wrap:wrap;gap:6px;margin-top:8px">
-            ${me.Phone ? `<span class="profile-tag">📱 ${me.Phone}</span>` : ''}
-            ${gmail !== '—' ? `<span class="profile-tag">✉️ ${gmail}</span>` : ''}
-            ${gender !== '—' ? `<span class="profile-tag">👤 ${gender}</span>` : ''}
-            ${status !== '—' ? `<span class="profile-tag">${statusBadge(status)}</span>` : ''}
-            ${dateJoined !== '—' ? `<span class="profile-tag">📅 Joined: ${dateJoined}</span>` : ''}
-          </div>
+          <div class="profile-name" id="profileName"></div>
+          <div class="profile-rank" id="profileRank"></div>
+          <div class="profile-badge-row" style="flex-wrap:wrap;gap:6px;margin-top:8px" id="profileBadges"></div>
         </div>
         <button onclick="openProfileEdit()" style="position:absolute;top:0;right:0;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer;white-space:nowrap">
           <i class="fa-solid fa-pen"></i> Edit My Details
         </button>
-      </div>` : `
-      <div class="profile-header">
-        <div class="profile-avatar">${avatar}</div>
-        <div>
-          <div class="profile-name">${currentUser?.name || 'Admin'}</div>
-          <div class="profile-rank">${currentUser?.rank || 'Administrator'}</div>
-          <div class="profile-badge-row" style="margin-top:8px">
-            <span class="profile-tag">📱 ${currentUser?.phone || '—'}</span>
-            ${currentUser?.email ? `<span class="profile-tag">✉️ ${currentUser.email}</span>` : ''}
-          </div>
-          <p style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:8px">Profile not found in Staff Master. Ask admin to add your details, or go to Staff Management to add yourself.</p>
+      </div>
+      
+      <div class="card navy-card" style="margin:16px 0">
+        <div style="font-weight:700;font-size:16px;color:var(--text1);margin-bottom:12px;display:flex;align-items:center;gap:8px">
+          <i class="fa-solid fa-folder-open" style="color:var(--navy)"></i> Assigned Projects
         </div>
-      </div>`;
-
-    const projectsHtml = (() => {
-      const projStr = me?.Assigned_Projects || '';
-      if (!projStr.trim()) return `<div style="color:var(--text3);font-size:12px">No projects assigned</div>`;
-      const projArr = projStr.split(';').map(p => p.trim()).filter(Boolean);
-      return `
-        <div style="display:flex;flex-wrap:wrap;gap:8px">
-          ${projArr.map(p => `<span class="badge" style="background:var(--navy);color:#fff;font-weight:600;padding:6px 12px;border-radius:20px;font-size:11px;letter-spacing:0.3px"><i class="fa-solid fa-folder-open" style="margin-right:4px"></i> ${p}</span>`).join('')}
-        </div>`;
-    })();
-
-    el.innerHTML = `
-      ${profileCard}
-
-      <!-- Tabbed Duties Section -->
-      ${me ? `
+        <div id="profileProjects"></div>
+      </div>
+      
       <div class="card navy-card" style="margin:16px 0">
         <div style="font-weight:700;font-size:16px;color:var(--text1);margin-bottom:12px;display:flex;align-items:center;gap:8px">
           <i class="fa-solid fa-briefcase" style="color:var(--navy)"></i> My Duties & Responsibilities
@@ -2568,77 +2635,58 @@ function renderProfile() {
           <button class="tab-pill duty-tab-btn" data-tab="monthly" onclick="switchDutyTab('monthly')">Monthly Duties</button>
           <button class="tab-pill duty-tab-btn" data-tab="yearly" onclick="switchDutyTab('yearly')">Yearly Duties</button>
         </div>
-        <div id="duty-panel-daily" class="duty-tab-panel" style="display:block;border-left:4px solid var(--navy);padding:10px 14px;background:var(--bg2);border-radius:0 8px 8px 0;margin-top:8px">
-          ${formatDutyText(me.Daily_Duties)}
-        </div>
-        <div id="duty-panel-weekly" class="duty-tab-panel" style="display:none;border-left:4px solid var(--navy);padding:10px 14px;background:var(--bg2);border-radius:0 8px 8px 0;margin-top:8px">
-          ${formatDutyText(me.Weekly_Duties)}
-        </div>
-        <div id="duty-panel-monthly" class="duty-tab-panel" style="display:none;border-left:4px solid var(--navy);padding:10px 14px;background:var(--bg2);border-radius:0 8px 8px 0;margin-top:8px">
-          ${formatDutyText(me.Monthly_Duties)}
-        </div>
-        <div id="duty-panel-yearly" class="duty-tab-panel" style="display:none;border-left:4px solid var(--navy);padding:10px 14px;background:var(--bg2);border-radius:0 8px 8px 0;margin-top:8px">
-          ${formatDutyText(me.Yearly_Duties)}
-        </div>
-      </div>
-      ` : ''}
-
-      <!-- My Projects Section -->
-      <div class="card navy-card" style="margin-bottom:16px">
-        <div style="font-weight:700;font-size:16px;color:var(--text1);margin-bottom:12px;display:flex;align-items:center;gap:8px">
-          <i class="fa-solid fa-square-poll-horizontal" style="color:var(--navy)"></i> My Assigned Projects
-        </div>
-        ${projectsHtml}
-      </div>
-
-      <!-- District & Contact Info Grid -->
-      <div class="card navy-card" style="margin-bottom:16px">
-        <div style="font-weight:700;font-size:16px;color:var(--text1);margin-bottom:12px;display:flex;align-items:center;gap:8px">
-          <i class="fa-solid fa-address-card" style="color:var(--navy)"></i> District & Contact Info
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
-          <div style="background:var(--bg2);padding:10px 14px;border-radius:8px">
-            <div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">District Assigned</div>
-            <div style="font-size:14px;color:var(--text1);font-weight:600;margin-top:2px">${me?.District_Assigned || '—'}</div>
-          </div>
-          <div style="background:var(--bg2);padding:10px 14px;border-radius:8px">
-            <div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Reporting Officer</div>
-            <div style="font-size:14px;color:var(--text1);font-weight:600;margin-top:2px">${me?.Reporting_Officer || '—'}</div>
-          </div>
-          <div style="background:var(--bg2);padding:10px 14px;border-radius:8px">
-            <div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Personal Email (Gmail)</div>
-            <div style="font-size:14px;color:var(--text1);font-weight:600;margin-top:2px">${gmail}</div>
-          </div>
-          <div style="background:var(--bg2);padding:10px 14px;border-radius:8px">
-            <div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Phone Number</div>
-            <div style="font-size:14px;color:var(--text1);font-weight:600;margin-top:2px">${me?.Phone || '—'}</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Hub statistics of the user -->
-      <div class="stats-grid" style="margin:16px 0">
-        <div class="stat-card">
-          <div class="stat-icon blue"><i class="fa-solid fa-list-check"></i></div>
-          <div><div class="stat-value">${myHubItems.length}</div><div class="stat-label">Total Assigned Hub Items</div></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon orange"><i class="fa-solid fa-clock"></i></div>
-          <div><div class="stat-value">${pending}</div><div class="stat-label">Pending</div></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon blue"><i class="fa-solid fa-spinner"></i></div>
-          <div><div class="stat-value">${inProgress}</div><div class="stat-label">In Progress</div></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon green"><i class="fa-solid fa-circle-check"></i></div>
-          <div><div class="stat-value">${completed}</div><div class="stat-label">Completed</div></div>
-        </div>
+        <div id="duty-panel-daily" class="duty-tab-panel" style="display:block;border-left:4px solid var(--navy);padding:10px 14px;background:var(--bg2);border-radius:0 8px 8px 0;margin-top:8px"></div>
+        <div id="duty-panel-weekly" class="duty-tab-panel" style="display:none;border-left:4px solid var(--navy);padding:10px 14px;background:var(--bg2);border-radius:0 8px 8px 0;margin-top:8px"></div>
+        <div id="duty-panel-monthly" class="duty-tab-panel" style="display:none;border-left:4px solid var(--navy);padding:10px 14px;background:var(--bg2);border-radius:0 8px 8px 0;margin-top:8px"></div>
+        <div id="duty-panel-yearly" class="duty-tab-panel" style="display:none;border-left:4px solid var(--navy);padding:10px 14px;background:var(--bg2);border-radius:0 8px 8px 0;margin-top:8px"></div>
       </div>
     `;
-  } catch (err) {
-    console.error('Error rendering profile:', err);
-    showToast('Unable to load profile. Please refresh.', 'error');
+
+    // 3. NULL SAFETY — Add fallback for every field displayed
+    const name = data.name || data.fullName || data.Full_Name || '—';
+    const rank = data.rank || data.designation || data.post || data.Rank || '—';
+    const phone = data.phone || data.mobile || data.phoneNumber || data.Phone || '—';
+    const badge = data.badge || data.badgeNo || data.staffId || data.Badge_No || '—';
+    const email = data.email || data.gmail || data.Gmail || '—';
+    const gender = data.gender || data.Gender || '—';
+    const status = data.status || data.Status || '—';
+    const joined = data.dateJoined || data.Joined || data.Date_Joined || '—';
+    const projects = data.projects || data.Assigned_Projects || '';
+    const dailyDuties = data.dailyDuties || data.Daily_Duties || '';
+    const weeklyDuties = data.weeklyDuties || data.Weekly_Duties || '';
+    const monthlyDuties = data.monthlyDuties || data.Monthly_Duties || '';
+    const yearlyDuties = data.yearlyDuties || data.Yearly_Duties || '';
+
+    document.getElementById('profileName').textContent = name;
+    document.getElementById('profileRank').textContent = `${rank}${badge !== '—' ? '  •  Badge: ' + badge : ''}`;
+    document.getElementById('profileAvatar').textContent = name[0].toUpperCase();
+
+    const badges = [];
+    if (phone !== '—') badges.push(`<span class="profile-tag">📱 ${phone}</span>`);
+    if (email !== '—') badges.push(`<span class="profile-tag">✉️ ${email}</span>`);
+    if (gender !== '—') badges.push(`<span class="profile-tag">👤 ${gender}</span>`);
+    if (status !== '—') badges.push(`<span class="profile-tag">${statusBadge(status)}</span>`);
+    if (joined !== '—') badges.push(`<span class="profile-tag">📅 Joined: ${joined}</span>`);
+    document.getElementById('profileBadges').innerHTML = badges.join('');
+
+    // Projects list
+    const projContainer = document.getElementById('profileProjects');
+    if (projects.trim()) {
+      const projArr = projects.split(';').map(p => p.trim()).filter(Boolean);
+      projContainer.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:8px">${projArr.map(p => `<span class="badge" style="background:var(--navy);color:#fff;font-weight:600;padding:6px 12px;border-radius:20px;font-size:11px;letter-spacing:0.3px"><i class="fa-solid fa-folder-open" style="margin-right:4px"></i> ${p}</span>`).join('')}</div>`;
+    } else {
+      projContainer.innerHTML = `<div style="color:var(--text3);font-size:12px">No projects assigned</div>`;
+    }
+
+    // Duties panels
+    document.getElementById('duty-panel-daily').innerHTML = formatDutyText(dailyDuties);
+    document.getElementById('duty-panel-weekly').innerHTML = formatDutyText(weeklyDuties);
+    document.getElementById('duty-panel-monthly').innerHTML = formatDutyText(monthlyDuties);
+    document.getElementById('duty-panel-yearly').innerHTML = formatDutyText(yearlyDuties);
+
+  } catch (error) {
+    console.error('Error fetching profile:', error);
+    showToast('Could not load profile data.', 'error');
   }
 }
 
@@ -2924,6 +2972,24 @@ function updateHubCategoryDropdown(type, selectedValue) {
     group.style.display = 'none';
     select.innerHTML = '';
   }
+}
+
+function renderEntriesTable(entries) {
+  allData.hub_entries = entries.map(item => ({
+    ...item,
+    Entry_ID: item.Entry_ID || item.id,
+    Type: item.Type,
+    Subject: item.Subject,
+    Assigned_To: item.Assigned_To,
+    Priority: item.Priority,
+    Due_Date: item.Due_Date,
+    Status: item.Status,
+    Description: item.Description,
+    Added_By: item.Added_By,
+    Added_On: item.Added_On,
+    Category: item.Category
+  }));
+  renderHub();
 }
 
 function renderHub() {
@@ -3230,21 +3296,35 @@ async function submitHubEntry() {
     Category: category
   };
 
-  if (hubEditContext) {
-    const idx = hubEditContext.index;
-    if (allData.hub_entries && allData.hub_entries[idx]) {
-      allData.hub_entries[idx] = localObj;
+  try {
+    if (hubEditContext) {
+      const idx = hubEditContext.index;
+      if (allData.hub_entries && allData.hub_entries[idx]) {
+        allData.hub_entries[idx] = localObj;
+      }
+      await setDoc(doc(db, "commandEntries", id), localObj);
+      await postAction('hub_entries', 'update', row, hubEditContext.row);
+    } else {
+      optimisticAdd('hub_entries', localObj, () => {
+        renderHub();
+        renderDashboard();
+      });
+      await addDoc(collection(db, "commandEntries"), localObj);
+      await postToSheet('hub_entries', row);
     }
-    await postAction('hub_entries', 'update', row, hubEditContext.row);
-  } else {
-    optimisticAdd('hub_entries', localObj, () => {
-      renderHub();
-      renderDashboard();
-    });
-    await postToSheet('hub_entries', row);
+
+    showToast('Entry saved successfully!', 'success');
+    
+    // Clear form fields
+    document.getElementById('hubSubject').value = '';
+    document.getElementById('hubDescription').value = '';
+    const catSelect = document.getElementById('hubCategory');
+    if (catSelect) catSelect.value = '';
+  } catch (error) {
+    console.error("Firestore save error:", error);
+    showToast('Failed to save. Check your connection.', 'error');
   }
 
-  showToast('Saved successfully!', 'success');
   hubEditContext = null;
   renderHub();
   renderDashboard();
@@ -3467,6 +3547,31 @@ async function refreshHeartScreen(renderFn, msg) {
 }
 
 // --- STAFF DIRECTORY ---
+function renderStaffTable(staffList) {
+  allData.staff = staffList.map(s => {
+    const name = s.name || s.fullName || s.Full_Name || 'N/A';
+    const rank = s.rank || s.designation || s.Rank || 'N/A';
+    const phone = s.phone || s.mobile || s.phoneNumber || s.Phone || 'N/A';
+    const badge = s.badge || s.badgeNo || s.Badge_No || 'N/A';
+    const gmail = s.gmail || s.email || s.Gmail || 'N/A';
+    const district = s.district || s.District_Assigned || 'N/A';
+    const projects = s.projects || s.Assigned_Projects || '';
+    
+    return {
+      ...s,
+      Full_Name: name,
+      Rank: rank,
+      Phone: phone,
+      Badge_No: badge,
+      Gmail: gmail,
+      District_Assigned: district,
+      Assigned_Projects: projects
+    };
+  });
+  renderStaff();
+  updateAllDropdowns();
+}
+
 function renderStaff() {
   const list = document.getElementById('staffListContainer');
   if (!list) return;
@@ -3487,23 +3592,31 @@ function renderStaff() {
   }
 
   list.innerHTML = data.map(s => {
-    const avatar = (s.Full_Name || 'A')[0].toUpperCase();
+    const name = s.name || s.fullName || s.Full_Name || 'N/A';
+    const rank = s.rank || s.designation || s.Rank || 'N/A';
+    const phone = s.phone || s.mobile || s.phoneNumber || s.Phone || 'N/A';
+    const badge = s.badge || s.badgeNo || s.Badge_No || 'N/A';
+    const gmail = s.gmail || s.email || s.Gmail || 'N/A';
+    const district = s.district || s.District_Assigned || 'N/A';
+    const projects = s.projects || s.Assigned_Projects || '';
+
+    const avatar = (name || 'A')[0].toUpperCase();
     return `
       <div class="staff-card">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
           <div class="staff-avatar">${avatar}</div>
           <div>
-            <div class="staff-name">${s.Full_Name || '—'}</div>
-            <div class="staff-rank">${s.Rank || '—'} ${s.Badge_No ? '• #' + s.Badge_No : ''}</div>
+            <div class="staff-name">${name}</div>
+            <div class="staff-rank">${rank} ${badge && badge !== 'N/A' ? '• #' + badge : ''}</div>
           </div>
         </div>
-        <div style="font-size:12px;color:var(--text2);margin-bottom:6px">📱 <strong>Phone:</strong> ${s.Phone || '—'}</div>
-        <div style="font-size:12px;color:var(--text2);margin-bottom:6px">✉️ <strong>Email:</strong> ${s.Gmail || '—'}</div>
-        <div style="font-size:12px;color:var(--text2);margin-bottom:10px">📍 <strong>District:</strong> ${s.District_Assigned || '—'}</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:6px">📱 <strong>Phone:</strong> ${phone}</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:6px">✉️ <strong>Email:</strong> ${gmail}</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:10px">📍 <strong>District:</strong> ${district}</div>
         <div style="border-top:1px solid var(--border);padding-top:10px;margin-top:8px">
           <span style="font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase">Projects:</span>
           <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">
-            ${(s.Assigned_Projects || '').split(';').map(p => p.trim()).filter(Boolean).map(p => `<span class="badge" style="background:var(--bg3);color:var(--navy);font-size:10px;padding:3px 6px">${p}</span>`).join('') || '<span style="font-size:11px;color:var(--text3)">None</span>'}
+            ${projects.split(';').map(p => p.trim()).filter(Boolean).map(p => `<span class="badge" style="background:var(--bg3);color:var(--navy);font-size:10px;padding:3px 6px">${p}</span>`).join('') || '<span style="font-size:11px;color:var(--text3)">None</span>'}
           </div>
         </div>
       </div>`;
