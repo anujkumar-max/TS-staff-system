@@ -36,6 +36,11 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const { request } = event;
 
+  // Only intercept GET requests (ignore POST, PUT, DELETE etc)
+  if (request.method !== 'GET') {
+    return;
+  }
+
   // For navigation requests, serve index.html from cache first
   if (request.mode === 'navigate') {
     event.respondWith(
