@@ -4175,8 +4175,14 @@ function renderAdminCredentials() {
 
 async function setupFirstAdmin() {
   try {
+    const staffRef = fsCollection(db, 'staff');
+    const q = fsQuery(staffRef, fsWhere('Phone', '==', '9493946020'));
+    const snap = await fsGetDocs(q);
+    for (const d of snap.docs) {
+      await fsDeleteDoc(fsDoc(db, 'staff', d.id));
+    }
     const today = new Date().toISOString().split('T')[0];
-    await fsAddDoc(fsCollection(db,'staff'), {
+    await fsAddDoc(staffRef, {
       Staff_ID:           'TS-ADM-001',
       Full_Name:          'Anuj Kumar',
       Rank:               'Technical Officer',
