@@ -17,36 +17,45 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <script type="module">
-  import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, getDoc, getDocs, where, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-  import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+  import { initializeApp, getApps }
+    from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import {
+    getFirestore, collection, addDoc, updateDoc, deleteDoc,
+    onSnapshot, query, orderBy, doc, getDoc, getDocs,
+    where, setDoc, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-  // Firebase Rules must allow: authenticated users can read/write
   const firebaseConfig = {
-    apiKey: "placeholder-api-key",
-    authDomain: "placeholder.firebaseapp.com",
-    projectId: "placeholder-project",
-    storageBucket: "placeholder.appspot.com",
-    messagingSenderId: "placeholder-sender",
-    appId: "placeholder-appid"
+    apiKey: "AIzaSyCiW5d_KIJ5KdrSDlnS5cs3nI_t1xiPvnw",
+    authDomain: "techops-command-5b24f.firebaseapp.com",
+    projectId: "techops-command-5b24f",
+    storageBucket: "techops-command-5b24f.firebasestorage.app",
+    messagingSenderId: "818634138606",
+    appId: "1:818634138606:web:014ebac6c9b9424ed3e4ff"
   };
 
-  const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-  const db = getFirestore(app);
-  const auth = getAuth(app);
+  const app  = getApps().length === 0
+             ? initializeApp(firebaseConfig)
+             : getApps()[0];
+  const db   = getFirestore(app);
 
-  window.db = db;
-  window.auth = auth;
-  window.collection = collection;
-  window.addDoc = addDoc;
-  window.onSnapshot = onSnapshot;
-  window.query = query;
-  window.orderBy = orderBy;
-  window.doc = doc;
-  window.getDoc = getDoc;
-  window.getDocs = getDocs;
-  window.where = where;
-  window.setDoc = setDoc;
+  // Expose to global scope for non-module scripts
+  window.db             = db;
+  window.fsCollection   = collection;
+  window.fsAddDoc       = addDoc;
+  window.fsUpdateDoc    = updateDoc;
+  window.fsDeleteDoc    = deleteDoc;
+  window.fsOnSnapshot   = onSnapshot;
+  window.fsQuery        = query;
+  window.fsOrderBy      = orderBy;
+  window.fsDoc          = doc;
+  window.fsGetDoc       = getDoc;
+  window.fsGetDocs      = getDocs;
+  window.fsWhere        = where;
+  window.fsSetDoc       = setDoc;
+  window.fsTimestamp    = serverTimestamp;
+  window.firebaseReady  = true;
+  console.log('Firebase Firestore connected successfully');
 </script>
 <style>
 /* ============================================================
@@ -1115,17 +1124,29 @@ select[multiple] option:selected {
         <div class="screen active" id="screen-dashboard">
           <!-- Stats Grid -->
           <div class="stats-grid" id="dashStats">
-            <div class="stat-card" style="cursor:default">
+            <div class="stat-card" onclick="showScreen('staff-management')" style="cursor:pointer">
               <div class="stat-icon success"><i class="fa-solid fa-id-badge"></i></div>
-              <div><div class="stat-value skeleton" id="statStaff">—</div><div class="stat-label">Total Staff</div></div>
+              <div>
+                <div class="stat-value skeleton" id="statStaff">—</div>
+                <div class="stat-label">Total Staff</div>
+                <div style="font-size:9px;color:var(--success);margin-top:2px">Click to view all staff →</div>
+              </div>
             </div>
-            <div class="stat-card" onclick="showScreen('hub')">
+            <div class="stat-card" onclick="showScreen('hub')" style="cursor:pointer">
               <div class="stat-icon heart"><i class="fa-solid fa-layer-group"></i></div>
-              <div><div class="stat-value skeleton" id="statHub">—</div><div class="stat-label">Hub Items</div></div>
+              <div>
+                <div class="stat-value skeleton" id="statHub">—</div>
+                <div class="stat-label">Hub Items</div>
+                <div style="font-size:9px;color:var(--heart);margin-top:2px">Click to open Hub →</div>
+              </div>
             </div>
-            <div class="stat-card" onclick="showScreen('vc')">
+            <div class="stat-card" onclick="showScreen('vc')" style="cursor:pointer">
               <div class="stat-icon info"><i class="fa-solid fa-video"></i></div>
-              <div><div class="stat-value skeleton" id="statVC">—</div><div class="stat-label">Upcoming VCs</div></div>
+              <div>
+                <div class="stat-value skeleton" id="statVC">—</div>
+                <div class="stat-label">Upcoming VCs</div>
+                <div style="font-size:9px;color:var(--info);margin-top:2px">Click to view meetings →</div>
+              </div>
             </div>
           </div>
 
@@ -1349,38 +1370,46 @@ select[multiple] option:selected {
           <div id="profileContent">
             <!-- Profile header card -->
             <div class="card navy-card" style="margin-bottom:16px">
-              <div class="profile-header" style="position:relative; display:flex; align-items:center; gap:16px; margin-bottom:16px;">
-                <div class="profile-avatar" id="profileAvatar" style="width:60px; height:60px; border-radius:50%; background:var(--navy); color:#fff; display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:700;"></div>
-                <div style="flex:1;min-width:0">
-                  <h2 id="profileName" style="font-size:20px; font-weight:700;"></h2>
-                  <p id="profileRank" style="font-size:14px; color:var(--text3);"></p>
+              <div class="profile-header" style="position:relative; display:flex; align-items:center; gap:20px; margin-bottom:16px; flex-wrap:wrap;">
+                <div id="profilePhotoContainer">
+                  <div class="profile-avatar" id="profileAvatar" style="width:72px; height:72px; border-radius:50%; background:var(--navy); color:#fff; display:flex; align-items:center; justify-content:center; font-size:28px; font-weight:700;"></div>
                 </div>
-              </div>
-              
-              <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px;">
-                <div><strong>Phone:</strong> <span id="profilePhone"></span></div>
-                <div><strong>Email:</strong> <span id="profileEmail"></span></div>
-                <div><strong>Staff ID:</strong> <span id="profileStaffId"></span></div>
-                <div><strong>Department:</strong> <span id="profileDept"></span></div>
-                <div><strong>Joined:</strong> <span id="profileJoined"></span></div>
-                <div><strong>Status:</strong> <span id="profileStatus" class="badge" style="background:var(--bg3); color:var(--navy); padding:3px 8px; border-radius:6px; font-size:11px;"></span></div>
-              </div>
-              <div style="margin-top:16px;">
-                <strong>Address:</strong>
-                <p id="profileAddress" style="margin-top:4px; color:var(--text2);"></p>
+                <div style="flex:1;min-width:200px">
+                  <h2 id="profileName" style="font-size:22px; font-weight:700;"></h2>
+                  <p id="profileRankBadge" style="font-size:14px; opacity:0.9; margin-top:4px; color:#fff"></p>
+                  <div class="profile-badge-row" id="profileHeaderBadges">
+                    <!-- Status, Role, Gender, Staff ID, Badge No -->
+                  </div>
+                </div>
               </div>
             </div>
 
-            <!-- Duties & Responsibilities Card -->
+            <!-- Profile Details Grid -->
+            <div class="card navy-card" style="margin-bottom:16px">
+              <div style="font-weight:700;font-size:16px;color:var(--text1);margin-bottom:12px">
+                <i class="fa-solid fa-address-card" style="color:var(--navy)"></i> Profile Details
+              </div>
+              <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:16px;">
+                <div><strong>Phone (Login ID):</strong> <span id="profilePhone"></span></div>
+                <div><strong>Gmail:</strong> <span id="profileEmail"></span></div>
+                <div><strong>Date Joined:</strong> <span id="profileJoined"></span></div>
+                <div><strong>District Assigned:</strong> <span id="profileDistrict"></span></div>
+                <div><strong>Reporting Officer:</strong> <span id="profileReporting"></span></div>
+                <div><strong>Assigned Projects:</strong> <span id="profileProjects"></span></div>
+                <div><strong>Created Date:</strong> <span id="profileCreated"></span></div>
+              </div>
+            </div>
+
+            <!-- Duties Section -->
             <div class="card navy-card" style="margin:16px 0">
               <div style="font-weight:700;font-size:16px;color:var(--text1);margin-bottom:12px;display:flex;align-items:center;gap:8px">
                 <i class="fa-solid fa-briefcase" style="color:var(--navy)"></i> My Duties & Responsibilities
               </div>
               <div class="tab-pills" style="margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:8px;display:flex;gap:6px">
-                <button class="tab-pill duty-tab-btn active" data-tab="daily" onclick="switchDutyTab('daily')">Daily Duties</button>
-                <button class="tab-pill duty-tab-btn" data-tab="weekly" onclick="switchDutyTab('weekly')">Weekly Duties</button>
-                <button class="tab-pill duty-tab-btn" data-tab="monthly" onclick="switchDutyTab('monthly')">Monthly Duties</button>
-                <button class="tab-pill duty-tab-btn" data-tab="yearly" onclick="switchDutyTab('yearly')">Yearly Duties</button>
+                <button class="tab-pill duty-tab-btn active" data-tab="daily" onclick="switchDutyTab('daily')">📅 Daily</button>
+                <button class="tab-pill duty-tab-btn" data-tab="weekly" onclick="switchDutyTab('weekly')">📆 Weekly</button>
+                <button class="tab-pill duty-tab-btn" data-tab="monthly" onclick="switchDutyTab('monthly')">🗓️ Monthly</button>
+                <button class="tab-pill duty-tab-btn" data-tab="yearly" onclick="switchDutyTab('yearly')">📋 Yearly</button>
               </div>
               <div id="duty-panel-daily" class="duty-tab-panel" style="display:block;border-left:4px solid var(--navy);padding:10px 14px;background:var(--bg2);border-radius:0 8px 8px 0;margin-top:8px"></div>
               <div id="duty-panel-weekly" class="duty-tab-panel" style="display:none;border-left:4px solid var(--navy);padding:10px 14px;background:var(--bg2);border-radius:0 8px 8px 0;margin-top:8px"></div>
@@ -1389,56 +1418,135 @@ select[multiple] option:selected {
             </div>
           </div>
 
-          <!-- ADD THIS INSIDE screen-profile, below the profile header card -->
-          <div class="card navy-card" id="profileEditCard">
+          <!-- Admin Edit Form (admin-only-section) -->
+          <div class="admin-only-section" id="adminEditProfileSection" style="display:none; margin-top:20px;">
+            <div class="card heart-card">
+              <div class="section-header">
+                <div class="section-title">
+                  <i class="fa-solid fa-user-gear"></i> Admin Edit Profile Form
+                </div>
+                <span class="section-badge">Admin Only</span>
+              </div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Staff ID *</label>
+                  <input type="text" id="pe_Staff_ID" placeholder="e.g. TS-001">
+                </div>
+                <div class="form-group">
+                  <label>Full Name *</label>
+                  <input type="text" id="pe_Full_Name" placeholder="Full name">
+                </div>
+                <div class="form-group">
+                  <label>Rank *</label>
+                  <input type="text" id="pe_Rank" placeholder="e.g. Sub-Inspector, Constable">
+                </div>
+                <div class="form-group">
+                  <label>Badge No</label>
+                  <input type="text" id="pe_Badge_No" placeholder="Badge number">
+                </div>
+                <div class="form-group">
+                  <label>Gender</label>
+                  <select id="pe_Gender">
+                    <option value="">-- Select --</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Gmail</label>
+                  <input type="email" id="pe_Gmail" placeholder="Gmail address">
+                </div>
+                <div class="form-group">
+                  <label>Phone (Login ID) *</label>
+                  <input type="tel" id="pe_Phone" placeholder="10-digit mobile number" readonly style="opacity:0.7;cursor:not-allowed">
+                </div>
+                <div class="form-group">
+                  <label>Date Joined</label>
+                  <input type="date" id="pe_Date_Joined">
+                </div>
+                <div class="form-group">
+                  <label>Status</label>
+                  <select id="pe_Status">
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>District Assigned</label>
+                  <input type="text" id="pe_District_Assigned" placeholder="e.g. Mangalagiri">
+                </div>
+                <div class="form-group">
+                  <label>Reporting Officer</label>
+                  <input type="text" id="pe_Reporting_Officer" placeholder="Reporting officer name">
+                </div>
+                <div class="form-group">
+                  <label>Assigned Projects</label>
+                  <input type="text" id="pe_Assigned_Projects" placeholder="Project 1, Project 2 ...">
+                </div>
+                <div class="form-group">
+                  <label>Profile Photo URL</label>
+                  <input type="url" id="pe_Profile_Photo_URL" placeholder="https://... (optional)">
+                </div>
+                <div class="form-group">
+                  <label>Role</label>
+                  <select id="pe_role">
+                    <option value="staff">Staff</option>
+                    <option value="officer">Officer</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+                <div class="form-group" style="grid-column:1/-1">
+                  <label>Daily Duties</label>
+                  <textarea id="pe_Daily_Duties" placeholder="Describe daily duties..."></textarea>
+                </div>
+                <div class="form-group" style="grid-column:1/-1">
+                  <label>Weekly Duties</label>
+                  <textarea id="pe_Weekly_Duties" placeholder="Describe weekly duties..."></textarea>
+                </div>
+                <div class="form-group" style="grid-column:1/-1">
+                  <label>Monthly Duties</label>
+                  <textarea id="pe_Monthly_Duties" placeholder="Describe monthly duties..."></textarea>
+                </div>
+                <div class="form-group" style="grid-column:1/-1">
+                  <label>Yearly Duties</label>
+                  <textarea id="pe_Yearly_Duties" placeholder="Describe yearly duties..."></textarea>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button class="btn-heart" onclick="adminSaveProfile()">
+                  <i class="fa-solid fa-floppy-disk"></i> Save Profile Details
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card navy-card" id="myDutiesCard" style="margin-top:16px">
             <div class="section-header">
               <div class="section-title">
-                <i class="fa-solid fa-user-pen"></i> Edit My Profile
+                <i class="fa-solid fa-calendar-check"></i> My Duties
               </div>
             </div>
-            <div class="form-grid">
-              <div class="form-group">
-                <label>Full Name</label>
-                <input type="text" id="editName" placeholder="Your full name">
-              </div>
-              <div class="form-group">
-                <label>Rank / Designation</label>
-                <input type="text" id="editRank" placeholder="Your rank">
-              </div>
-              <div class="form-group">
-                <label>Phone Number</label>
-                <input type="tel" id="editPhone" placeholder="Phone number" readonly
-                       style="opacity:0.6;cursor:not-allowed">
-              </div>
-              <div class="form-group">
-                <label>Email Address</label>
-                <input type="email" id="editEmail" placeholder="Email address">
-              </div>
-              <div class="form-group">
-                <label>Staff ID / Badge No</label>
-                <input type="text" id="editStaffId" placeholder="Staff ID" readonly
-                       style="opacity:0.6;cursor:not-allowed">
-              </div>
-              <div class="form-group">
-                <label>Department</label>
-                <input type="text" id="editDept" placeholder="Department">
-              </div>
-              <div class="form-group">
-                <label>Date of Joining</label>
-                <input type="date" id="editDOJ">
-              </div>
-              <div class="form-group" style="grid-column:1/-1">
-                <label>Address</label>
-                <textarea id="editAddress" placeholder="Residential address"></textarea>
-              </div>
+            <div class="tab-pills" style="margin-bottom:12px;display:flex;gap:6px">
+              <button class="tab-pill active" onclick="filterDuties('Daily',this)">📅 Daily</button>
+              <button class="tab-pill" onclick="filterDuties('Weekly',this)">📆 Weekly</button>
+              <button class="tab-pill" onclick="filterDuties('Yearly',this)">🗓️ Yearly</button>
             </div>
-            <div class="form-actions">
-              <button class="btn-primary" onclick="saveProfileToSheet()">
-                <i class="fa-solid fa-floppy-disk"></i> Save Changes
-              </button>
-              <button class="btn-secondary" onclick="loadMyProfile()">
-                <i class="fa-solid fa-rotate-left"></i> Reset
-              </button>
+            <div id="dutiesTableWrap" class="table-wrap">
+              <table>
+                <thead><tr>
+                  <th>#</th><th>Date</th><th>Duty</th>
+                  <th>Description</th><th>Status</th><th>Assigned By</th>
+                </tr></thead>
+                <tbody id="dutiesTableBody">
+                  <tr><td colspan="6">
+                    <div class="empty-state">
+                      <i class="fa-solid fa-calendar-xmark"></i>
+                      <p>No duties assigned yet.</p>
+                    </div>
+                  </td></tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -1507,59 +1615,133 @@ select[multiple] option:selected {
           </div>
 
           <!-- Add / Edit Form -->
-          <div class="card navy-card" id="staffFormCard">
-            <div class="section-title" style="margin-bottom:14px" id="staffFormTitle">
-              <i class="fa-solid fa-user-plus"></i> Add New Staff
-            </div>
-            <div class="form-grid">
-              <!-- Row 1: Name, Rank, Badge -->
-              <div class="form-group"><label>Full Name *</label><input type="text" id="sfName" placeholder="Full name"></div>
-              <div class="form-group"><label>Rank *</label>
-                <select id="sfRank">
-                  <option value="">— Select Rank —</option>
-                  <option>IGP</option><option>DIG</option><option>SP</option><option>AddSP</option>
-                  <option>DySP</option><option>CI</option><option>SI</option><option>ASI</option>
-                  <option>HC</option><option>PC</option><option>WPC</option><option>Inspector</option>
-                  <option>HC(C)</option><option>PC(C)</option><option>WPC(C)</option><option>RSI</option>
-                </select>
-              </div>
-              <div class="form-group"><label>Badge Number</label><input type="text" id="sfBadge" placeholder="Badge No."></div>
-              <!-- Row 2: Phone, Gender, Status -->
-              <div class="form-group">
-                <label>Phone Number (Login ID) *</label>
-                <input type="text" id="sfPhone" placeholder="Enter phone number">
-                <small style="color:var(--text3);font-size:10px;margin-top:3px;display:block">This will be staff login ID</small>
-              </div>
-              <div class="form-group"><label>Gender</label>
-                <select id="sfGender"><option>Male</option><option>Female</option></select>
-              </div>
-              <div class="form-group"><label>Status</label>
-                <select id="sfStatus"><option>Active</option><option>Inactive</option></select>
-              </div>
-              <!-- Row 3: Gmail, Projects, District -->
-              <div class="form-group"><label>Gmail</label><input type="email" id="sfGmail" placeholder="staff@gmail.com"></div>
-              <div class="form-group"><label>Assigned Projects</label><input type="text" id="sfProjects" placeholder="Project names"></div>
-              <div class="form-group"><label>District Assigned</label><input type="text" id="sfDistrict" placeholder="District name"></div>
-              <!-- Row 4: Reporting Officer full width -->
-              <div class="form-group" style="grid-column:1/-1"><label>Reporting Officer</label><input type="text" id="sfReporting" placeholder="Officer name"></div>
-            </div>
-            
-            <!-- Duty Details Section -->
-            <div class="section-title" style="margin-top:20px;margin-bottom:14px">
-              <i class="fa-solid fa-briefcase"></i> Duty Details
-            </div>
-            <div class="form-grid">
-              <div class="form-group" style="grid-column:1/-1"><label>Daily Duties</label><textarea id="sfDaily" placeholder="Enter daily duties..." style="min-height:80px"></textarea></div>
-              <div class="form-group" style="grid-column:1/-1"><label>Weekly Duties</label><textarea id="sfWeekly" placeholder="Enter weekly duties..." style="min-height:80px"></textarea></div>
-              <div class="form-group" style="grid-column:1/-1"><label>Monthly Duties</label><textarea id="sfMonthly" placeholder="Enter monthly duties..." style="min-height:80px"></textarea></div>
-              <div class="form-group" style="grid-column:1/-1"><label>Yearly Duties</label><textarea id="sfYearly" placeholder="Enter yearly duties..." style="min-height:80px"></textarea></div>
-            </div>
+<div class="admin-only-section">
+<div class="card heart-card" style="margin-bottom:20px">
+  <div class="section-header">
+    <div class="section-title">
+      <i class="fa-solid fa-user-plus"></i> Add New Staff Member
+    </div>
+    <span class="section-badge">Admin Only</span>
+  </div>
 
-            <div class="form-actions">
-              <button class="btn-primary" id="sfSaveBtn" onclick="submitStaff()"><i class="fa-solid fa-floppy-disk"></i> Save Staff</button>
-              <button class="btn-secondary" id="sfClearBtn" onclick="clearStaffForm()">Clear Form</button>
-            </div>
-          </div>
+  <div class="form-grid">
+    <div class="form-group">
+      <label>Staff ID *</label>
+      <input type="text" id="ns_Staff_ID" placeholder="e.g. TS-001">
+    </div>
+    <div class="form-group">
+      <label>Full Name *</label>
+      <input type="text" id="ns_Full_Name" placeholder="Full name">
+    </div>
+    <div class="form-group">
+      <label>Rank *</label>
+      <input type="text" id="ns_Rank"
+             placeholder="e.g. Sub-Inspector, Constable">
+    </div>
+    <div class="form-group">
+      <label>Badge No</label>
+      <input type="text" id="ns_Badge_No" placeholder="Badge number">
+    </div>
+    <div class="form-group">
+      <label>Gender</label>
+      <select id="ns_Gender">
+        <option value="">-- Select --</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Gmail</label>
+      <input type="email" id="ns_Gmail" placeholder="Gmail address">
+    </div>
+    <div class="form-group">
+      <label>Phone (Login ID) *</label>
+      <input type="tel" id="ns_Phone"
+             placeholder="10-digit mobile number">
+    </div>
+    <div class="form-group">
+      <label>Date Joined</label>
+      <input type="date" id="ns_Date_Joined">
+    </div>
+    <div class="form-group">
+      <label>Status</label>
+      <select id="ns_Status">
+        <option value="Active">Active</option>
+        <option value="Inactive">Inactive</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>District Assigned</label>
+      <input type="text" id="ns_District_Assigned"
+             placeholder="e.g. Mangalagiri">
+    </div>
+    <div class="form-group">
+      <label>Reporting Officer</label>
+      <input type="text" id="ns_Reporting_Officer"
+             placeholder="Reporting officer name">
+    </div>
+    <div class="form-group">
+      <label>Assigned Projects</label>
+      <input type="text" id="ns_Assigned_Projects"
+             placeholder="Project 1, Project 2 ...">
+    </div>
+    <div class="form-group">
+      <label>Profile Photo URL</label>
+      <input type="url" id="ns_Profile_Photo_URL"
+             placeholder="https://... (optional)">
+    </div>
+    <div class="form-group">
+      <label>Role</label>
+      <select id="ns_role">
+        <option value="staff">Staff</option>
+        <option value="officer">Officer</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+    <div class="form-group" style="grid-column:1/-1">
+      <label>Daily Duties</label>
+      <textarea id="ns_Daily_Duties"
+                placeholder="Describe daily duties..."></textarea>
+    </div>
+    <div class="form-group" style="grid-column:1/-1">
+      <label>Weekly Duties</label>
+      <textarea id="ns_Weekly_Duties"
+                placeholder="Describe weekly duties..."></textarea>
+    </div>
+    <div class="form-group" style="grid-column:1/-1">
+      <label>Monthly Duties</label>
+      <textarea id="ns_Monthly_Duties"
+                placeholder="Describe monthly duties..."></textarea>
+    </div>
+    <div class="form-group" style="grid-column:1/-1">
+      <label>Yearly Duties</label>
+      <textarea id="ns_Yearly_Duties"
+                placeholder="Describe yearly duties..."></textarea>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button class="btn-heart" onclick="addNewStaff()">
+      <i class="fa-solid fa-user-plus"></i> Add Staff Member
+    </button>
+    <button class="btn-secondary" onclick="clearNewStaffForm()">
+      <i class="fa-solid fa-xmark"></i> Clear Form
+    </button>
+  </div>
+
+  <!-- Success notice -->
+  <div id="staffAddedNotice"
+       style="display:none;margin-top:14px;padding:12px 16px;
+              background:rgba(26,122,74,0.1);border:1px solid var(--success);
+              border-radius:10px;font-size:13px;color:var(--success)">
+    <i class="fa-solid fa-circle-check"></i>
+    Staff member added! &nbsp;<strong>Login ID:</strong>
+    <span id="noticePhone"></span> &nbsp;|&nbsp;
+    <strong>Default Password:</strong> 1111
+  </div>
+</div>
+</div>
 
           <!-- Staff List -->
           <div class="section-header" style="margin-top:8px">
@@ -1578,13 +1760,21 @@ select[multiple] option:selected {
           <div class="card" style="padding:0;overflow:hidden">
             <div class="table-wrap">
               <table>
-                <thead><tr>
-                  <th>S.No</th><th>Name</th><th>Rank</th><th>Phone</th><th>Gender</th>
-                  <th>Badge No</th><th>Status</th><th>Actions</th>
-                </tr></thead>
-                <tbody id="staffTableBody">
-                  <tr><td colspan="8"><div class="loading"><div class="spinner"></div></div></td></tr>
-                </tbody>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Staff ID</th>
+                    <th>Name</th>
+                    <th>Rank</th>
+                    <th>Badge No</th>
+                    <th>Gender</th>
+                    <th>Phone</th>
+                    <th>District</th>
+                    <th>Reporting Officer</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="staffTableBody"></tbody>
               </table>
             </div>
           </div>
@@ -1740,8 +1930,6 @@ select[multiple] option:selected {
 // ============================================================
 // SECTION 1: CONFIGURATION & GLOBAL VARIABLES
 // ============================================================
-const RELAY_URL = 'https://script.google.com/macros/s/AKfycbyRTsaP4Ix5u2l3Ghkhvh87q7MGzD29k_jnWPrATHUtWTgv2LZmPK6Vo40bqyru4CJHLA/exec';
-const APPS_SCRIPT_URL = RELAY_URL;
 let staffCache = []; // global cache
 const ADMIN_PHONE = '9493946020';
 const ADMIN_PASS  = '8421';
@@ -2016,16 +2204,6 @@ function showScreen(name) {
 
   // Lazy-load screens
   if (name === 'hub') {
-    loadStaffFromSheet();
-    if (!commandEntriesListenerActive) {
-      commandEntriesListenerActive = true;
-      onSnapshot(collection(db, "commandEntries"), (snapshot) => {
-        const entries = [];
-        snapshot.forEach(doc => entries.push({ id: doc.id, ...doc.data() }));
-        console.log('Fetched entries:', entries.length);
-        renderEntriesTable(entries);
-      });
-    }
     renderHub();
   }
   if (name === 'vc') renderVC();
@@ -2142,19 +2320,10 @@ function optimisticAdd(sheetKey, obj, renderFn) {
 
 async function loadAllData() {
   try {
-    const [staff, hub_entries, vcschedule, notices] = await Promise.all([
-      fetchSheet('Staff_Master'),
-      fetchSheet('hub_entries'),
-      fetchSheet('VC_Schedule'),
-      fetchSheet('Notices')
-    ]);
-    const mergedStaff = mergeStaffData(staff);
-    allData = { staff: mergedStaff, hub_entries, vcschedule, notices };
-    staffListCache = mergedStaff;
-    renderDashboard();
-    renderNoticesBanner();
-    updateAllDropdowns();
-    renderAdminCredentials();
+    loadStaffFromFirestore();
+    loadHubEntries();
+    loadVCMeetings();
+    loadNotices();
     return true;
   } catch(err) {
     console.error('loadAllData error:', err);
@@ -2164,13 +2333,7 @@ async function loadAllData() {
 }
 
 async function loadStaffList() {
-  try {
-    const staff = await fetchSheet('Staff_Master');
-    allData.staff = mergeStaffData(staff);
-  } catch(e) {
-    allData.staff = mergeStaffData([]);
-  }
-  updateAllDropdowns();
+  // Handled by loadStaffFromFirestore
 }
 
 function mergeStaffData(sheetStaff) {
@@ -2178,13 +2341,11 @@ function mergeStaffData(sheetStaff) {
 }
 
 function refreshData() {
-  loadAllData();
+  showToast('Real-time sync active!', 'success');
 }
 
 async function refreshAll() {
-  showToast('Refreshing...', 'info');
-  await loadAllData();
-  showToast('Refreshed!', 'success');
+  showToast('Real-time sync active!', 'success');
 }
 
 // ============================================================
@@ -2379,78 +2540,88 @@ function startClock() {
 
 // --- LOGIN ---
 async function doLogin() {
-  const phone = document.getElementById('loginEmail').value.trim();
-  const pass = document.getElementById('loginPass').value;
-  const loginBtn = document.getElementById('loginBtn');
+  const phone    = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPass').value.trim();
+  const btn      = document.getElementById('loginBtn');
+  const errDiv   = document.getElementById('loginError');
 
-  if (!phone || !pass) {
-    showLoginError('Enter phone and password');
+  if (!phone || !password) {
+    if (errDiv) {
+      errDiv.textContent = 'Please enter phone and password.';
+      errDiv.style.display = 'block';
+    }
     return;
   }
 
-  // Set loading state
-  if (loginBtn) {
-    loginBtn.disabled = true;
-    loginBtn.classList.add('btn-loading');
-    loginBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> &nbsp;SIGNING IN...';
+  if (btn) {
+    btn.disabled   = true;
+    btn.innerHTML  = '<i class="fa-solid fa-spinner fa-spin"></i> &nbsp;SIGNING IN...';
   }
+  if (errDiv) errDiv.style.display = 'none';
 
   try {
-    if (phone === ADMIN_PHONE && pass === ADMIN_PASS) {
-      currentUser = {
-        phone,
-        name: 'Admin',
-        rank: 'RSI',
-        role: 'admin',
-        email: 'admin@appolice.gov.in'
-      };
-      localStorage.setItem('userPhone', phone);
-      await loadStaffFromSheet();
-      startApp();
-      return;
+    const staffRef = fsCollection(db, 'staff');
+    const q        = fsQuery(staffRef, fsWhere('Phone', '==', phone));
+    const snap     = await fsGetDocs(q);
+
+    if (snap.empty) {
+      throw new Error('Phone number not registered. Contact admin.');
     }
 
-    await loadStaffFromSheet();
-    loginWithStaffData(phone, pass);
-  } catch (err) {
-    console.error('Login error:', err);
-    showLoginError('Login failed. Please try again.');
-  } finally {
-    // Restore button state if not logged in
-    if (!currentUser && loginBtn) {
-      loginBtn.disabled = false;
-      loginBtn.classList.remove('btn-loading');
-      loginBtn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> &nbsp;SIGN IN';
+    const staffDoc  = snap.docs[0];
+    const staffData = staffDoc.data();
+    const stored    = String(staffData.password || '1111').trim();
+
+    if (stored !== password) {
+      throw new Error('Incorrect password. Please try again.');
     }
-  }
-}
 
-function loginWithStaffData(phone, pass) {
-  const staff = allData.staff || [];
-  const found = staff.find(s => 
-    String(s.Phone || s.phone || s.Mobile || '').trim() === String(phone).trim()
-    && (s.Status || 'Active') === 'Active'
-  );
+    // Save session
+    localStorage.setItem('userName',   staffData.Full_Name || '');
+    localStorage.setItem('userRank',   staffData.Rank      || '');
+    localStorage.setItem('userRole',   staffData.role      || 'staff');
+    localStorage.setItem('userDocId',  staffDoc.id);
+    localStorage.setItem('userPhone',  phone);
+    window.currentUser = { ...staffData, id: staffDoc.id };
 
-  if (found && pass === STAFF_PASS) {
-    currentUser = {
-      phone,
-      name: found.Full_Name || found.Name || found.name || 'Staff',
-      rank: found.Rank || found.rank || found.Designation || 'PC',
-      role: isOfficerRank(found.Rank || found.rank || found.Designation) ? 'officer' : 'staff',
-      email: found.Gmail || found.Email || found.email || '',
-      Daily_Duties: found.Daily_Duties || '',
-      Weekly_Duties: found.Weekly_Duties || '',
-      Monthly_Duties: found.Monthly_Duties || '',
-      Yearly_Duties: found.Yearly_Duties || '',
-      staffData: found
-    };
-    localStorage.setItem('userPhone', phone);
-    loadStaffFromSheet().then(() => {
-      startApp();
-    });
-  } else {
-    showLoginError('Invalid phone number or password. Please try again.');
+    // Show app
+    const loginScr = document.getElementById('loginScreen');
+    if (loginScr) loginScr.style.display = 'none';
+    const appSh = document.getElementById('appShell');
+    if (appSh) appSh.style.display = 'block';
+
+    // Update sidebar user info
+    const sidebarName = document.getElementById('sidebarName');
+    if (sidebarName) sidebarName.textContent = staffData.Full_Name || 'Staff';
+    const sidebarRank = document.getElementById('sidebarRank');
+    if (sidebarRank) sidebarRank.textContent = staffData.Rank || '';
+    const sidebarAvatar = document.getElementById('sidebarAvatar');
+    if (sidebarAvatar) sidebarAvatar.textContent = (staffData.Full_Name || 'S').charAt(0).toUpperCase();
+
+    // Show admin nav if admin
+    const staffMgmtNavItem = document.getElementById('staffMgmtNavItem');
+    if (staffMgmtNavItem) {
+      staffMgmtNavItem.style.display = (staffData.role === 'admin' || staffData.role === 'officer') ? 'flex' : 'none';
+    }
+    const adminBadge = document.getElementById('adminBadge');
+    if (adminBadge) {
+      adminBadge.style.display = (staffData.role === 'admin' || staffData.role === 'officer') ? 'inline-flex' : 'none';
+    }
+
+    // Load all data
+    loadAllData();
+    showScreen('dashboard');
+    showToast('Welcome, ' + (staffData.Full_Name || 'Staff') + '!', 'success');
+
+  } catch(err) {
+    if (errDiv) {
+      errDiv.textContent     = err.message;
+      errDiv.style.display   = 'block';
+    }
+    if (btn) {
+      btn.disabled           = false;
+      btn.innerHTML          = '<i class="fa-solid fa-right-to-bracket"></i> &nbsp;SIGN IN';
+    }
   }
 }
 
@@ -2500,20 +2671,17 @@ function initApp() {
 }
 
 function doLogout() {
-  currentUser = null;
-  const loginScr = document.getElementById('loginScreen');
+  localStorage.clear();
+  window.currentUser = null;
+  staffCache = [];
   const appSh = document.getElementById('appShell');
-  if (loginScr) loginScr.style.display = 'flex';
   if (appSh) appSh.style.display = 'none';
-  
-  // Reset fields
-  const loginBtn = document.getElementById('loginBtn');
-  if (loginBtn) {
-    loginBtn.disabled = false;
-    loginBtn.classList.remove('btn-loading');
-    loginBtn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> &nbsp;SIGN IN';
-  }
-  document.getElementById('loginPass').value = '';
+  const loginScr = document.getElementById('loginScreen');
+  if (loginScr) loginScr.style.display = 'flex';
+  const emailInput = document.getElementById('loginEmail');
+  if (emailInput) emailInput.value = '';
+  const passInput = document.getElementById('loginPass');
+  if (passInput) passInput.value = '';
 }
 
 // --- DASHBOARD ---
@@ -2613,122 +2781,303 @@ function loadMyProfile() {
     String(s['Phone'] || s['phone'] || s['Mobile'] || '').trim() === currentPhone
   );
   if (!myRecord) {
-    showToast('Profile not found in staff sheet. Contact admin.', 'error');
+    showToast('Profile not found. Contact admin.', 'error');
     return;
   }
   renderProfileView(myRecord);
+  loadMyDuties(currentPhone);
+}
+
+let allDuties = [];
+
+function loadMyDuties(phone) {
+  const q = fsQuery(
+    fsCollection(db, 'duties'),
+    fsWhere('staffPhone', '==', phone),
+    fsOrderBy('dutyDate', 'desc')
+  );
+  fsOnSnapshot(q, (snap) => {
+    allDuties = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const filtered = allDuties.filter(d => d.dutyType === 'Daily');
+    renderDutiesTable(filtered);
+  }, (err) => {
+    console.error("Duties load error:", err);
+  });
+}
+
+function filterDuties(type, btn) {
+  document.querySelectorAll('#myDutiesCard .tab-pill')
+    .forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderDutiesTable(allDuties.filter(d => d.dutyType === type));
+}
+
+function renderDutiesTable(duties) {
+  const tbody = document.getElementById('dutiesTableBody');
+  if (!tbody) return;
+  if (!duties.length) {
+    tbody.innerHTML = `<tr><td colspan="6">
+      <div class="empty-state">
+        <i class="fa-solid fa-calendar-xmark"></i>
+        <p>No duties found for this period.</p>
+      </div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = duties.map((d, i) => `
+    <tr>
+      <td>${i+1}</td>
+      <td>${d.dutyDate || '—'}</td>
+      <td><strong>${d.description ? d.description.substring(0,30)+'...' : '—'}</strong></td>
+      <td style="max-width:200px;white-space:normal">
+        ${d.description || '—'}</td>
+      <td><span class="badge badge-${
+        d.status==='Completed'?'completed':
+        d.status==='In Progress'?'progress':'pending'
+      }">${d.status||'Pending'}</span></td>
+      <td>${d.assignedBy||'Admin'}</td>
+    </tr>`).join('');
 }
 
 function renderProfileView(data) {
-  const name   = data['Full_Name']   || data['Full Name']   || data['Name']        || data['name']        || '—';
-  const rank   = data['Rank']        || data['rank']        || data['Designation'] || '—';
-  const phone  = data['Phone']       || data['phone']       || data['Mobile']      || '—';
-  const email  = data['Gmail']       || data['Gmail']       || data['Email']       || data['email']       || '—';
-  const staffId= data['Staff_ID']    || data['Staff ID']    || data['Badge_No']    || data['Badge No']    || data['BadgeNo']     || '—';
-  const dept   = data['District_Assigned'] || data['District Assigned'] || data['Department']  || data['Dept']        || '—';
-  const joined = data['Date_Joined'] || data['Date Joined'] || data['Date of Join']|| data['DOJ']         || '—';
-  const address= data['Address']     || data['address']     || '—';
-  const status = data['Status']      || data['status']      || 'Active';
+  if (!data) return;
+  const docId = data.id || data.Entry_ID || localStorage.getItem('userDocId');
 
-  document.getElementById('profileName').textContent    = name;
-  document.getElementById('profileRank').textContent    = rank;
-  document.getElementById('profilePhone').textContent   = phone;
-  document.getElementById('profileEmail').textContent   = email;
-  document.getElementById('profileStaffId').textContent = staffId;
-  document.getElementById('profileDept').textContent    = dept;
-  document.getElementById('profileJoined').textContent  = joined;
-  document.getElementById('profileAddress').textContent = address;
-  document.getElementById('profileStatus').textContent  = status;
-  document.getElementById('profileAvatar').textContent  = name.charAt(0).toUpperCase();
+  // Profile Photo circular with initials fallback
+  const photoContainer = document.getElementById('profilePhotoContainer');
+  if (photoContainer) {
+    if (data.Profile_Photo_URL) {
+      photoContainer.innerHTML = `<img src="${data.Profile_Photo_URL}" 
+        style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,0.3);flex-shrink:0;">`;
+    } else {
+      photoContainer.innerHTML = `<div class="profile-avatar" id="profileAvatar" style="width:72px;height:72px;border-radius:50%;
+        background:linear-gradient(135deg, var(--gold), #a07828);display:flex;align-items:center;
+        justify-content:center;font-size:28px;font-weight:700;color:#fff;border:3px solid rgba(255,255,255,0.3);flex-shrink:0;">
+        ${(data.Full_Name || 'S').charAt(0).toUpperCase()}</div>`;
+    }
+  }
+
+  // Header Details
+  const pName = document.getElementById('profileName');
+  if (pName) pName.textContent = data.Full_Name || '—';
   
-  const sidebarAvatar = document.getElementById('sidebarAvatar');
-  const sidebarName = document.getElementById('sidebarName');
-  const sidebarRank = document.getElementById('sidebarRank');
-  if (sidebarAvatar) sidebarAvatar.textContent  = name.charAt(0).toUpperCase();
-  if (sidebarName) sidebarName.textContent    = name;
-  if (sidebarRank) sidebarRank.textContent    = rank;
+  const pRankB = document.getElementById('profileRankBadge');
+  if (pRankB) pRankB.textContent = (data.Rank || '—') + (data.Badge_No ? ` (Badge: ${data.Badge_No})` : '');
+  
+  const badgesRow = document.getElementById('profileHeaderBadges');
+  if (badgesRow) {
+    const statusB = `<span class="profile-tag" style="background:var(--success)">${data.Status || 'Active'}</span>`;
+    const roleB = `<span class="profile-tag" style="background:var(--navy-light)">Role: ${data.role || 'staff'}</span>`;
+    const genderB = `<span class="profile-tag">${data.Gender || '—'}</span>`;
+    const idB = `<span class="profile-tag">ID: ${data.Staff_ID || '—'}</span>`;
+    badgesRow.innerHTML = `${statusB} ${roleB} ${genderB} ${idB}`;
+  }
 
-  // Pre-fill the edit form fields when profile loads:
-  if (document.getElementById('editName')) document.getElementById('editName').value    = name;
-  if (document.getElementById('editRank')) document.getElementById('editRank').value    = rank;
-  if (document.getElementById('editPhone')) document.getElementById('editPhone').value   = phone;
-  if (document.getElementById('editEmail')) document.getElementById('editEmail').value   = email;
-  if (document.getElementById('editStaffId')) document.getElementById('editStaffId').value = staffId;
-  if (document.getElementById('editDept')) document.getElementById('editDept').value    = dept;
-  if (document.getElementById('editDOJ')) document.getElementById('editDOJ').value     = joined;
-  if (document.getElementById('editAddress')) document.getElementById('editAddress').value = address;
+  // Details Grid
+  const elPhone = document.getElementById('profilePhone');
+  if (elPhone) elPhone.textContent = data.Phone || '—';
+  
+  const elEmail = document.getElementById('profileEmail');
+  if (elEmail) elEmail.textContent = data.Gmail || '—';
+  
+  const elJoined = document.getElementById('profileJoined');
+  if (elJoined) elJoined.textContent = data.Date_Joined || '—';
+  
+  const elDistrict = document.getElementById('profileDistrict');
+  if (elDistrict) elDistrict.textContent = data.District_Assigned || '—';
+  
+  const elReporting = document.getElementById('profileReporting');
+  if (elReporting) elReporting.textContent = data.Reporting_Officer || '—';
+  
+  const elProjects = document.getElementById('profileProjects');
+  if (elProjects) elProjects.textContent = data.Assigned_Projects || '—';
+  
+  const elCreated = document.getElementById('profileCreated');
+  if (elCreated) elCreated.textContent = data.Created_Date || '—';
 
-  // Load duties from record or fallback static mappings
-  const dailyDuties   = data['Daily_Duties']   || data['Daily Duties']   || (DUTIES_MAP[phone] ? DUTIES_MAP[phone].d : '') || '';
-  const weeklyDuties  = data['Weekly_Duties']  || data['Weekly Duties']  || (DUTIES_MAP[phone] ? DUTIES_MAP[phone].w : '') || '';
-  const monthlyDuties = data['Monthly_Duties'] || data['Monthly Duties'] || (DUTIES_MAP[phone] ? DUTIES_MAP[phone].m : '') || '';
-  const yearlyDuties  = data['Yearly_Duties']  || data['Yearly Duties']  || (DUTIES_MAP[phone] ? DUTIES_MAP[phone].y : '') || '';
+  // Duties Panels
+  const dailyDuties   = data.Daily_Duties   || (DUTIES_MAP[data.Phone] ? DUTIES_MAP[data.Phone].d : '') || '';
+  const weeklyDuties  = data.Weekly_Duties  || (DUTIES_MAP[data.Phone] ? DUTIES_MAP[data.Phone].w : '') || '';
+  const monthlyDuties = data.Monthly_Duties || (DUTIES_MAP[data.Phone] ? DUTIES_MAP[data.Phone].m : '') || '';
+  const yearlyDuties  = data.Yearly_Duties  || (DUTIES_MAP[data.Phone] ? DUTIES_MAP[data.Phone].y : '') || '';
 
   if (document.getElementById('duty-panel-daily')) document.getElementById('duty-panel-daily').innerHTML = formatDutyText(dailyDuties);
   if (document.getElementById('duty-panel-weekly')) document.getElementById('duty-panel-weekly').innerHTML = formatDutyText(weeklyDuties);
   if (document.getElementById('duty-panel-monthly')) document.getElementById('duty-panel-monthly').innerHTML = formatDutyText(monthlyDuties);
   if (document.getElementById('duty-panel-yearly')) document.getElementById('duty-panel-yearly').innerHTML = formatDutyText(yearlyDuties);
+
+  // Admin Edit form populated if current user is admin
+  const userRole = localStorage.getItem('userRole') || currentUser?.role || 'staff';
+  const isAdmin = (userRole === 'admin');
+  const adminSection = document.getElementById('adminEditProfileSection');
+  if (adminSection) {
+    adminSection.style.display = isAdmin ? 'block' : 'none';
+  }
+
+  if (isAdmin) {
+    document.getElementById('pe_Staff_ID').value = data.Staff_ID || '';
+    document.getElementById('pe_Full_Name').value = data.Full_Name || '';
+    document.getElementById('pe_Rank').value = data.Rank || '';
+    document.getElementById('pe_Badge_No').value = data.Badge_No || '';
+    document.getElementById('pe_Gender').value = data.Gender || 'Male';
+    document.getElementById('pe_Gmail').value = data.Gmail || '';
+    document.getElementById('pe_Phone').value = data.Phone || '';
+    document.getElementById('pe_Date_Joined').value = data.Date_Joined || '';
+    document.getElementById('pe_Status').value = data.Status || 'Active';
+    document.getElementById('pe_District_Assigned').value = data.District_Assigned || '';
+    document.getElementById('pe_Reporting_Officer').value = data.Reporting_Officer || '';
+    document.getElementById('pe_Assigned_Projects').value = data.Assigned_Projects || '';
+    document.getElementById('pe_Profile_Photo_URL').value = data.Profile_Photo_URL || '';
+    document.getElementById('pe_role').value = data.role || 'staff';
+    document.getElementById('pe_Daily_Duties').value = data.Daily_Duties || '';
+    document.getElementById('pe_Weekly_Duties').value = data.Weekly_Duties || '';
+    document.getElementById('pe_Monthly_Duties').value = data.Monthly_Duties || '';
+    document.getElementById('pe_Yearly_Duties').value = data.Yearly_Duties || '';
+    
+    // Store doc ID globally for save callback
+    window.pe_docId = docId;
+  }
+}
+
+async function adminSaveProfile() {
+  const docId = window.pe_docId;
+  if (!docId) {
+    showToast('Cannot identify profile record.', 'error');
+    return;
+  }
+  const get = id => {
+    const el = document.getElementById(id);
+    return el ? el.value.trim() : '';
+  };
+  const updatedData = {
+    Staff_ID:           get('pe_Staff_ID'),
+    Full_Name:          get('pe_Full_Name'),
+    Rank:               get('pe_Rank'),
+    Badge_No:           get('pe_Badge_No'),
+    Gender:             get('pe_Gender'),
+    Gmail:              get('pe_Gmail'),
+    Phone:              get('pe_Phone'),
+    Date_Joined:        get('pe_Date_Joined'),
+    Status:             get('pe_Status') || 'Active',
+    Profile_Photo_URL:  get('pe_Profile_Photo_URL'),
+    Assigned_Projects:  get('pe_Assigned_Projects'),
+    District_Assigned:  get('pe_District_Assigned'),
+    Reporting_Officer:  get('pe_Reporting_Officer'),
+    Daily_Duties:       get('pe_Daily_Duties'),
+    Weekly_Duties:      get('pe_Weekly_Duties'),
+    Monthly_Duties:     get('pe_Monthly_Duties'),
+    Yearly_Duties:      get('pe_Yearly_Duties'),
+    role:               get('pe_role') || 'staff'
+  };
+  await updateStaffProfile(docId, updatedData);
+}
+
+async function updateStaffProfile(docId, data) {
+  if (!docId) {
+    showToast('Cannot identify staff record.','error'); return;
+  }
+  try {
+    await fsUpdateDoc(fsDoc(db, 'staff', docId), {
+      ...data,
+      Updated_Date: new Date().toISOString().split('T')[0]
+    });
+    showToast('Profile updated successfully!','success');
+    await loadStaffFromFirestore(); // refresh cache
+    loadMyProfile();
+  } catch(err) {
+    showToast('Update failed: ' + err.message,'error');
+  }
+}
+
+async function saveProfileToFirestore() {
+  const docId = localStorage.getItem('userDocId') || window.pe_docId;
+  if (!docId) { showToast('Session error. Please logout & login.', 'error'); return; }
+  try {
+    const get = id => {
+      const el = document.getElementById(id);
+      return el ? el.value.trim() : '';
+    };
+    await fsUpdateDoc(fsDoc(db, 'staff', docId), {
+      Full_Name:          get('pe_Full_Name'),
+      Rank:               get('pe_Rank'),
+      Gmail:              get('pe_Gmail'),
+      District_Assigned:  get('pe_District_Assigned'),
+      Date_Joined:        get('pe_Date_Joined'),
+      Updated_Date:       new Date().toISOString().split('T')[0]
+    });
+    showToast('Profile updated successfully!', 'success');
+    loadMyProfile();
+  } catch(err) {
+    showToast('Update failed: ' + err.message, 'error');
+  }
 }
 
 async function saveProfileToSheet() {
-  const updatedData = {
-    action:    'updateStaff',
-    phone:     document.getElementById('editPhone').value,
-    name:      document.getElementById('editName').value,
-    rank:      document.getElementById('editRank').value,
-    email:     document.getElementById('editEmail').value,
-    dept:      document.getElementById('editDept').value,
-    doj:       document.getElementById('editDOJ').value,
-    address:   document.getElementById('editAddress').value
-  };
-  try {
-    const res = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      redirect: 'follow',
-      body: JSON.stringify(updatedData)
-    });
-    const result = await res.json();
-    if (result.success) {
-      showToast('Profile updated successfully!', 'success');
-      await loadStaffFromSheet();
-      loadMyProfile();
-    } else {
-      showToast('Update failed: ' + (result.error || 'Unknown error'), 'error');
-    }
-  } catch(err) {
-    showToast('Could not save profile. Check connection.', 'error');
-  }
+  await saveProfileToFirestore();
 }
 
-async function loadStaffFromSheet() {
-  try {
-    const res = await fetch(APPS_SCRIPT_URL + '?action=getStaff', { redirect: 'follow' });
-    const data = await res.json();
-    staffCache = data.staff || data || [];
+function loadStaffFromFirestore() {
+  const q = fsQuery(
+    fsCollection(db, 'staff'),
+    fsOrderBy('name', 'asc')
+  );
+  fsOnSnapshot(q, (snapshot) => {
+    staffCache = snapshot.docs.map(d => {
+      const data = d.data();
+      return {
+        id: d.id,
+        ...data,
+        Full_Name: data.name || '',
+        Rank: data.rank || '',
+        Phone: data.phone || '',
+        Gender: data.gender || 'Male',
+        Badge_No: data.badgeNo || data.staffId || '',
+        Gmail: data.email || '',
+        Status: data.status || 'Active',
+        Assigned_Projects: data.assignedProjects || '',
+        District_Assigned: data.department || data.districtAssigned || '',
+        Reporting_Officer: data.reportingOfficer || '',
+        Daily_Duties: data.dailyDuties || '',
+        Weekly_Duties: data.weeklyDuties || '',
+        Monthly_Duties: data.monthlyDuties || '',
+        Yearly_Duties: data.yearlyDuties || '',
+        Date_Joined: data.dateOfJoin || ''
+      };
+    });
     allData.staff = staffCache;
-    renderStaffManagement(staffCache);
+    console.log('Staff loaded:', staffCache.length);
+    renderStaffMgmt();
     renderStaff();
     populateAllStaffDropdowns(staffCache);
-  } catch(err) {
+    const statStaff = document.getElementById('statStaff');
+    if (statStaff) {
+      statStaff.textContent = staffCache.filter(s => s.Status === 'Active').length;
+      statStaff.classList.remove('skeleton');
+    }
+  }, (err) => {
     console.error('Staff load error:', err);
-    showToast('Failed to load staff list from Google Sheet.', 'error');
-  }
+    showToast('Failed to load staff list.', 'error');
+  });
+}
+
+// Alias for backwards compatibility
+async function loadStaffFromSheet() {
+  loadStaffFromFirestore();
 }
 
 function renderStaffManagement(staffList) {
   const tbody = document.getElementById('staffTableBody');
   if (!tbody) return;
   if (!staffList || staffList.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><i class="fa-solid fa-users-slash"></i><p>No staff records found in Google Sheet.</p></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><i class="fa-solid fa-users-slash"></i><p>No staff records found.</p></td></tr>';
     return;
   }
   tbody.innerHTML = staffList.map((s, i) => {
-    const staffId = s['Staff ID'] || s['staffId'] || s['BadgeNo'] || s['Staff_ID'] || s['Badge_No'] || '—';
-    const name = s['Name'] || s['name'] || s['fullName'] || s['Full_Name'] || '—';
-    const rank = s['Rank'] || s['rank'] || s['Designation'] || '—';
-    const phone = s['Phone'] || s['phone'] || s['Mobile'] || '—';
-    const email = s['Email'] || s['email'] || s['Gmail'] || '—';
-    const status = s['Status'] || s['status'] || 'Active';
+    const staffId = s.Badge_No || s.staffId || '—';
+    const name = s.Full_Name || s.name || '—';
+    const rank = s.Rank || s.rank || '—';
+    const phone = s.Phone || s.phone || '—';
+    const email = s.Gmail || s.email || '—';
+    const status = s.Status || s.status || 'Active';
     return `
       <tr>
         <td>${i + 1}</td>
@@ -2753,18 +3102,100 @@ function renderStaffManagement(staffList) {
 
 function populateAllStaffDropdowns(staffList) {
   const dropdowns = document.querySelectorAll(
-    '#assignedTo, #taskAssignedTo, #hubAssignedTo, ' +
-    '#vcSpeaker, #vcOrganiser, #vcPersons, #sfReporting, ' +
-    '#corrAllocBy, #corrAllocTo, ' +
-    'select[name="assignedTo"], select[data-staff-dropdown]'
+    '#assignedTo, #taskAssignedTo, #hubAssignedTo, #vcSpeaker, #vcOrganiser, #vcPersons, #sfReporting, #corrAllocBy, #corrAllocTo, select[name="assignedTo"], select[data-staff-dropdown]'
   );
   const options = '<option value="">-- Select Staff --</option>' +
     staffList.map(s => {
-      const name = s['Full_Name'] || s['Full Name'] || s['Name'] || s['name'] || s['fullName'] || 'Unknown';
-      const rank = s['Rank'] || s['rank'] || s['Designation'] || '';
-      return `<option value="${name}">${rank ? rank + ' - ' : ''}${name}</option>`;
+      const name = s.Full_Name || 'Unknown';
+      const rank = s.Rank || '';
+      return `<option value="${name}">${rank ? rank + ' · ' : ''}${name}</option>`;
     }).join('');
   dropdowns.forEach(sel => sel.innerHTML = options);
+}
+
+function loadHubEntries() {
+  const q = fsQuery(
+    fsCollection(db, 'hub_entries'),
+    fsOrderBy('createdAt', 'desc')
+  );
+  fsOnSnapshot(q, (snap) => {
+    const entries = snap.docs.map(d => {
+      const data = d.data();
+      return {
+        id: d.id,
+        Entry_ID: d.id,
+        Type: data.type || '',
+        Subject: data.subject || '',
+        Assigned_To: data.assignedTo || '',
+        Priority: data.priority || 'Medium',
+        Due_Date: data.dueDate || '',
+        Status: data.status || 'Pending',
+        Description: data.description || '',
+        Added_By: data.createdBy || '',
+        Added_On: data.createdAt ? (data.createdAt.seconds ? new Date(data.createdAt.seconds * 1000).toISOString() : String(data.createdAt)) : '',
+        Category: data.category || ''
+      };
+    });
+    allData.hub_entries = entries;
+    renderHub();
+    renderDashboard();
+    
+    // Update badge/statistics
+    const active = entries.filter(e => e.Status !== 'Completed').length;
+    const statHub = document.getElementById('statHub');
+    if (statHub) { statHub.textContent = active; statHub.classList.remove('skeleton'); }
+    const hubBadge = document.getElementById('hubBadge');
+    if (hubBadge) hubBadge.textContent = active;
+  });
+}
+
+function loadVCMeetings() {
+  const q = fsQuery(
+    fsCollection(db, 'vc_meetings'),
+    fsOrderBy('createdAt', 'desc')
+  );
+  fsOnSnapshot(q, (snap) => {
+    const data = snap.docs.map(d => {
+      const docData = d.data();
+      return {
+        id: d.id,
+        VC_ID: d.id,
+        Subject: docData.title || docData.subject || '',
+        Date: docData.date || '',
+        Time: docData.time || '',
+        Platform: docData.venue || docData.platform || '',
+        VC_Link: docData.link || docData.vcLink || '',
+        Remarks: docData.agenda || docData.remarks || '',
+        Project_Name: docData.projectName || docData.project || '',
+        Organiser: docData.chairperson || docData.organiser || '',
+        Speaker: docData.speaker || '',
+        Allotted_Persons: Array.isArray(docData.participants) ? docData.participants.join(', ') : (docData.allottedPersons || ''),
+        Status: docData.status || 'Upcoming'
+      };
+    });
+    allData.vcschedule = data;
+    renderVC();
+    renderDashboard();
+  });
+}
+
+function loadNotices() {
+  const q = fsQuery(
+    fsCollection(db, 'notices'),
+    fsOrderBy('createdAt', 'desc')
+  );
+  fsOnSnapshot(q, (snap) => {
+    const data = snap.docs.map(d => {
+      const docData = d.data();
+      return {
+        id: d.id,
+        Message: docData.text || '',
+        Status: (docData.active === true || docData.active === 'true') ? 'Active' : 'Inactive'
+      };
+    });
+    allData.notices = data;
+    renderNoticesBanner();
+  });
 }
 
 function switchDutyTab(tabName) {
@@ -2837,176 +3268,226 @@ async function saveProfileEdit() {
 }
 
 // --- STAFF MANAGEMENT ---
-function renderStaffMgmt() {
+async function addNewStaff() {
+  const get = id => {
+    const el = document.getElementById(id);
+    return el ? el.value.trim() : '';
+  };
+
+  const Staff_ID   = get('ns_Staff_ID');
+  const Full_Name  = get('ns_Full_Name');
+  const Rank       = get('ns_Rank');
+  const Phone      = get('ns_Phone');
+
+  if (!Full_Name || !Phone) {
+    showToast('Full Name and Phone are required.', 'error');
+    return;
+  }
+  if (Phone.length < 10) {
+    showToast('Enter a valid 10-digit phone number.', 'error');
+    return;
+  }
+
+  // Check duplicate phone
+  const existing = staffCache.find(
+    s => String(s.Phone).trim() === Phone
+  );
+  if (existing) {
+    showToast('A staff member with this phone already exists!','error');
+    return;
+  }
+
+  const btn = event.target.closest('button');
+  btn.disabled  = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+
   try {
-    if (currentUser?.role !== 'admin') {
-      showToast('Unauthorized access. Admin role required.', 'error');
-      return;
-    }
-    const tbody = document.getElementById('staffMgmtBody');
-    if (!tbody) return;
+    const now = new Date().toISOString().split('T')[0];
+    await fsAddDoc(fsCollection(db, 'staff'), {
+      Staff_ID,
+      Full_Name,
+      Rank,
+      Badge_No:           get('ns_Badge_No'),
+      Gender:             get('ns_Gender'),
+      Gmail:              get('ns_Gmail'),
+      Phone,
+      Date_Joined:        get('ns_Date_Joined'),
+      Status:             get('ns_Status') || 'Active',
+      Profile_Photo_URL:  get('ns_Profile_Photo_URL'),
+      Assigned_Projects:  get('ns_Assigned_Projects'),
+      District_Assigned:  get('ns_District_Assigned'),
+      Reporting_Officer:  get('ns_Reporting_Officer'),
+      Created_Date:       now,
+      Daily_Duties:       get('ns_Daily_Duties'),
+      Weekly_Duties:      get('ns_Weekly_Duties'),
+      Monthly_Duties:     get('ns_Monthly_Duties'),
+      Yearly_Duties:      get('ns_Yearly_Duties'),
+      role:               get('ns_role') || 'staff',
+      password:           '1111'
+    });
 
-    const search = (document.getElementById('sfSearch')?.value || '').toLowerCase();
-    let data = allData.staff || [];
-    
-    if (search) {
-      data = data.filter(s =>
-        (s.Full_Name || s.Name || '').toLowerCase().includes(search) ||
-        (s.Rank || '').toLowerCase().includes(search) ||
-        String(s.Phone || '').includes(search)
-      );
-    }
+    // Show success notice with phone
+    document.getElementById('noticePhone').textContent = Phone;
+    document.getElementById('staffAddedNotice').style.display = 'block';
+    showToast(Full_Name + ' added! Login: ' + Phone + ' / 1111','success');
+    clearNewStaffForm();
 
-    if (data.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fa-solid fa-users"></i><p>No staff records found.</p></div></td></tr>`;
-      return;
-    }
-
-    tbody.innerHTML = data.map((s, i) => {
-      const realIndex = (allData.staff || []).indexOf(s);
-      const rowIdx = (realIndex !== -1 ? realIndex : i);
-      return '<tr>' +
-        '<td>' + (i + 1) + '</td>' +
-        '<td><strong>' + (s.Full_Name || '—') + '</strong></td>' +
-        '<td>' + (s.Rank || '—') + '</td>' +
-        '<td>' + (s.Phone || '—') + '</td>' +
-        '<td>' + (s.Gender || '—') + '</td>' +
-        '<td>' + (s.Badge_No || '—') + '</td>' +
-        '<td>' + statusBadge(s.Status) + '</td>' +
-        '<td><div class="row-actions">' +
-        '<button class="action-btn" onclick="editStaff(' + rowIdx + ')" title="Edit"><i class="fa-solid fa-pen"></i></button>' +
-        '<button class="action-btn" onclick="deleteStaff(' + rowIdx + ')" title="Delete" style="color:var(--danger)"><i class="fa-solid fa-trash"></i></button>' +
-        '</div></td>' +
-        '</tr>';
-    }).join('');
-  } catch (err) {
-    console.error('Error rendering staff management:', err);
-    showToast('Unable to load staff list. Please refresh.', 'error');
+  } catch(err) {
+    showToast('Error: ' + err.message, 'error');
+  } finally {
+    btn.disabled  = false;
+    btn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Add Staff Member';
   }
 }
 
-function renderStaffManagement() {
-  renderStaffMgmt();
-}
-
-function editStaff(rowIndex) {
-  const staffObj = (allData.staff || [])[rowIndex];
-  if (!staffObj) return;
-
-  document.getElementById('sfName').value = staffObj.Full_Name || '';
-  document.getElementById('sfRank').value = staffObj.Rank || '';
-  document.getElementById('sfBadge').value = staffObj.Badge_No || '';
-  document.getElementById('sfPhone').value = staffObj.Phone || '';
-  document.getElementById('sfGender').value = staffObj.Gender || 'Male';
-  document.getElementById('sfStatus').value = staffObj.Status || 'Active';
-  document.getElementById('sfGmail').value = staffObj.Gmail || '';
-  document.getElementById('sfProjects').value = staffObj.Assigned_Projects || '';
-  document.getElementById('sfDistrict').value = staffObj.District_Assigned || '';
-  document.getElementById('sfReporting').value = staffObj.Reporting_Officer || '';
-  document.getElementById('sfDaily').value = staffObj.Daily_Duties || '';
-  document.getElementById('sfWeekly').value = staffObj.Weekly_Duties || '';
-  document.getElementById('sfMonthly').value = staffObj.Monthly_Duties || '';
-  document.getElementById('sfYearly').value = staffObj.Yearly_Duties || '';
-
-  editContext = { index: rowIndex, row: rowIndex + 2 };
-  const addBtn = document.getElementById('sfAddBtn');
-  if (addBtn) addBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Update Staff';
-}
-
-async function deleteStaff(index) {
-  const s = (allData.staff || [])[index];
-  const name = s ? s.Full_Name : '';
-  if (!confirm(`Delete ${name || 'this staff member'}?`)) return;
-  showToast('Deleting staff...', 'info');
-  await postAction('Staff_Master', 'delete', {}, index + 2);
-  await loadAllData();
-  renderStaffMgmt();
-  showToast('Staff deleted successfully!', 'success');
-}
-
-async function submitStaff() {
-  const name = document.getElementById('sfName').value.trim();
-  const phone = document.getElementById('sfPhone').value.trim();
-  if (!name || !phone) { showToast('Name and Phone are required', 'error'); return; }
-
-  showToast('Saving staff details...', 'info');
-
-  const rowData = [
-    editContext ? (allData.staff[editContext.index]?.Staff_ID || `S${Date.now()}`) : `S${Date.now()}`,
-    name,
-    document.getElementById('sfRank').value,
-    document.getElementById('sfBadge').value.trim(),
-    document.getElementById('sfGender').value,
-    document.getElementById('sfGmail').value.trim(),
-    phone,
-    editContext ? (allData.staff[editContext.index]?.Date_Joined || new Date().toISOString().split('T')[0]) : new Date().toISOString().split('T')[0],
-    document.getElementById('sfStatus').value,
-    '', // Photo URL
-    document.getElementById('sfProjects').value.trim(),
-    document.getElementById('sfDistrict').value.trim(),
-    document.getElementById('sfReporting').value,
-    editContext ? (allData.staff[editContext.index]?.Created_Date || new Date().toISOString()) : new Date().toISOString()
-  ];
-
-  // Update duties text maps
-  const daily = document.getElementById('sfDaily').value.trim();
-  const weekly = document.getElementById('sfWeekly').value.trim();
-  const monthly = document.getElementById('sfMonthly').value.trim();
-  const yearly = document.getElementById('sfYearly').value.trim();
-  
-  rowData.push(daily);
-  rowData.push(weekly);
-  rowData.push(monthly);
-  rowData.push(yearly);
-
-  if (editContext) {
-    await postAction('Staff_Master', 'update', rowData, editContext.row);
-  } else {
-    await postToSheet('Staff_Master', rowData);
-  }
-
-  // Clear fields
-  const fields = ['sfName', 'sfPhone', 'sfBadge', 'sfGmail', 'sfProjects', 'sfDistrict', 'sfDaily', 'sfWeekly', 'sfMonthly', 'sfYearly'];
-  fields.forEach(id => {
+function clearNewStaffForm() {
+  ['ns_Staff_ID','ns_Full_Name','ns_Rank','ns_Badge_No',
+   'ns_Gmail','ns_Phone','ns_Date_Joined','ns_Profile_Photo_URL',
+   'ns_Assigned_Projects','ns_District_Assigned',
+   'ns_Reporting_Officer','ns_Daily_Duties','ns_Weekly_Duties',
+   'ns_Monthly_Duties','ns_Yearly_Duties'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
-  
-  editContext = null;
-  const addBtn = document.getElementById('sfAddBtn');
-  if (addBtn) addBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add Staff Member';
+  const notice = document.getElementById('staffAddedNotice');
+  if (notice) notice.style.display = 'none';
+}
 
-  await loadAllData();
-  renderStaffMgmt();
-  showToast('Staff saved successfully!', 'success');
+function renderStaffManagement(list) {
+  const tbody = document.getElementById('staffTableBody');
+  if (!tbody) return;
+  if (!list || !list.length) {
+    tbody.innerHTML = `<tr><td colspan="10">
+      <div class="empty-state">
+        <i class="fa-solid fa-users-slash"></i>
+        <p>No staff records. Add staff using the form above.</p>
+      </div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map((s, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${s.Staff_ID        || '—'}</td>
+      <td>
+        ${s.Profile_Photo_URL
+          ? `<img src="${s.Profile_Photo_URL}"
+               style="width:28px;height:28px;border-radius:50%;
+                      object-fit:cover;border:2px solid var(--navy);
+                      margin-right:6px;vertical-align:middle">`
+          : `<div style="width:28px;height:28px;border-radius:50%;
+               background:linear-gradient(135deg,var(--navy),var(--gold));
+               display:inline-flex;align-items:center;justify-content:center;
+               color:#fff;font-size:11px;font-weight:700;margin-right:6px;
+               vertical-align:middle">
+               ${(s.Full_Name||'?').charAt(0).toUpperCase()}</div>`}
+        <strong>${s.Full_Name      || '—'}</strong>
+      </td>
+      <td>${s.Rank             || '—'}</td>
+      <td>${s.Badge_No         || '—'}</td>
+      <td>${s.Gender           || '—'}</td>
+      <td>${s.Phone            || '—'}</td>
+      <td>${s.District_Assigned|| '—'}</td>
+      <td>${s.Reporting_Officer|| '—'}</td>
+      <td><span class="badge badge-${
+        (s.Status||'Active').toLowerCase()==='active'
+        ? 'active':'absent'
+      }">${s.Status||'Active'}</span></td>
+    </tr>`).join('');
+
+  // Update staff count
+  const el = document.getElementById('statStaff');
+  if (el) el.textContent = list.length;
+}
+
+function renderStaffMgmt() {
+  const search = (document.getElementById('sfSearch')?.value || '').toLowerCase();
+  let list = allData.staff || [];
+  if (search) {
+    list = list.filter(s =>
+      (s.Full_Name || '').toLowerCase().includes(search) ||
+      (s.Rank || '').toLowerCase().includes(search) ||
+      String(s.Phone || '').includes(search) ||
+      String(s.Staff_ID || '').toLowerCase().includes(search)
+    );
+  }
+  renderStaffManagement(list);
 }
 
 async function bulkImportStaff() {
-  if (!confirm('Import all TS staff into Staff_Master sheet?\n\n18 complete records (email + duties) + 45 duty chart staff.\nPhone = Login ID | Password = 1111\nExisting records skipped.\n\nProceed?')) return;
-  showToast('Importing staff...', 'info');
-  await fetch(RELAY_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sheet: 'Staff_Master', action: 'bulkImportStaff' })
-  });
-  await new Promise(r => setTimeout(r, 6000));
-  await loadAllData();
-  renderStaffMgmt();
-  showToast('Bulk import completed successfully!', 'success');
+  if (!confirm('Import baseline staff members into Firestore?\n\nExisting records with matching phone numbers will not be duplicated.\n\nProceed?')) return;
+  showToast('Importing staff members to Firestore...', 'info');
+
+  let importedCount = 0;
+  try {
+    const staffRef = fsCollection(db, 'staff');
+
+    // Combine DASHBOARD_STAFF and STAFF_TEMPLATE
+    const allStaffToImport = [];
+
+    // Process DASHBOARD_STAFF: ["S1101", "Md. Anwar", "PC", "1773", "Male", "anwar1773@gmail.com", "8639399057", ...]
+    DASHBOARD_STAFF.forEach(row => {
+      allStaffToImport.push({
+        staffId: row[0],
+        name: row[1],
+        rank: row[2],
+        badgeNo: row[3],
+        gender: row[4],
+        email: row[5],
+        phone: row[6],
+        status: 'Active',
+        assignedProjects: row[10] || '',
+        department: row[11] || '',
+        districtAssigned: row[11] || '',
+        password: '1111',
+        role: row[6] === ADMIN_PHONE ? 'admin' : (isOfficerRank(row[2]) ? 'officer' : 'staff'),
+        dailyDuties: row[10] || ''
+      });
+    });
+
+    // Process STAFF_TEMPLATE: ["", "M. Prasada Rao", "IGP", "", "Male", "igp_ts@appolice.gov.in", "9493946020", ...]
+    STAFF_TEMPLATE.forEach(row => {
+      if (!row[6]) return; // Skip if no phone
+      allStaffToImport.push({
+        staffId: row[0] || `S${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        name: row[1],
+        rank: row[2],
+        badgeNo: row[3],
+        gender: row[4],
+        email: row[5],
+        phone: row[6],
+        status: 'Active',
+        assignedProjects: '',
+        department: '',
+        districtAssigned: '',
+        password: '1111',
+        role: row[6] === ADMIN_PHONE ? 'admin' : (isOfficerRank(row[2]) ? 'officer' : 'staff'),
+        dailyDuties: ''
+      });
+    });
+
+    // Deduplicate and import
+    for (const s of allStaffToImport) {
+      if (!s.phone) continue;
+      const q = fsQuery(staffRef, fsWhere('phone', '==', s.phone));
+      const snap = await fsGetDocs(q);
+      if (snap.empty) {
+        await fsAddDoc(staffRef, {
+          ...s,
+          createdAt: fsTimestamp()
+        });
+        importedCount++;
+      }
+    }
+
+    showToast(`Successfully imported ${importedCount} new staff members!`, 'success');
+  } catch(err) {
+    console.error("Bulk import error:", err);
+    showToast('Bulk import failed: ' + err.message, 'error');
+  }
 }
 
 async function cleanUpUnusedSheets() {
-  if (!confirm('Warning: This will clear all data from unused sheets (Attendance, Leave, Rankings, Points_Log, Turn_Duties, Login_Log, Chat_Messages). Headers will be kept.\n\nProceed?')) return;
-  showToast('Cleaning up sheets...', 'info');
-  await fetch(RELAY_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'cleanupSheets' })
-  });
-  await new Promise(r => setTimeout(r, 4000));
-  showToast('Cleanup completed successfully!', 'success');
+  showToast('Firebase Firestore backend active. Sheets cleanup not required.', 'info');
 }
 
 // --- COMMAND & CORRESPONDENCE HUB ---
@@ -3338,60 +3819,37 @@ async function submitHubEntry() {
     return;
   }
 
-  const id = hubEditContext?.id || `H${Date.now()}`;
   const addedBy = currentUser?.name || 'Admin';
-  const addedOn = new Date().toISOString();
 
-  const row = [
-    id,
+  const docData = {
     type,
     subject,
     assignedTo,
     priority,
     dueDate,
-    status,
     description,
-    addedBy,
-    addedOn,
-    category
-  ];
+    status,
+    category,
+    createdBy: addedBy,
+    updatedAt: fsTimestamp()
+  };
 
   closeModal('addHubEntryModal');
   showToast('Saving entry...', 'info');
 
-  const localObj = {
-    Entry_ID: id,
-    Type: type,
-    Subject: subject,
-    Assigned_To: assignedTo,
-    Priority: priority,
-    Due_Date: dueDate,
-    Status: status,
-    Description: description,
-    Added_By: addedBy,
-    Added_On: addedOn,
-    Category: category
-  };
-
   try {
     if (hubEditContext) {
-      const idx = hubEditContext.index;
-      if (allData.hub_entries && allData.hub_entries[idx]) {
-        allData.hub_entries[idx] = localObj;
-      }
-      await setDoc(doc(db, "commandEntries", id), localObj);
-      await postAction('hub_entries', 'update', row, hubEditContext.row);
+      const id = hubEditContext.id;
+      await fsUpdateDoc(fsDoc(db, "hub_entries", id), docData);
+      showToast('Entry updated successfully!', 'success');
     } else {
-      optimisticAdd('hub_entries', localObj, () => {
-        renderHub();
-        renderDashboard();
+      await fsAddDoc(fsCollection(db, "hub_entries"), {
+        ...docData,
+        createdAt: fsTimestamp()
       });
-      await addDoc(collection(db, "commandEntries"), localObj);
-      await postToSheet('hub_entries', row);
+      showToast('Entry added successfully!', 'success');
     }
 
-    showToast('Entry saved successfully!', 'success');
-    
     // Clear form fields
     document.getElementById('hubSubject').value = '';
     document.getElementById('hubDescription').value = '';
@@ -3403,19 +3861,19 @@ async function submitHubEntry() {
   }
 
   hubEditContext = null;
-  renderHub();
-  renderDashboard();
 }
 
 async function deleteHubEntry(i) {
   const t = (allData.hub_entries || [])[i];
   if (!t || !confirm('Are you sure you want to delete this hub entry?')) return;
   showToast('Deleting...', 'info');
-  await postAction('hub_entries', 'delete', {}, rowNumber(t, i));
-  await refreshHeartScreen(() => {
-    renderHub();
-    renderDashboard();
-  }, 'Entry deleted successfully');
+  try {
+    await fsDeleteDoc(fsDoc(db, 'hub_entries', t.id));
+    showToast('Entry deleted successfully', 'success');
+  } catch(err) {
+    console.error("Delete error:", err);
+    showToast('Failed to delete entry', 'error');
+  }
 }
 
 function exportHubData() {
@@ -3525,69 +3983,57 @@ async function submitVC() {
   if (!subject || !date || !time) { showToast('Subject, Date and Time are required', 'error'); return; }
 
   showToast('Saving VC schedule...', 'info');
-  const selectedPersons = Array.from(document.getElementById('vcPersons')?.selectedOptions || []).map(o => o.value).join(', ');
+  const selectedPersons = Array.from(document.getElementById('vcPersons')?.selectedOptions || []).map(o => o.value);
 
-  const id = editContext?.id || `V${Date.now()}`;
-  const row = [
-    id,
-    editContext ? (allData.vcschedule[editContext.index]?.Serial_No || `${(allData.vcschedule || []).length + 1}/2026`) : `${(allData.vcschedule || []).length + 1}/2026`,
-    subject,
-    date,
-    time,
-    document.getElementById('vcPlatform').value,
-    document.getElementById('vcProject').value,
-    document.getElementById('vcLink').value.trim(),
-    document.getElementById('vcOrganiser').value,
-    document.getElementById('vcSpeaker').value,
-    selectedPersons,
-    'Upcoming',
-    editContext ? (allData.vcschedule[editContext.index]?.Linked_Postponed_ID || '') : '',
-    editContext ? (allData.vcschedule[editContext.index]?.Postpone_Reason || '') : '',
-    currentUser?.name || 'Admin',
-    document.getElementById('vcRemarks').value.trim(),
-    new Date().toISOString()
-  ];
+  const localObj = {
+    title: subject,
+    date: date,
+    time: time,
+    venue: document.getElementById('vcPlatform').value,
+    link: document.getElementById('vcLink').value.trim(),
+    agenda: document.getElementById('vcRemarks').value.trim(),
+    projectName: document.getElementById('vcProject').value,
+    chairperson: document.getElementById('vcOrganiser').value,
+    speaker: document.getElementById('vcSpeaker').value,
+    participants: selectedPersons,
+    status: 'Upcoming',
+    createdBy: localStorage.getItem('userName') || 'Admin',
+    createdAt: fsTimestamp()
+  };
 
   closeModal('addVCModal');
 
-  const localObj = {
-    VC_ID: id,
-    Subject: subject,
-    Date: date,
-    Time: time,
-    Platform: document.getElementById('vcPlatform').value,
-    Project_Name: document.getElementById('vcProject').value,
-    VC_Link: document.getElementById('vcLink').value.trim(),
-    Organiser: document.getElementById('vcOrganiser').value,
-    Speaker: document.getElementById('vcSpeaker').value,
-    Allotted_Persons: selectedPersons,
-    Status: 'Upcoming',
-    Remarks: document.getElementById('vcRemarks').value.trim(),
-    Timestamp: new Date().toISOString()
-  };
-
-  if (editContext) {
-    const idx = editContext.index;
-    if (allData.vcschedule && allData.vcschedule[idx]) {
-      allData.vcschedule[idx] = localObj;
+  try {
+    if (editContext && editContext.module === 'vc') {
+      const id = editContext.id;
+      await fsUpdateDoc(fsDoc(db, 'vc_meetings', id), {
+        ...localObj,
+        updatedAt: fsTimestamp()
+      });
+      showToast('Meeting updated successfully!', 'success');
+    } else {
+      await fsAddDoc(fsCollection(db, 'vc_meetings'), localObj);
+      showToast('Meeting scheduled successfully!', 'success');
     }
-    await postAction('VC_Schedule', 'update', row, editContext.row);
-  } else {
-    optimisticAdd('vcschedule', localObj, renderVC);
-    await postToSheet('VC_Schedule', row);
+  } catch(err) {
+    console.error("Meeting save error:", err);
+    showToast('Failed to save meeting.', 'error');
   }
 
-  showToast('Saved successfully!', 'success');
   editContext = null;
-  renderVC();
 }
 
 async function deleteVC(i) {
   const v = (allData.vcschedule || [])[i];
   if (!v || !confirm('Delete this VC schedule?')) return;
   showToast('Deleting VC...', 'info');
-  await postAction('VC_Schedule', 'delete', {}, rowNumber(v, i));
-  await refreshHeartScreen(renderVC, 'VC deleted successfully');
+  try {
+    await fsDeleteDoc(fsDoc(db, 'vc_meetings', v.id));
+    showToast('Meeting deleted successfully', 'success');
+  } catch(err) {
+    console.error("Delete error:", err);
+    showToast('Failed to delete meeting', 'error');
+  }
 }
 
 function exportData(module) {
@@ -3726,6 +4172,38 @@ function renderAdminCredentials() {
     </tr>
   `).join('');
 }
+
+async function setupFirstAdmin() {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    await fsAddDoc(fsCollection(db,'staff'), {
+      Staff_ID:           'TS-ADM-001',
+      Full_Name:          'Anuj Kumar',
+      Rank:               'Technical Officer',
+      Badge_No:           'ADM-001',
+      Gender:             'Male',
+      Gmail:              'tangulaanojkumar@gmail.com',
+      Phone:              '9493946020',
+      Date_Joined:        today,
+      Status:             'Active',
+      Profile_Photo_URL:  '',
+      Assigned_Projects:  'AP Police TS Staff System',
+      District_Assigned:  'Mangalagiri',
+      Reporting_Officer:  'IGP Office',
+      Created_Date:       today,
+      Daily_Duties:       'System Administration, Staff Monitoring',
+      Weekly_Duties:      'Weekly Report Generation, Data Backup',
+      Monthly_Duties:     'Monthly Performance Review',
+      Yearly_Duties:      'Annual System Audit, Staff Evaluation',
+      role:               'admin',
+      password:           '8421'
+    });
+    alert('SUCCESS! Admin created.\nLogin: 9493946020 / 8421');
+  } catch(err) {
+    alert('ERROR: ' + err.message);
+  }
+}
+window.setupFirstAdmin = setupFirstAdmin;
 </script>
 
 <script>
