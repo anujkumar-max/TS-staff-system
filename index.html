@@ -545,6 +545,7 @@ tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
 
 .badge-dispatched { background: rgba(26,122,74,0.12); color: var(--success); }
 .badge-irregular { background: rgba(139,0,0,0.12); color: var(--heart); }
+.badge-heart { background: rgba(139,0,0,0.12); color: var(--heart); }
 
 .badge-with-officer {
   background: rgba(26,96,128,0.15);
@@ -1106,42 +1107,37 @@ select[multiple] option:selected {
   position: fixed;
   top: 56px; left: 240px;
   right: 0; bottom: 0;
-  background: rgba(255,255,255,0.5);
-  backdrop-filter: blur(2px);
+  background: linear-gradient(135deg,
+    rgba(7,16,32,0.92) 0%,
+    rgba(13,59,122,0.88) 100%);
+  backdrop-filter: blur(4px);
   z-index: 500; display: none;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column; gap: 12px;
-}
-[data-theme="dark"] #contentOverlay {
-  background: rgba(10,22,40,0.5);
+  align-items: center; justify-content: center;
+  flex-direction: column; gap: 16px;
 }
 #contentOverlay.active { display: flex; }
-.page-spinner {
-  width: 48px; height: 48px; position: relative;
-}
-.page-spinner::before {
-  content: ''; position: absolute; inset: 0;
-  border: 3px solid var(--border);
-  border-top-color: var(--navy);
-  border-right-color: var(--gold);
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
-.page-spinner-icon {
-  position: absolute; inset: 0;
-  display: flex; align-items: center;
-  justify-content: center;
-  font-size: 18px; color: var(--navy);
-}
-.page-loader-label {
-  font-size: 11px; color: var(--text3);
-  letter-spacing: 2px; text-transform: uppercase;
-  font-family: 'Rajdhani', sans-serif;
-  font-weight: 600;
-}
+
 @media (max-width: 768px) {
   #contentOverlay { left: 0; }
+}
+.staff-check-item {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 10px; border-radius: 6px;
+  background: var(--bg3); border: 1px solid var(--border);
+  font-size: 12px; color: var(--text2); cursor: pointer;
+  transition: all 0.15s; white-space: nowrap;
+}
+.staff-check-item:hover {
+  border-color: var(--navy); color: var(--navy);
+}
+.staff-check-item input[type="checkbox"] {
+  accent-color: var(--navy); width: 14px; height: 14px;
+  cursor: pointer;
+}
+.staff-check-item.checked {
+  background: rgba(13,59,122,0.1);
+  border-color: var(--navy); color: var(--navy);
+  font-weight: 600;
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -1236,7 +1232,7 @@ select[multiple] option:selected {
      APP SHELL
      ============================================================ -->
 <div id="appShell">
-  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+  <div class="sidebar-overlay" onclick="closeSidebar()"></div>
   <div class="app-layout">
 
     <!-- SIDEBAR -->
@@ -1254,24 +1250,23 @@ select[multiple] option:selected {
 
       <div class="sidebar-nav">
         <div class="nav-section-label">Main</div>
-        <div class="nav-item active" onclick="showScreen('dashboard')">
+        <div class="nav-item active" onclick="showScreen('dashboard'); closeSidebar()">
           <i class="fa-solid fa-gauge-high"></i><span>Dashboard</span>
         </div>
-        <div class="nav-item" onclick="showScreen('profile')">
+        <div class="nav-item" onclick="showScreen('profile'); closeSidebar()">
           <i class="fa-solid fa-circle-user"></i><span>My Profile</span>
         </div>
 
         <div class="nav-section-label" style="margin-top:8px">❤ Operations Centre</div>
-        <div class="nav-item heart-item" onclick="showScreen('hub')">
+        <div class="nav-item heart-item" onclick="showScreen('hub'); closeSidebar()">
           <i class="fa-solid fa-layer-group"></i><span>Command & Correspondence Hub</span>
-          <span class="nav-badge" id="hubBadge">0</span>
         </div>
-        <div class="nav-item heart-item" onclick="showScreen('vc')">
+        <div class="nav-item heart-item" onclick="showScreen('vc'); closeSidebar()">
           <i class="fa-solid fa-video"></i><span>Conf & Meetings</span>
         </div>
 
         <div class="nav-section-label" style="margin-top:8px">Admin</div>
-        <div class="nav-item" id="staffMgmtNavItem" onclick="showScreen('staff-management')" style="display:none">
+        <div class="nav-item" id="staffMgmtNavItem" onclick="showScreen('staff-management'); closeSidebar()" style="display:none">
           <i class="fa-solid fa-users-gear"></i><span>Staff Management</span>
         </div>
         <div class="nav-item" onclick="doLogout()">
@@ -1462,9 +1457,9 @@ select[multiple] option:selected {
             
             <select id="hubTypeFilter" onchange="renderHub()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text1);font-size:13px;outline:none;">
               <option value="all">All Types</option>
-              <option value="Command Register">Command Register</option>
-              <option value="Correspondence">Correspondence</option>
-              <option value="Priority Works">Priority Works</option>
+              <option value="Command Directives">Command Directives</option>
+              <option value="Official Correspondence">Official Correspondence</option>
+              <option value="Critical Tasks">Critical Tasks</option>
             </select>
             
             <select id="hubStatusFilter" onchange="renderHub()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text1);font-size:13px;outline:none;">
@@ -1507,7 +1502,7 @@ select[multiple] option:selected {
             <p>❤ Heart Module — VC Schedule, Speakers, History</p>
           </div>
           <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
-            <button class="btn-heart" onclick="openModal('addVCModal')">
+            <button class="btn-heart" onclick="openAddVCModal()">
               <i class="fa-solid fa-plus"></i> Schedule VC/Meeting
             </button>
             <button onclick="refreshAll()" style="background:var(--navy);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;border:none;cursor:pointer">
@@ -1598,10 +1593,10 @@ select[multiple] option:selected {
         <div class="screen" id="screen-profile">
           <div class="page-header">
             <h1><i class="fa-solid fa-circle-user" style="color:var(--navy)"></i> My Profile</h1>
-            <p>Your details, assigned tasks and correspondence</p>
+            <p>Your details, duties, assigned tasks and meetings</p>
           </div>
           <div id="profileContent">
-            <!-- Profile header card -->
+            <!-- SECTION A: Profile Header (read-only, visible to all) -->
             <div class="card navy-card" style="margin-bottom:16px">
               <div class="profile-header" style="position:relative; display:flex; align-items:center; gap:20px; margin-bottom:16px; flex-wrap:wrap;">
                 <div id="profilePhotoContainer">
@@ -1617,170 +1612,227 @@ select[multiple] option:selected {
               </div>
             </div>
 
-            <!-- Profile Details Grid -->
-            <div class="card navy-card" style="margin-bottom:16px">
-              <div style="font-weight:700;font-size:16px;color:var(--text1);margin-bottom:12px">
-                <i class="fa-solid fa-address-card" style="color:var(--navy)"></i> Profile Details
-              </div>
-              <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:16px;">
-                <div><strong>Phone (Login ID):</strong> <span id="profilePhone"></span></div>
-                <div><strong>Gmail:</strong> <span id="profileEmail"></span></div>
-                <div><strong>Date Joined:</strong> <span id="profileJoined"></span></div>
-                <div><strong>District Assigned:</strong> <span id="profileDistrict"></span></div>
-                <div><strong>Reporting Officer:</strong> <span id="profileReporting"></span></div>
-                <div><strong>Assigned Projects:</strong> <span id="profileProjects"></span></div>
-                <div><strong>Created Date:</strong> <span id="profileCreated"></span></div>
-              </div>
-            </div>
-
-            <!-- Duties Section -->
-            <div class="card navy-card" style="margin:16px 0">
-              <div style="font-weight:700;font-size:16px;color:var(--text1);margin-bottom:12px;display:flex;align-items:center;gap:8px">
-                <i class="fa-solid fa-briefcase" style="color:var(--navy)"></i> My Duties & Responsibilities
-              </div>
-              <div class="tab-pills" style="margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:8px;display:flex;gap:6px">
-                <button class="tab-pill duty-tab-btn active" data-tab="daily" onclick="switchDutyTab('daily')">📅 Daily</button>
-                <button class="tab-pill duty-tab-btn" data-tab="weekly" onclick="switchDutyTab('weekly')">📆 Weekly</button>
-                <button class="tab-pill duty-tab-btn" data-tab="monthly" onclick="switchDutyTab('monthly')">🗓️ Monthly</button>
-                <button class="tab-pill duty-tab-btn" data-tab="yearly" onclick="switchDutyTab('yearly')">📋 Yearly</button>
-              </div>
-              <div id="duty-panel-daily" class="duty-tab-panel" style="display:block;border-left:4px solid var(--navy);padding:10px 14px;background:var(--bg2);border-radius:0 8px 8px 0;margin-top:8px"></div>
-              <div id="duty-panel-weekly" class="duty-tab-panel" style="display:none;border-left:4px solid var(--navy);padding:10px 14px;background:var(--bg2);border-radius:0 8px 8px 0;margin-top:8px"></div>
-              <div id="duty-panel-monthly" class="duty-tab-panel" style="display:none;border-left:4px solid var(--navy);padding:10px 14px;background:var(--bg2);border-radius:0 8px 8px 0;margin-top:8px"></div>
-              <div id="duty-panel-yearly" class="duty-tab-panel" style="display:none;border-left:4px solid var(--navy);padding:10px 14px;background:var(--bg2);border-radius:0 8px 8px 0;margin-top:8px"></div>
-            </div>
-          </div>
-
-          <!-- Admin Edit Form (admin-only-section) -->
-          <div class="admin-only-section" id="adminEditProfileSection" style="display:none; margin-top:20px;">
-            <div class="card heart-card">
+            <!-- SECTION B: Update My Details Form -->
+            <div class="card navy-card">
               <div class="section-header">
                 <div class="section-title">
-                  <i class="fa-solid fa-user-gear"></i> Admin Edit Profile Form
+                  <i class="fa-solid fa-user-pen"></i> 
+                  Update My Details
                 </div>
-                <span class="section-badge">Admin Only</span>
+                <span class="section-badge" 
+                      style="background:rgba(26,122,74,0.1);
+                             color:var(--success)">
+                  Editable by You
+                </span>
               </div>
               <div class="form-grid">
                 <div class="form-group">
-                  <label>Staff ID *</label>
-                  <input type="text" id="pe_Staff_ID" placeholder="e.g. TS-001">
-                </div>
-                <div class="form-group">
-                  <label>Full Name *</label>
-                  <input type="text" id="pe_Full_Name" placeholder="Full name">
-                </div>
-                <div class="form-group">
-                  <label>Rank *</label>
-                  <input type="text" id="pe_Rank" placeholder="e.g. Sub-Inspector, Constable">
-                </div>
-                <div class="form-group">
-                  <label>Badge No</label>
-                  <input type="text" id="pe_Badge_No" placeholder="Badge number">
-                </div>
-                <div class="form-group">
-                  <label>Gender</label>
-                  <select id="pe_Gender">
-                    <option value="">-- Select --</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </select>
+                  <label>Full Name</label>
+                  <input type="text" id="editFullName">
                 </div>
                 <div class="form-group">
                   <label>Gmail</label>
-                  <input type="email" id="pe_Gmail" placeholder="Gmail address">
+                  <input type="email" id="editGmail">
                 </div>
                 <div class="form-group">
-                  <label>Phone (Login ID) *</label>
-                  <input type="tel" id="pe_Phone" placeholder="10-digit mobile number" readonly style="opacity:0.7;cursor:not-allowed">
+                  <label>Profile Photo URL</label>
+                  <input type="url" id="editPhotoURL" 
+                         placeholder="https://...">
                 </div>
-                <div class="form-group">
+                <div class="form-group" style="grid-column:1/-1">
+                  <label>Address</label>
+                  <textarea id="editAddress" 
+                            placeholder="Your address..."></textarea>
+                </div>
+
+                <!-- ADMIN ONLY fields -->
+                <div class="form-group admin-only-section">
+                  <label>Rank / Designation</label>
+                  <input type="text" id="editRank">
+                </div>
+                <div class="form-group admin-only-section">
+                  <label>Badge No</label>
+                  <input type="text" id="editBadgeNo">
+                </div>
+                <div class="form-group admin-only-section">
+                  <label>Staff ID</label>
+                  <input type="text" id="editStaffId">
+                </div>
+                <div class="form-group admin-only-section">
+                  <label>Phone (Login ID)</label>
+                  <input type="tel" id="editPhone">
+                </div>
+                <div class="form-group admin-only-section">
                   <label>Date Joined</label>
-                  <input type="date" id="pe_Date_Joined">
+                  <input type="date" id="editDateJoined">
                 </div>
-                <div class="form-group">
+                <div class="form-group admin-only-section">
+                  <label>District Assigned</label>
+                  <input type="text" id="editDistrict">
+                </div>
+                <div class="form-group admin-only-section">
+                  <label>Reporting Officer</label>
+                  <input type="text" id="editReportingOfficer">
+                </div>
+                <div class="form-group admin-only-section">
+                  <label>Assigned Projects</label>
+                  <input type="text" id="editProjects">
+                </div>
+                <div class="form-group admin-only-section">
                   <label>Status</label>
-                  <select id="pe_Status">
+                  <select id="editStatus">
                     <option value="Active">Active</option>
                     <option value="Inactive">Inactive</option>
                   </select>
                 </div>
-                <div class="form-group">
-                  <label>District Assigned</label>
-                  <input type="text" id="pe_District_Assigned" placeholder="e.g. Mangalagiri">
-                </div>
-                <div class="form-group">
-                  <label>Reporting Officer</label>
-                  <input type="text" id="pe_Reporting_Officer" placeholder="Reporting officer name">
-                </div>
-                <div class="form-group">
-                  <label>Assigned Projects</label>
-                  <input type="text" id="pe_Assigned_Projects" placeholder="Project 1, Project 2 ...">
-                </div>
-                <div class="form-group">
-                  <label>Profile Photo URL</label>
-                  <input type="url" id="pe_Profile_Photo_URL" placeholder="https://... (optional)">
-                </div>
-                <div class="form-group">
+                <div class="form-group admin-only-section">
                   <label>Role</label>
-                  <select id="pe_role">
+                  <select id="editRole">
                     <option value="staff">Staff</option>
                     <option value="officer">Officer</option>
                     <option value="admin">Admin</option>
                   </select>
                 </div>
-                <div class="form-group" style="grid-column:1/-1">
-                  <label>Daily Duties</label>
-                  <textarea id="pe_Daily_Duties" placeholder="Describe daily duties..."></textarea>
-                </div>
-                <div class="form-group" style="grid-column:1/-1">
-                  <label>Weekly Duties</label>
-                  <textarea id="pe_Weekly_Duties" placeholder="Describe weekly duties..."></textarea>
-                </div>
-                <div class="form-group" style="grid-column:1/-1">
-                  <label>Monthly Duties</label>
-                  <textarea id="pe_Monthly_Duties" placeholder="Describe monthly duties..."></textarea>
-                </div>
-                <div class="form-group" style="grid-column:1/-1">
-                  <label>Yearly Duties</label>
-                  <textarea id="pe_Yearly_Duties" placeholder="Describe yearly duties..."></textarea>
-                </div>
               </div>
               <div class="form-actions">
-                <button class="btn-heart" onclick="adminSaveProfile()">
-                  <i class="fa-solid fa-floppy-disk"></i> Save Profile Details
+                <button class="btn-primary" 
+                        onclick="saveMyProfileDetails()">
+                  <i class="fa-solid fa-floppy-disk"></i>
+                  Save Details
+                </button>
+                <button class="btn-secondary" 
+                        onclick="loadMyProfile()">
+                  <i class="fa-solid fa-rotate-left"></i> Reset
                 </button>
               </div>
             </div>
-          </div>
 
-          <div class="card navy-card" id="myDutiesCard" style="margin-top:16px">
-            <div class="section-header">
-              <div class="section-title">
-                <i class="fa-solid fa-calendar-check"></i> My Duties
+            <!-- SECTION C: Duties & Responsibilities (Admin can edit, staff can only VIEW) -->
+            <div class="card heart-card" style="margin-top:16px">
+              <div class="section-header">
+                <div class="section-title">
+                  <i class="fa-solid fa-list-check"></i>
+                  Duties &amp; Responsibilities
+                </div>
+                <span class="section-badge admin-only-section"
+                      style="background:rgba(139,0,0,0.1);
+                             color:var(--heart)">
+                  Admin Edit Only
+                </span>
+              </div>
+
+              <!-- View tabs (visible to all) -->
+              <div class="tab-pills">
+                <button class="tab-pill active"
+                  onclick="showDutyTab('Daily',this)">
+                  📅 Daily</button>
+                <button class="tab-pill"
+                  onclick="showDutyTab('Weekly',this)">
+                  📆 Weekly</button>
+                <button class="tab-pill"
+                  onclick="showDutyTab('Monthly',this)">
+                  🗓️ Monthly</button>
+                <button class="tab-pill"
+                  onclick="showDutyTab('Yearly',this)">
+                  📋 Yearly</button>
+              </div>
+
+              <!-- Duty content display -->
+              <div id="dutyDisplay"
+                   style="background:var(--bg3);border-radius:8px;
+                          padding:14px;font-size:13px;
+                          color:var(--text2);min-height:60px;
+                          line-height:1.7;margin-bottom:12px">
+                No daily duties assigned.
+              </div>
+
+              <!-- Admin edit textarea (admin only) -->
+              <div class="admin-only-section">
+                <div class="form-group" style="margin-top:12px">
+                  <label>Edit Selected Duty (Admin Only)</label>
+                  <textarea id="adminDutyEdit" rows="4"
+                    placeholder="Enter duties here..."></textarea>
+                </div>
+                <div class="form-actions" style="margin-top:10px">
+                  <button class="btn-heart" 
+                          onclick="saveAdminDuty()">
+                    <i class="fa-solid fa-floppy-disk"></i>
+                    Save Duty
+                  </button>
+                </div>
               </div>
             </div>
-            <div class="tab-pills" style="margin-bottom:12px;display:flex;gap:6px">
-              <button class="tab-pill active" onclick="filterDuties('Daily',this)">📅 Daily</button>
-              <button class="tab-pill" onclick="filterDuties('Weekly',this)">📆 Weekly</button>
-              <button class="tab-pill" onclick="filterDuties('Yearly',this)">🗓️ Yearly</button>
+
+            <!-- SECTION D (FIX 4): My Work — Assigned Tasks & VCs -->
+            <div class="card navy-card" style="margin-top:16px">
+              <div class="section-header">
+                <div class="section-title">
+                  <i class="fa-solid fa-briefcase"></i>
+                  My Work — Assigned Tasks &amp; Meetings
+                </div>
+              </div>
+
+              <!-- Sub tabs -->
+              <div class="tab-pills">
+                <button class="tab-pill heart-pill active"
+                  onclick="showMyWorkTab('tasks',this)">
+                  <i class="fa-solid fa-layer-group"></i>
+                  Assigned Tasks</button>
+                <button class="tab-pill heart-pill"
+                  onclick="showMyWorkTab('vc',this)">
+                  <i class="fa-solid fa-video"></i>
+                  My Meetings</button>
+              </div>
+
+              <!-- Tasks table -->
+              <div id="myTasksSection">
+                <div class="table-wrap">
+                  <table>
+                    <thead class="heart-thead"><tr>
+                      <th>#</th>
+                      <th>Type</th>
+                      <th>Subject</th>
+                      <th>Priority</th>
+                      <th>Due Date</th>
+                      <th>Status</th>
+                    </tr></thead>
+                    <tbody id="myTasksBody">
+                      <tr><td colspan="6">
+                        <div class="empty-state">
+                          <i class="fa-solid fa-inbox"></i>
+                          <p>No tasks assigned yet.</p>
+                        </div>
+                      </td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- VCs table -->
+              <div id="myVCSection" style="display:none">
+                <div class="table-wrap">
+                  <table>
+                    <thead class="heart-thead"><tr>
+                      <th>#</th>
+                      <th>Subject</th>
+                      <th>Date</th>
+                      <th>Time</th>
+                      <th>Platform</th>
+                      <th>Status</th>
+                    </tr></thead>
+                    <tbody id="myVCBody">
+                      <tr><td colspan="6">
+                        <div class="empty-state">
+                          <i class="fa-solid fa-video-slash"></i>
+                          <p>No meetings assigned yet.</p>
+                        </div>
+                      </td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
-            <div id="dutiesTableWrap" class="table-wrap">
-              <table>
-                <thead><tr>
-                  <th>#</th><th>Date</th><th>Duty</th>
-                  <th>Description</th><th>Status</th><th>Assigned By</th>
-                </tr></thead>
-                <tbody id="dutiesTableBody">
-                  <tr><td colspan="6">
-                    <div class="empty-state">
-                      <i class="fa-solid fa-calendar-xmark"></i>
-                      <p>No duties assigned yet.</p>
-                    </div>
-                  </td></tr>
-                </tbody>
-              </table>
-            </div>
+
           </div>
         </div>
 
@@ -2146,10 +2198,23 @@ select[multiple] option:selected {
         </div>
         <div class="form-group" style="grid-column:1/-1"><label>VC Link</label><input type="text" id="vcLink" placeholder="Paste meeting link here"></div>
         <div class="form-group" style="grid-column:1/-1">
-          <label>Allotted Persons
-            <small style="color:var(--text3)">(Hold Ctrl to select multiple)</small>
-          </label>
-          <select id="vcPersons" multiple size="8" style="height:180px"></select>
+          <label>ALLOTTED PERSONS</label>
+          <div id="allottedCheckboxWrap"
+               style="max-height:180px;overflow-y:auto;
+                      border:1px solid var(--border);
+                      border-radius:8px;padding:8px;
+                      background:var(--bg);display:flex;
+                      flex-wrap:wrap;gap:6px">
+            <!-- Checkboxes populated by JS -->
+            <div style="font-size:12px;color:var(--text3);
+                        padding:4px">
+              Loading staff...
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--text3);
+                      margin-top:4px">
+            <span id="allottedCount">0</span> person(s) selected
+          </div>
         </div>
       </div>
       <div class="form-group" style="margin-top:12px"><label>Remarks</label><textarea id="vcRemarks" placeholder="Additional remarks..."></textarea></div>
@@ -2473,20 +2538,46 @@ function showScreen(name) {
 }
 
 function toggleSidebar() {
-  const sidebar = document.querySelector('.sidebar');
-  const overlay = document.getElementById('sidebarOverlay');
-  if (sidebar && overlay) {
-    sidebar.classList.toggle('mobile-open');
-    overlay.style.display = sidebar.classList.contains('mobile-open') ? 'block' : 'none';
+  const sidebar  = document.querySelector('.sidebar');
+  const overlay  = document.querySelector('.sidebar-overlay');
+  if (!sidebar) return;
+
+  if (window.innerWidth <= 768) {
+    // MOBILE: toggle open/close
+    const isOpen = sidebar.classList.contains('mobile-open');
+    if (isOpen) {
+      sidebar.classList.remove('mobile-open');
+      if (overlay) overlay.classList.remove('active');
+    } else {
+      sidebar.classList.add('mobile-open');
+      if (overlay) overlay.classList.add('active');
+    }
+  } else {
+    // DESKTOP: collapse/expand
+    sidebar.classList.toggle('collapsed');
+    updateOverlayPosition();
   }
 }
 
 function closeSidebar() {
   const sidebar = document.querySelector('.sidebar');
-  const overlay = document.getElementById('sidebarOverlay');
-  if (sidebar && overlay) {
+  const overlay = document.querySelector('.sidebar-overlay');
+  if (!sidebar) return;
+  if (window.innerWidth <= 768) {
     sidebar.classList.remove('mobile-open');
-    overlay.style.display = 'none';
+    if (overlay) overlay.classList.remove('active');
+  }
+}
+
+function updateOverlayPosition() {
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('contentOverlay');
+  if (sidebar && overlay) {
+    if (sidebar.classList.contains('collapsed')) {
+      overlay.style.left = '60px';
+    } else {
+      overlay.style.left = '240px';
+    }
   }
 }
 
@@ -2942,9 +3033,9 @@ function renderDashboard() {
   document.querySelectorAll('.skeleton').forEach(el => el.classList.remove('skeleton'));
 
   const hub = allData.hub_entries || [];
-  const tasksCount = hub.filter(h => h.Type === 'Command Register' && ['Pending', 'In Progress'].includes(h.Status)).length;
-  const lettersCount = hub.filter(h => h.Type === 'Correspondence' && ['Pending', 'In Progress'].includes(h.Status)).length;
-  const igpCount = hub.filter(h => (h.Type === 'IGP Works' || h.Type === 'Priority Works') && ['Pending', 'In Progress'].includes(h.Status)).length;
+  const tasksCount = hub.filter(h => (h.Type === 'Command Register' || h.Type === 'Command Directives') && ['Pending', 'In Progress'].includes(h.Status)).length;
+  const lettersCount = hub.filter(h => (h.Type === 'Correspondence' || h.Type === 'Official Correspondence') && ['Pending', 'In Progress'].includes(h.Status)).length;
+  const igpCount = hub.filter(h => (h.Type === 'IGP Works' || h.Type === 'Priority Works' || h.Type === 'Critical Tasks') && ['Pending', 'In Progress'].includes(h.Status)).length;
   const activeHubItems = tasksCount + lettersCount + igpCount;
 
   const upcomingVC = (allData.vcschedule || []).filter(v => v.Status === 'Upcoming').length;
@@ -2953,12 +3044,10 @@ function renderDashboard() {
   const statStaff = document.getElementById('statStaff');
   const statHub = document.getElementById('statHub');
   const statVC = document.getElementById('statVC');
-  const hubBadge = document.getElementById('hubBadge');
 
   if (statStaff) statStaff.textContent = totalStaff;
   if (statHub) statHub.textContent = activeHubItems;
   if (statVC) statVC.textContent = upcomingVC;
-  if (hubBadge) hubBadge.textContent = activeHubItems;
 
   // Heart module stats
   const hHubTasks = document.getElementById('hHubTasks');
@@ -2985,13 +3074,24 @@ function renderDashboard() {
       return;
     }
     tbody.innerHTML = recent.map(t => {
+      const typeDisplay = {
+        'Command Register':    'Command Directives',
+        'Correspondence':      'Official Correspondence',
+        'Priority Works':      'Critical Tasks',
+        'IGP Works':           'Critical Tasks',
+        'Command Directives':  'Command Directives',
+        'Official Correspondence': 'Official Correspondence',
+        'Critical Tasks':      'Critical Tasks'
+      };
+      const displayType = typeDisplay[t.Type] || t.Type || '—';
+
       let typeClass = 'badge-navy';
-      if (t.Type === 'Correspondence') typeClass = 'badge-gold';
-      else if (t.Type === 'IGP Works' || t.Type === 'Priority Works') typeClass = 'badge-heart';
+      if (displayType === 'Official Correspondence') typeClass = 'badge-gold';
+      else if (displayType === 'Critical Tasks') typeClass = 'badge-heart';
       
       return `
         <tr>
-          <td><span class="badge ${typeClass}">${t.Type === 'IGP Works' ? 'Priority Works' : (t.Type || '—')}</span></td>
+          <td><span class="badge ${typeClass}">${displayType}</span></td>
           <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis"><strong>${t.Subject || '—'}</strong></td>
           <td>${t.Assigned_To || '—'}</td>
           <td>${priorityBadge(t.Priority)}</td>
@@ -3036,58 +3136,10 @@ function loadMyProfile() {
     showToast('Profile not found. Contact admin.', 'error');
     return;
   }
+  window.currentProfileRecord = myRecord;
   renderProfileView(myRecord);
-  loadMyDuties(currentPhone);
-}
-
-let allDuties = [];
-
-function loadMyDuties(phone) {
-  const q = fsQuery(
-    fsCollection(db, 'duties'),
-    fsWhere('staffPhone', '==', phone),
-    fsOrderBy('dutyDate', 'desc')
-  );
-  fsOnSnapshot(q, (snap) => {
-    allDuties = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    const filtered = allDuties.filter(d => d.dutyType === 'Daily');
-    renderDutiesTable(filtered);
-  }, (err) => {
-    console.error("Duties load error:", err);
-  });
-}
-
-function filterDuties(type, btn) {
-  document.querySelectorAll('#myDutiesCard .tab-pill')
-    .forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  renderDutiesTable(allDuties.filter(d => d.dutyType === type));
-}
-
-function renderDutiesTable(duties) {
-  const tbody = document.getElementById('dutiesTableBody');
-  if (!tbody) return;
-  if (!duties.length) {
-    tbody.innerHTML = `<tr><td colspan="6">
-      <div class="empty-state">
-        <i class="fa-solid fa-calendar-xmark"></i>
-        <p>No duties found for this period.</p>
-      </div></td></tr>`;
-    return;
-  }
-  tbody.innerHTML = duties.map((d, i) => `
-    <tr>
-      <td>${i+1}</td>
-      <td>${d.dutyDate || '—'}</td>
-      <td><strong>${d.description ? d.description.substring(0,30)+'...' : '—'}</strong></td>
-      <td style="max-width:200px;white-space:normal">
-        ${d.description || '—'}</td>
-      <td><span class="badge badge-${
-        d.status==='Completed'?'completed':
-        d.status==='In Progress'?'progress':'pending'
-      }">${d.status||'Pending'}</span></td>
-      <td>${d.assignedBy||'Admin'}</td>
-    </tr>`).join('');
+  loadMyAssignedWork(myRecord.Full_Name || '');
+  showDutyTab('Daily', document.querySelector('#screen-profile .tab-pill'));
 }
 
 function renderProfileView(data) {
@@ -3124,147 +3176,196 @@ function renderProfileView(data) {
     badgesRow.innerHTML = `${statusB} ${roleB} ${genderB} ${idB}`;
   }
 
-  // Details Grid
-  const elPhone = document.getElementById('profilePhone');
-  if (elPhone) elPhone.textContent = data.Phone || '—';
-  
-  const elEmail = document.getElementById('profileEmail');
-  if (elEmail) elEmail.textContent = data.Gmail || '—';
-  
-  const elJoined = document.getElementById('profileJoined');
-  if (elJoined) elJoined.textContent = data.Date_Joined || '—';
-  
-  const elDistrict = document.getElementById('profileDistrict');
-  if (elDistrict) elDistrict.textContent = data.District_Assigned || '—';
-  
-  const elReporting = document.getElementById('profileReporting');
-  if (elReporting) elReporting.textContent = data.Reporting_Officer || '—';
-  
-  const elProjects = document.getElementById('profileProjects');
-  if (elProjects) elProjects.textContent = data.Assigned_Projects || '—';
-  
-  const elCreated = document.getElementById('profileCreated');
-  if (elCreated) elCreated.textContent = data.Created_Date || '—';
+  // Populate Section B
+  document.getElementById('editFullName').value = data.Full_Name || '';
+  document.getElementById('editGmail').value = data.Gmail || '';
+  document.getElementById('editPhotoURL').value = data.Profile_Photo_URL || '';
+  document.getElementById('editAddress').value = data.Address || '';
 
-  // Duties Panels
-  const dailyDuties   = data.Daily_Duties   || (DUTIES_MAP[data.Phone] ? DUTIES_MAP[data.Phone].d : '') || '';
-  const weeklyDuties  = data.Weekly_Duties  || (DUTIES_MAP[data.Phone] ? DUTIES_MAP[data.Phone].w : '') || '';
-  const monthlyDuties = data.Monthly_Duties || (DUTIES_MAP[data.Phone] ? DUTIES_MAP[data.Phone].m : '') || '';
-  const yearlyDuties  = data.Yearly_Duties  || (DUTIES_MAP[data.Phone] ? DUTIES_MAP[data.Phone].y : '') || '';
-
-  if (document.getElementById('duty-panel-daily')) document.getElementById('duty-panel-daily').innerHTML = formatDutyText(dailyDuties);
-  if (document.getElementById('duty-panel-weekly')) document.getElementById('duty-panel-weekly').innerHTML = formatDutyText(weeklyDuties);
-  if (document.getElementById('duty-panel-monthly')) document.getElementById('duty-panel-monthly').innerHTML = formatDutyText(monthlyDuties);
-  if (document.getElementById('duty-panel-yearly')) document.getElementById('duty-panel-yearly').innerHTML = formatDutyText(yearlyDuties);
-
-  // Admin Edit form populated if current user is admin
   const userRole = localStorage.getItem('userRole') || currentUser?.role || 'staff';
   const isAdmin = (userRole === 'admin');
-  const adminSection = document.getElementById('adminEditProfileSection');
-  if (adminSection) {
-    adminSection.style.display = isAdmin ? 'block' : 'none';
-  }
+
+  // Toggle admin only fields
+  document.querySelectorAll('#screen-profile .admin-only-section').forEach(el => {
+    el.style.display = isAdmin ? '' : 'none';
+  });
 
   if (isAdmin) {
-    document.getElementById('pe_Staff_ID').value = data.Staff_ID || '';
-    document.getElementById('pe_Full_Name').value = data.Full_Name || '';
-    document.getElementById('pe_Rank').value = data.Rank || '';
-    document.getElementById('pe_Badge_No').value = data.Badge_No || '';
-    document.getElementById('pe_Gender').value = data.Gender || 'Male';
-    document.getElementById('pe_Gmail').value = data.Gmail || '';
-    document.getElementById('pe_Phone').value = data.Phone || '';
-    document.getElementById('pe_Date_Joined').value = data.Date_Joined || '';
-    document.getElementById('pe_Status').value = data.Status || 'Active';
-    document.getElementById('pe_District_Assigned').value = data.District_Assigned || '';
-    document.getElementById('pe_Reporting_Officer').value = data.Reporting_Officer || '';
-    document.getElementById('pe_Assigned_Projects').value = data.Assigned_Projects || '';
-    document.getElementById('pe_Profile_Photo_URL').value = data.Profile_Photo_URL || '';
-    document.getElementById('pe_role').value = data.role || 'staff';
-    document.getElementById('pe_Daily_Duties').value = data.Daily_Duties || '';
-    document.getElementById('pe_Weekly_Duties').value = data.Weekly_Duties || '';
-    document.getElementById('pe_Monthly_Duties').value = data.Monthly_Duties || '';
-    document.getElementById('pe_Yearly_Duties').value = data.Yearly_Duties || '';
-    
-    // Store doc ID globally for save callback
-    window.pe_docId = docId;
+    document.getElementById('editRank').value = data.Rank || '';
+    document.getElementById('editBadgeNo').value = data.Badge_No || '';
+    document.getElementById('editStaffId').value = data.Staff_ID || '';
+    document.getElementById('editPhone').value = data.Phone || '';
+    document.getElementById('editDateJoined').value = data.Date_Joined || '';
+    document.getElementById('editDistrict').value = data.District_Assigned || '';
+    document.getElementById('editReportingOfficer').value = data.Reporting_Officer || '';
+    document.getElementById('editProjects').value = data.Assigned_Projects || '';
+    document.getElementById('editStatus').value = data.Status || 'Active';
+    document.getElementById('editRole').value = data.role || 'staff';
   }
 }
 
-async function adminSaveProfile() {
-  const docId = window.pe_docId;
-  if (!docId) {
-    showToast('Cannot identify profile record.', 'error');
-    return;
+let currentDutyTab = 'Daily';
+
+function showDutyTab(type, btn) {
+  currentDutyTab = type;
+  document.querySelectorAll('#screen-profile .tab-pill')
+    .forEach(b => {
+      if (!b.classList.contains('heart-pill')) b.classList.remove('active');
+    });
+  if (btn) btn.classList.add('active');
+  const record = window.currentProfileRecord || {};
+  const dutyMap = {
+    'Daily':   record.Daily_Duties   || 'No daily duties assigned.',
+    'Weekly':  record.Weekly_Duties  || 'No weekly duties assigned.',
+    'Monthly': record.Monthly_Duties || 'No monthly duties assigned.',
+    'Yearly':  record.Yearly_Duties  || 'No yearly duties assigned.'
+  };
+  const display = document.getElementById('dutyDisplay');
+  if (display) display.textContent = dutyMap[type];
+  const editEl = document.getElementById('adminDutyEdit');
+  if (editEl) {
+    editEl.value = (dutyMap[type] === 'No ' + type.toLowerCase() + ' duties assigned.') ? '' : dutyMap[type];
   }
-  const get = id => {
-    const el = document.getElementById(id);
-    return el ? el.value.trim() : '';
-  };
-  const updatedData = {
-    Staff_ID:           get('pe_Staff_ID'),
-    Full_Name:          get('pe_Full_Name'),
-    Rank:               get('pe_Rank'),
-    Badge_No:           get('pe_Badge_No'),
-    Gender:             get('pe_Gender'),
-    Gmail:              get('pe_Gmail'),
-    Phone:              get('pe_Phone'),
-    Date_Joined:        get('pe_Date_Joined'),
-    Status:             get('pe_Status') || 'Active',
-    Profile_Photo_URL:  get('pe_Profile_Photo_URL'),
-    Assigned_Projects:  get('pe_Assigned_Projects'),
-    District_Assigned:  get('pe_District_Assigned'),
-    Reporting_Officer:  get('pe_Reporting_Officer'),
-    Daily_Duties:       get('pe_Daily_Duties'),
-    Weekly_Duties:      get('pe_Weekly_Duties'),
-    Monthly_Duties:     get('pe_Monthly_Duties'),
-    Yearly_Duties:      get('pe_Yearly_Duties'),
-    role:               get('pe_role') || 'staff'
-  };
-  await updateStaffProfile(docId, updatedData);
 }
 
-async function updateStaffProfile(docId, data) {
-  if (!docId) {
-    showToast('Cannot identify staff record.','error'); return;
+async function saveAdminDuty() {
+  const docId = localStorage.getItem('userDocId');
+  const val   = document.getElementById('adminDutyEdit').value.trim();
+  const fieldMap = {
+    'Daily':   'Daily_Duties',
+    'Weekly':  'Weekly_Duties',
+    'Monthly': 'Monthly_Duties',
+    'Yearly':  'Yearly_Duties'
+  };
+  const field = fieldMap[currentDutyTab];
+  if (!field || !docId) return;
+  try {
+    await fsUpdateDoc(fsDoc(db,'staff',docId), { [field]: val });
+    if (window.currentProfileRecord)
+      window.currentProfileRecord[field] = val;
+    showDutyTab(currentDutyTab, null);
+    showToast(currentDutyTab + ' duty updated!','success');
+  } catch(err) {
+    showToast('Save failed: ' + err.message,'error');
+  }
+}
+
+async function saveMyProfileDetails() {
+  const docId = localStorage.getItem('userDocId');
+  if (!docId) return;
+  const isAdmin = localStorage.getItem('userRole') === 'admin';
+  const data = {
+    Full_Name:          document.getElementById('editFullName').value.trim(),
+    Gmail:              document.getElementById('editGmail').value.trim(),
+    Profile_Photo_URL:  document.getElementById('editPhotoURL').value.trim(),
+    Address:            document.getElementById('editAddress').value.trim()
+  };
+  if (isAdmin) {
+    data.Rank              = document.getElementById('editRank').value.trim();
+    data.Badge_No          = document.getElementById('editBadgeNo').value.trim();
+    data.Staff_ID          = document.getElementById('editStaffId').value.trim();
+    data.Phone             = document.getElementById('editPhone').value.trim();
+    data.Date_Joined       = document.getElementById('editDateJoined').value;
+    data.District_Assigned = document.getElementById('editDistrict').value.trim();
+    data.Reporting_Officer = document.getElementById('editReportingOfficer').value.trim();
+    data.Assigned_Projects = document.getElementById('editProjects').value.trim();
+    data.Status            = document.getElementById('editStatus').value;
+    data.role              = document.getElementById('editRole').value;
   }
   try {
-    await fsUpdateDoc(fsDoc(db, 'staff', docId), {
-      ...data,
-      Updated_Date: new Date().toISOString().split('T')[0]
-    });
+    await fsUpdateDoc(fsDoc(db,'staff',docId), data);
+    localStorage.setItem('userName', data.Full_Name);
+    document.getElementById('sidebarName').textContent = data.Full_Name;
+    await loadStaffFromFirestore();
+    loadMyProfile();
     showToast('Profile updated successfully!','success');
-    await loadStaffFromFirestore(); // refresh cache
-    loadMyProfile();
   } catch(err) {
-    showToast('Update failed: ' + err.message,'error');
+    showToast('Update failed: '+err.message,'error');
   }
 }
 
-async function saveProfileToFirestore() {
-  const docId = localStorage.getItem('userDocId') || window.pe_docId;
-  if (!docId) { showToast('Session error. Please logout & login.', 'error'); return; }
-  try {
-    const get = id => {
-      const el = document.getElementById(id);
-      return el ? el.value.trim() : '';
-    };
-    await fsUpdateDoc(fsDoc(db, 'staff', docId), {
-      Full_Name:          get('pe_Full_Name'),
-      Rank:               get('pe_Rank'),
-      Gmail:              get('pe_Gmail'),
-      District_Assigned:  get('pe_District_Assigned'),
-      Date_Joined:        get('pe_Date_Joined'),
-      Updated_Date:       new Date().toISOString().split('T')[0]
-    });
-    showToast('Profile updated successfully!', 'success');
-    loadMyProfile();
-  } catch(err) {
-    showToast('Update failed: ' + err.message, 'error');
-  }
+function showMyWorkTab(tab, btn) {
+  document.querySelectorAll(
+    '#screen-profile .tab-pill.heart-pill')
+    .forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  document.getElementById('myTasksSection').style.display =
+    tab === 'tasks' ? 'block' : 'none';
+  document.getElementById('myVCSection').style.display =
+    tab === 'vc' ? 'block' : 'none';
 }
 
-async function saveProfileToSheet() {
-  await saveProfileToFirestore();
+function loadMyAssignedWork(staffName) {
+  // Load tasks assigned to this staff
+  const hubQ = fsQuery(
+    fsCollection(db,'hub_entries'),
+    fsWhere('assignedTo','==', staffName)
+  );
+  fsGetDocs(hubQ).then(snap => {
+    const tasks = snap.docs.map(d=>({id:d.id,...d.data()}));
+    const tbody = document.getElementById('myTasksBody');
+    if (!tbody) return;
+    if (!tasks.length) {
+      tbody.innerHTML = `<tr><td colspan="6">
+        <div class="empty-state">
+          <i class="fa-solid fa-inbox"></i>
+          <p>No tasks assigned yet.</p>
+        </div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = tasks.map((t,i)=>`
+      <tr>
+        <td>${i+1}</td>
+        <td><span class="badge badge-${
+          t.type==='Command Directives'?'navy':
+          t.type==='Official Correspondence'?'gold':
+          'urgent'}">${t.type||'—'}</span></td>
+        <td>${t.subject||'—'}</td>
+        <td><span class="badge badge-${
+          t.priority==='High'?'high':
+          t.priority==='Low'?'low':'medium'
+        }">${t.priority||'Medium'}</span></td>
+        <td>${t.dueDate||'—'}</td>
+        <td><span class="badge badge-${
+          t.status==='Completed'?'completed':
+          t.status==='In Progress'?'progress':'pending'
+        }">${t.status||'Pending'}</span></td>
+      </tr>`).join('');
+  });
+
+  // Load VCs allotted to this staff
+  fsGetDocs(fsCollection(db,'vc_meetings')).then(snap => {
+    const vcs = snap.docs
+      .map(d=>({id:d.id,...d.data()}))
+      .filter(v => {
+        const persons = v.allottedPersons || v.participants || [];
+        return Array.isArray(persons)
+          ? persons.includes(staffName)
+          : String(persons).includes(staffName);
+      });
+    const tbody = document.getElementById('myVCBody');
+    if (!tbody) return;
+    if (!vcs.length) {
+      tbody.innerHTML = `<tr><td colspan="6">
+        <div class="empty-state">
+          <i class="fa-solid fa-video-slash"></i>
+          <p>No meetings assigned yet.</p>
+        </div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = vcs.map((v,i)=>`
+      <tr>
+        <td>${i+1}</td>
+        <td>${v.subject||v.title||'—'}</td>
+        <td>${v.vcDate||v.date||'—'}</td>
+        <td>${v.time||'—'}</td>
+        <td>${v.platform||'—'}</td>
+        <td><span class="badge badge-${
+          (v.status||'upcoming').toLowerCase()==='completed'
+          ?'completed':'upcoming'}">${v.status||'Upcoming'}
+        </span></td>
+      </tr>`).join('');
+  });
 }
 
 function loadStaffFromFirestore() {
@@ -3354,7 +3455,7 @@ function renderStaffManagement(staffList) {
 
 function populateAllStaffDropdowns(staffList) {
   const dropdowns = document.querySelectorAll(
-    '#assignedTo, #taskAssignedTo, #hubAssignedTo, #vcSpeaker, #vcOrganiser, #vcPersons, #sfReporting, #corrAllocBy, #corrAllocTo, select[name="assignedTo"], select[data-staff-dropdown]'
+    '#assignedTo, #taskAssignedTo, #hubAssignedTo, #vcSpeaker, #vcOrganiser, #sfReporting, #corrAllocBy, #corrAllocTo, select[name="assignedTo"], select[data-staff-dropdown]'
   );
   const options = '<option value="">-- Select Staff --</option>' +
     staffList.map(s => {
@@ -3363,6 +3464,46 @@ function populateAllStaffDropdowns(staffList) {
       return `<option value="${name}">${rank ? rank + ' · ' : ''}${name}</option>`;
     }).join('');
   dropdowns.forEach(sel => sel.innerHTML = options);
+
+  populateAllottedCheckboxes(staffList);
+}
+
+function populateAllottedCheckboxes(staffList) {
+  const wrap = document.getElementById('allottedCheckboxWrap');
+  if (!wrap) return;
+  wrap.innerHTML = staffList.map(s => {
+    const name = s.Full_Name || s.name || 'Unknown';
+    const rank = s.Rank || s.rank || '';
+    return `
+      <label class="staff-check-item" 
+             onclick="updateAllottedCount()">
+        <input type="checkbox" 
+               class="allotted-cb" value="${name}">
+        ${rank ? '<small style="color:var(--text3)">'
+          +rank+'</small> · ' : ''}${name}
+      </label>`;
+  }).join('');
+}
+
+function updateAllottedCount() {
+  setTimeout(() => {
+    const checked = document.querySelectorAll(
+      '.allotted-cb:checked').length;
+    const countEl = document.getElementById('allottedCount');
+    if (countEl) countEl.textContent = checked;
+    // Update checked style
+    document.querySelectorAll('.staff-check-item')
+      .forEach(el => {
+        const cb = el.querySelector('input[type="checkbox"]');
+        el.classList.toggle('checked', cb && cb.checked);
+      });
+  }, 10);
+}
+
+function getSelectedAllottedPersons() {
+  return Array.from(
+    document.querySelectorAll('.allotted-cb:checked')
+  ).map(cb => cb.value);
 }
 
 function loadHubEntries() {
@@ -3396,8 +3537,7 @@ function loadHubEntries() {
     const active = entries.filter(e => e.Status !== 'Completed').length;
     const statHub = document.getElementById('statHub');
     if (statHub) { statHub.textContent = active; statHub.classList.remove('skeleton'); }
-    const hubBadge = document.getElementById('hubBadge');
-    if (hubBadge) hubBadge.textContent = active;
+
   });
 }
 
@@ -3750,7 +3890,7 @@ function updateHubCategoryDropdown(type, selectedValue) {
   const select = document.getElementById('hubCategory');
   if (!group || !select) return;
 
-  if (type === 'Command Register') {
+  if (type === 'Command Register' || type === 'Command Directives') {
     group.style.display = 'block';
     label.textContent = 'Category *';
     select.innerHTML = `
@@ -3766,7 +3906,7 @@ function updateHubCategoryDropdown(type, selectedValue) {
       <option value="eOffice">eOffice</option>
     `;
     if (selectedValue) select.value = selectedValue;
-  } else if (type === 'Correspondence') {
+  } else if (type === 'Correspondence' || type === 'Official Correspondence') {
     group.style.display = 'block';
     label.textContent = 'Correspondence Type *';
     select.innerHTML = `
@@ -3826,8 +3966,12 @@ function renderHub() {
 
     // Filter by type
     if (typeFilter !== 'all') {
-      if (typeFilter === 'Priority Works') {
-        data = data.filter(h => h.Type === 'Priority Works' || h.Type === 'IGP Works');
+      if (typeFilter === 'Command Directives') {
+        data = data.filter(h => h.Type === 'Command Directives' || h.Type === 'Command Register');
+      } else if (typeFilter === 'Official Correspondence') {
+        data = data.filter(h => h.Type === 'Official Correspondence' || h.Type === 'Correspondence');
+      } else if (typeFilter === 'Critical Tasks') {
+        data = data.filter(h => h.Type === 'Critical Tasks' || h.Type === 'Priority Works' || h.Type === 'IGP Works');
       } else {
         data = data.filter(h => h.Type === typeFilter);
       }
@@ -3845,13 +3989,25 @@ function renderHub() {
 
     tbody.innerHTML = data.map((t, i) => {
       const realIndex = (allData.hub_entries || []).indexOf(t);
+      
+      const typeDisplay = {
+        'Command Register':    'Command Directives',
+        'Correspondence':      'Official Correspondence',
+        'Priority Works':      'Critical Tasks',
+        'IGP Works':           'Critical Tasks',
+        'Command Directives':  'Command Directives',
+        'Official Correspondence': 'Official Correspondence',
+        'Critical Tasks':      'Critical Tasks'
+      };
+      const displayType = typeDisplay[t.Type] || t.Type || '—';
+
       let typeClass = 'badge-navy';
-      if (t.Type === 'Correspondence') typeClass = 'badge-gold';
-      else if (t.Type === 'IGP Works' || t.Type === 'Priority Works') typeClass = 'badge-heart';
+      if (displayType === 'Official Correspondence') typeClass = 'badge-gold';
+      else if (displayType === 'Critical Tasks') typeClass = 'badge-heart';
 
       return '<tr>' +
         '<td>' + (i + 1) + '</td>' +
-        '<td><span class="badge ' + typeClass + '">' + (t.Type === 'IGP Works' ? 'Priority Works' : (t.Type || '—')) + '</span></td>' +
+        '<td><span class="badge ' + typeClass + '">' + displayType + '</span></td>' +
         '<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis"><strong>' + (t.Subject || '—') + '</strong>' +
         (t.Category ? '<div style="font-size:11px;color:var(--text3);margin-top:2px"><i class="fa-solid fa-tag"></i> ' + t.Category + '</div>' : '') + '</td>' +
         '<td>' + (t.Assigned_To || '—') + '</td>' +
@@ -3907,9 +4063,10 @@ function editHubEntry(i) {
       <div class="form-group">
         <label>Type *</label>
         <select id="hubType">
-          <option value="Command Register">Command Register</option>
-          <option value="Correspondence">Correspondence</option>
-          <option value="Priority Works">Priority Works</option>
+          <option value="">-- Select Type --</option>
+          <option value="Command Directives">Command Directives</option>
+          <option value="Official Correspondence">Official Correspondence</option>
+          <option value="Critical Tasks">Critical Tasks</option>
         </select>
       </div>
       <div class="form-group" id="hubCategoryGroup">
@@ -3935,14 +4092,6 @@ function editHubEntry(i) {
       <div class="form-group">
         <label>Due Date</label>
         <input type="date" id="hubDueDate">
-      </div>
-      <div class="form-group">
-        <label>Status</label>
-        <select id="hubStatus">
-          <option>Pending</option>
-          <option>In Progress</option>
-          <option>Completed</option>
-        </select>
       </div>
       <div class="form-group" style="grid-column:1/-1">
         <label>Description</label>
@@ -3971,13 +4120,22 @@ function editHubEntry(i) {
   }
 
   // Populate values
-  document.getElementById('hubType').value = t.Type || 'Command Register';
-  updateHubCategoryDropdown(t.Type || 'Command Register', t.Category);
+  const typeDisplay = {
+    'Command Register':    'Command Directives',
+    'Correspondence':      'Official Correspondence',
+    'Priority Works':      'Critical Tasks',
+    'IGP Works':           'Critical Tasks',
+    'Command Directives':  'Command Directives',
+    'Official Correspondence': 'Official Correspondence',
+    'Critical Tasks':      'Critical Tasks'
+  };
+  const currentType = typeDisplay[t.Type] || t.Type || 'Command Directives';
+  document.getElementById('hubType').value = currentType;
+  updateHubCategoryDropdown(currentType, t.Category);
   document.getElementById('hubSubject').value = t.Subject || '';
   document.getElementById('hubAssignedTo').value = t.Assigned_To || '';
   document.getElementById('hubPriority').value = t.Priority || 'Medium';
   document.getElementById('hubDueDate').value = String(t.Due_Date || '').split('T')[0];
-  document.getElementById('hubStatus').value = t.Status || 'Pending';
   document.getElementById('hubDescription').value = t.Description || '';
 
   openModal('addHubEntryModal');
@@ -3991,9 +4149,10 @@ function openAddHubEntryModal() {
       <div class="form-group">
         <label>Type *</label>
         <select id="hubType">
-          <option value="Command Register">Command Register</option>
-          <option value="Correspondence">Correspondence</option>
-          <option value="Priority Works">Priority Works</option>
+          <option value="">-- Select Type --</option>
+          <option value="Command Directives">Command Directives</option>
+          <option value="Official Correspondence">Official Correspondence</option>
+          <option value="Critical Tasks">Critical Tasks</option>
         </select>
       </div>
       <div class="form-group" id="hubCategoryGroup">
@@ -4019,14 +4178,6 @@ function openAddHubEntryModal() {
       <div class="form-group">
         <label>Due Date</label>
         <input type="date" id="hubDueDate">
-      </div>
-      <div class="form-group">
-        <label>Status</label>
-        <select id="hubStatus">
-          <option>Pending</option>
-          <option>In Progress</option>
-          <option>Completed</option>
-        </select>
       </div>
       <div class="form-group" style="grid-column:1/-1">
         <label>Description</label>
@@ -4067,8 +4218,8 @@ async function submitHubEntry() {
   const priority = document.getElementById('hubPriority').value;
   const dueDate = document.getElementById('hubDueDate').value;
   const description = document.getElementById('hubDescription').value.trim();
-  const status = document.getElementById('hubStatus').value;
-  const category = (type === 'Command Register' || type === 'Correspondence') ? document.getElementById('hubCategory').value : '';
+  const status = hubEditContext ? ((allData.hub_entries || [])[hubEditContext.index]?.Status || 'Pending') : 'Pending';
+  const category = (type === 'Command Register' || type === 'Command Directives' || type === 'Correspondence' || type === 'Official Correspondence') ? document.getElementById('hubCategory').value : '';
 
   if (!subject) {
     showToast('Please enter a subject/title', 'error');
@@ -4205,6 +4356,24 @@ function renderVC() {
   }).join('');
 }
 
+function openAddVCModal() {
+  editContext = null;
+  document.querySelectorAll('.allotted-cb').forEach(cb => cb.checked = false);
+  updateAllottedCount();
+
+  document.getElementById('vcSubject').value = '';
+  document.getElementById('vcDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('vcTime').value = '';
+  document.getElementById('vcPlatform').value = 'BharatVC';
+  document.getElementById('vcLink').value = '';
+  document.getElementById('vcRemarks').value = '';
+  document.getElementById('vcProject').value = 'Miscellaneous';
+  document.getElementById('vcOrganiser').value = '';
+  document.getElementById('vcSpeaker').value = '';
+
+  openModal('addVCModal');
+}
+
 function editVC(i) {
   const v = (allData.vcschedule || [])[i];
   if (!v) return;
@@ -4213,21 +4382,22 @@ function editVC(i) {
   document.getElementById('vcSubject').value = v.Subject || '';
   document.getElementById('vcDate').value = String(v.Date || '').split('T')[0];
   document.getElementById('vcTime').value = v.Time || '';
-  document.getElementById('vcPlatform').value = v.Platform || 'WebEx';
+  document.getElementById('vcPlatform').value = v.Platform || 'BharatVC';
   document.getElementById('vcLink').value = v.VC_Link || '';
   document.getElementById('vcRemarks').value = v.Remarks || '';
   document.getElementById('vcProject').value = v.Project_Name || 'Miscellaneous';
   document.getElementById('vcOrganiser').value = v.Organiser || '';
   document.getElementById('vcSpeaker').value = v.Speaker || '';
   
-  // Set multi-select value
-  const allottedOptions = (v.Allotted_Persons || '').split(',').map(s => s.trim());
-  const selectEl = document.getElementById('vcPersons');
-  if (selectEl) {
-    Array.from(selectEl.options).forEach(opt => {
-      opt.selected = allottedOptions.includes(opt.value);
-    });
-  }
+  // Set checkboxes values
+  const allottedOptions = Array.isArray(v.allottedPersons || v.participants)
+    ? (v.allottedPersons || v.participants)
+    : String(v.Allotted_Persons || v.participants || v.allottedPersons || '').split(',').map(s => s.trim()).filter(Boolean);
+
+  document.querySelectorAll('.allotted-cb').forEach(cb => {
+    cb.checked = allottedOptions.includes(cb.value);
+  });
+  updateAllottedCount();
   
   openModal('addVCModal');
 }
@@ -4239,7 +4409,7 @@ async function submitVC() {
   if (!subject || !date || !time) { showToast('Subject, Date and Time are required', 'error'); return; }
 
   showToast('Saving VC schedule...', 'info');
-  const selectedPersons = Array.from(document.getElementById('vcPersons')?.selectedOptions || []).map(o => o.value);
+  const selectedPersons = getSelectedAllottedPersons();
 
   const localObj = {
     title: subject,
@@ -4252,6 +4422,7 @@ async function submitVC() {
     chairperson: document.getElementById('vcOrganiser').value,
     speaker: document.getElementById('vcSpeaker').value,
     participants: selectedPersons,
+    allottedPersons: selectedPersons,
     status: 'Upcoming',
     createdBy: localStorage.getItem('userName') || 'Admin',
     createdAt: fsTimestamp()
@@ -4501,6 +4672,14 @@ const screenLabels = {
   'staff-management': 'Staff Management'
 };
 
+const screenLoadMessages = {
+  'dashboard':        'Retrieving dashboard metrics & duty statistics',
+  'profile':          'Loading personnel profile & active duties',
+  'hub':              'Syncing command directives & official correspondence',
+  'vc':               'Fetching scheduled conferences & video meetings',
+  'staff-management': 'Loading staff directory & database records'
+};
+
 function showPageLoader(screenName) {
   const bar = document.getElementById('pageLoaderBar');
   if (bar) {
@@ -4509,10 +4688,13 @@ function showPageLoader(screenName) {
   }
   const overlay = document.getElementById('contentOverlay');
   const label   = document.getElementById('pageLoaderLabel');
-  if (overlay) overlay.classList.add('active');
-  if (label)   label.textContent =
-    'Loading ' +
-    (screenLabels[screenName] || screenName) + '...';
+  if (overlay) {
+    overlay.classList.add('active');
+    updateOverlayPosition();
+  }
+  if (label) {
+    label.textContent = screenLoadMessages[screenName] || ('Loading ' + (screenLabels[screenName] || screenName) + '...');
+  }
 }
 
 function hidePageLoader() {
@@ -4546,13 +4728,29 @@ if ('serviceWorker' in navigator) {
   <div id="pageLoaderBar"></div>
 </div>
 <div id="contentOverlay">
-  <div class="page-spinner">
-    <div class="page-spinner-icon">
+  <!-- Double-ripple rings -->
+  <div class="splash-ripple" style="width: 100px; height: 100px; border-width: 1.5px; animation-duration: 2s; border-color: rgba(201,168,76,0.25);"></div>
+  <div class="splash-ripple" style="width: 100px; height: 100px; border-width: 1.5px; animation-duration: 2s; animation-delay: 0.7s; border-color: rgba(201,168,76,0.25);"></div>
+  
+  <div class="splash-logo-wrap" style="margin-bottom: 16px;">
+    <img src="logo.png" alt="AP Police"
+         class="splash-logo"
+         style="width: 70px; height: 70px; border-width: 2px; box-shadow: 0 0 15px rgba(201,168,76,0.2), 0 0 30px rgba(13,59,122,0.4);"
+         onerror="this.style.display='none';
+           document.getElementById('overlayLogoFb').style.display='flex'">
+    <div class="splash-logo-fallback"
+         id="overlayLogoFb" style="width: 70px; height: 70px; font-size: 28px; border-width: 2px; display:none">
       <i class="fa-solid fa-shield-halved"></i>
     </div>
   </div>
-  <div class="page-loader-label" id="pageLoaderLabel">
+  
+  <div class="splash-loading-text" id="pageLoaderLabel" style="font-size: 12px; color: rgba(255,255,255,0.7); font-weight: 500;">
     Loading...
+  </div>
+  <div style="display: flex; gap: 4px; margin-top: -6px;">
+    <span class="splash-dot" style="background: var(--gold); width: 5px; height: 5px;"></span>
+    <span class="splash-dot" style="background: var(--gold); width: 5px; height: 5px; animation-delay: 0.2s;"></span>
+    <span class="splash-dot" style="background: var(--gold); width: 5px; height: 5px; animation-delay: 0.4s;"></span>
   </div>
 </div>
 </body>
