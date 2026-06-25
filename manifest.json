@@ -1,8 +1,8 @@
 {
-  "name": "AP Police TS — Staff Monitoring System",
-  "short_name": "AP Police TS",
-  "description": "AP Police Technical Services Staff Monitoring System — IGP Office, Mangalagiri, Andhra Pradesh",
-  "start_url": "index.html",
+  "name": "SWADHARMA — AP Police Technical Services Duty Management System",
+  "short_name": "SWADHARMA",
+  "description": "AP Police Technical Services Duty Management System. Discipline. Duty. Devotion.",
+  "start_url": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
   "theme_color": "#0d3b7a",

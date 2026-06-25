@@ -6,13 +6,15 @@
 <meta name="theme-color" content="#0d3b7a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="AP Police TS">
+<meta name="apple-mobile-web-app-title" content="SWADHARMA">
+<meta name="application-name" content="SWADHARMA">
+<meta name="description" content="SWADHARMA — AP Police Technical Services Duty Management System. Discipline. Duty. Devotion. Mangalagiri, Andhra Pradesh.">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512.png">
-<title>AP Police TS — Staff Monitoring System</title>
+<title>SWADHARMA — AP Police Technical Services Duty Management System</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -958,14 +960,237 @@ select[multiple] option:selected {
   align-self: flex-end;
 }
 
-/* Custom type badges for the unified hub */
-.badge-navy { background: rgba(13,59,122,0.12); color: var(--navy); }
-.badge-gold { background: rgba(201,168,76,0.12); color: var(--gold); }
-.badge-heart { background: rgba(224,86,86,0.12); color: var(--heart); }
+/* SWADHARMA SPLASH LOADER */
+#splashLoader {
+  position: fixed; inset: 0; z-index: 99999;
+  background: linear-gradient(135deg,
+    #071020 0%, #0d3b7a 50%, #082d5e 100%);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  transition: opacity 0.6s ease, visibility 0.6s ease;
+}
+#splashLoader.hide {
+  opacity: 0; visibility: hidden; pointer-events: none;
+}
+.splash-ripple {
+  position: absolute;
+  width: 120px; height: 120px; border-radius: 50%;
+  border: 2px solid rgba(201,168,76,0.3);
+  animation: rippleOut 2s ease-out infinite;
+}
+.splash-ripple:nth-child(2) { animation-delay: 0.5s; }
+.splash-ripple:nth-child(3) { animation-delay: 1s; }
+@keyframes rippleOut {
+  0%   { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(3.5); opacity: 0; }
+}
+.splash-logo-wrap {
+  position: relative; display: flex;
+  align-items: center; justify-content: center;
+  margin-bottom: 32px;
+}
+.splash-logo {
+  width: 100px; height: 100px; border-radius: 50%;
+  border: 3px solid rgba(201,168,76,0.6);
+  background: rgba(255,255,255,0.08);
+  padding: 6px; object-fit: cover;
+  position: relative; z-index: 2;
+  animation: splashLogoPulse 1.5s ease-in-out infinite;
+  box-shadow: 0 0 30px rgba(201,168,76,0.3),
+              0 0 60px rgba(13,59,122,0.5);
+}
+.splash-logo-fallback {
+  width: 100px; height: 100px; border-radius: 50%;
+  border: 3px solid rgba(201,168,76,0.6);
+  background: rgba(255,255,255,0.08);
+  display: flex; align-items: center;
+  justify-content: center;
+  font-size: 40px; color: #c9a84c;
+  position: relative; z-index: 2;
+  animation: splashLogoPulse 1.5s ease-in-out infinite;
+}
+@keyframes splashLogoPulse {
+  0%,100% { box-shadow: 0 0 20px rgba(201,168,76,0.3); }
+  50%      { box-shadow: 0 0 40px rgba(201,168,76,0.6); }
+}
+.splash-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 38px; font-weight: 700;
+  letter-spacing: 6px; text-align: center;
+  margin-bottom: 6px;
+  background: linear-gradient(90deg,
+    #c9a84c, #f0d080, #c9a84c);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmerText 2s linear infinite;
+}
+@keyframes shimmerText {
+  0%   { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+.splash-subtitle {
+  font-size: 11px; color: rgba(255,255,255,0.5);
+  letter-spacing: 2px; text-transform: uppercase;
+  text-align: center; margin-bottom: 4px;
+}
+.splash-dept {
+  font-size: 12px; color: rgba(201,168,76,0.7);
+  letter-spacing: 1px; text-align: center;
+  margin-bottom: 6px;
+}
+.splash-tagline {
+  font-size: 11px; color: rgba(255,255,255,0.3);
+  letter-spacing: 3px; text-transform: uppercase;
+  text-align: center; font-style: italic;
+  margin-bottom: 44px;
+}
+.splash-progress-wrap {
+  width: 220px; height: 2px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 2px; overflow: hidden;
+  margin-bottom: 16px;
+}
+.splash-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #c9a84c, #f0d080);
+  border-radius: 2px;
+  animation: progressFill 2.4s ease-in-out forwards;
+}
+@keyframes progressFill {
+  0%   { width: 0%; }
+  30%  { width: 35%; }
+  70%  { width: 72%; }
+  100% { width: 100%; }
+}
+.splash-loading-text {
+  font-size: 11px; color: rgba(255,255,255,0.4);
+  letter-spacing: 2px; text-transform: uppercase;
+  display: flex; align-items: center; gap: 2px;
+}
+.splash-dot {
+  width: 4px; height: 4px; border-radius: 50%;
+  background: rgba(201,168,76,0.6);
+  display: inline-block; margin: 0 2px;
+  animation: dotBounce 1.2s ease-in-out infinite;
+}
+.splash-dot:nth-child(2) { animation-delay: 0.2s; }
+.splash-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dotBounce {
+  0%,80%,100% { transform: scale(0.8); opacity: 0.4; }
+  40%          { transform: scale(1.4); opacity: 1; }
+}
+.splash-footer {
+  position: absolute; bottom: 24px;
+  font-size: 10px; color: rgba(255,255,255,0.2);
+  letter-spacing: 1px; text-align: center;
+  text-transform: uppercase;
+}
+
+/* GLOBAL PAGE LOADER */
+#pageLoader {
+  position: fixed; top: 0; left: 0;
+  width: 100%; height: 3px;
+  z-index: 9998; pointer-events: none;
+}
+#pageLoaderBar {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg,
+    #0d3b7a 0%, #c9a84c 50%, #8b0000 100%);
+  border-radius: 0 3px 3px 0;
+  transition: width 0.3s ease;
+  box-shadow: 0 0 8px rgba(201,168,76,0.5);
+}
+#contentOverlay {
+  position: fixed;
+  top: 56px; left: 240px;
+  right: 0; bottom: 0;
+  background: rgba(255,255,255,0.5);
+  backdrop-filter: blur(2px);
+  z-index: 500; display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column; gap: 12px;
+}
+[data-theme="dark"] #contentOverlay {
+  background: rgba(10,22,40,0.5);
+}
+#contentOverlay.active { display: flex; }
+.page-spinner {
+  width: 48px; height: 48px; position: relative;
+}
+.page-spinner::before {
+  content: ''; position: absolute; inset: 0;
+  border: 3px solid var(--border);
+  border-top-color: var(--navy);
+  border-right-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+.page-spinner-icon {
+  position: absolute; inset: 0;
+  display: flex; align-items: center;
+  justify-content: center;
+  font-size: 18px; color: var(--navy);
+}
+.page-loader-label {
+  font-size: 11px; color: var(--text3);
+  letter-spacing: 2px; text-transform: uppercase;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+}
+@media (max-width: 768px) {
+  #contentOverlay { left: 0; }
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
+
+<div id="splashLoader" style="display:none">
+  <div class="splash-ripple"></div>
+  <div class="splash-ripple"></div>
+  <div class="splash-ripple"></div>
+  <div class="splash-logo-wrap">
+    <img src="logo.png" alt="AP Police"
+         class="splash-logo"
+         onerror="this.style.display='none';
+           document.getElementById('splashLogoFb')
+           .style.display='flex'">
+    <div class="splash-logo-fallback"
+         id="splashLogoFb" style="display:none">
+      <i class="fa-solid fa-shield-halved"></i>
+    </div>
+  </div>
+  <div class="splash-title">SWADHARMA</div>
+  <div class="splash-subtitle">
+    AP Police Technical Services
+  </div>
+  <div class="splash-dept">
+    Duty Management System &nbsp;·&nbsp; 
+    Mangalagiri, A.P.
+  </div>
+  <div class="splash-tagline">
+    Discipline &nbsp;·&nbsp; 
+    Duty &nbsp;·&nbsp; 
+    Devotion
+  </div>
+  <div class="splash-progress-wrap">
+    <div class="splash-progress-bar"></div>
+  </div>
+  <div class="splash-loading-text" id="splashLoadingText">
+    Loading
+    <span class="splash-dot"></span>
+    <span class="splash-dot"></span>
+    <span class="splash-dot"></span>
+  </div>
+  <div class="splash-footer">
+    SWADHARMA &nbsp;·&nbsp;
+    AP Police Technical Services &nbsp;·&nbsp;
+    Andhra Pradesh
+  </div>
+</div>
 
 <!-- ============================================================
      LOGIN SCREEN
@@ -981,8 +1206,16 @@ select[multiple] option:selected {
         <i class="fa-solid fa-shield-halved"></i>
       </div>
     </div>
-    <div class="login-title">AP POLICE — TECHNICAL SERVICES</div>
-    <div class="login-sub">Staff Monitoring System &nbsp;|&nbsp; IGP Office, Mangalagiri</div>
+    <div class="login-title">SWADHARMA</div>
+    <div class="login-sub">AP Police Technical Services &nbsp;·&nbsp; Mangalagiri, A.P.</div>
+    <div style="font-size:10px;
+                color:rgba(255,255,255,0.4);
+                text-align:center;margin-bottom:28px;
+                letter-spacing:1.5px;
+                text-transform:uppercase;
+                font-style:italic">
+      Discipline &nbsp;·&nbsp; Duty &nbsp;·&nbsp; Devotion
+    </div>
     <div class="login-field">
       <label>Phone Number / Staff ID</label>
       <input type="tel" id="loginEmail" placeholder="Enter your phone number" autocomplete="tel">
@@ -995,7 +1228,7 @@ select[multiple] option:selected {
       <i class="fa-solid fa-right-to-bracket"></i> &nbsp;SIGN IN
     </button>
     <div class="login-error" id="loginError">Invalid phone number or password. Please try again.</div>
-    <div class="login-footer">AP POLICE TECHNICAL SERVICES &nbsp;•&nbsp; MANGALAGIRI, ANDHRA PRADESH</div>
+    <div class="login-footer">SWADHARMA — AP POLICE TECHNICAL SERVICES &nbsp;·&nbsp; MANGALAGIRI, ANDHRA PRADESH</div>
   </div>
 </div>
 
@@ -1014,8 +1247,8 @@ select[multiple] option:selected {
              onerror="this.style.display='none';document.getElementById('sidebarLogoFallback').style.display='flex'">
         <div class="logo-placeholder-sm" id="sidebarLogoFallback" style="display:none"><i class="fa-solid fa-shield-halved"></i></div>
         <div class="sidebar-brand">
-          <h2>AP POLICE TS</h2>
-          <p>STAFF MONITOR</p>
+          <h2>SWADHARMA</h2>
+          <p>DUTY MANAGEMENT</p>
         </div>
       </div>
 
@@ -1028,7 +1261,7 @@ select[multiple] option:selected {
           <i class="fa-solid fa-circle-user"></i><span>My Profile</span>
         </div>
 
-        <div class="nav-section-label" style="margin-top:8px">❤ Command Centre</div>
+        <div class="nav-section-label" style="margin-top:8px">❤ Operations Centre</div>
         <div class="nav-item heart-item" onclick="showScreen('hub')">
           <i class="fa-solid fa-layer-group"></i><span>Command & Correspondence Hub</span>
           <span class="nav-badge" id="hubBadge">0</span>
@@ -1088,7 +1321,7 @@ select[multiple] option:selected {
             </div>
             <div class="notif-list" id="notifList">
               <div class="notif-item unread" onclick="markRead(this, event)">
-                <span class="notif-item-title">New IGP Task</span>
+                <span class="notif-item-title">New Priority Work</span>
                 <span class="notif-item-desc">Update weekly report on CCTNS progress.</span>
                 <span class="notif-item-time">5 mins ago</span>
               </div>
@@ -1164,7 +1397,7 @@ select[multiple] option:selected {
                 <div class="heart-stat-row">
                   <div class="heart-stat"><div class="heart-stat-val" id="hHubTasks">—</div><div class="heart-stat-lbl">Tasks</div></div>
                   <div class="heart-stat"><div class="heart-stat-val" id="hHubLetters">—</div><div class="heart-stat-lbl">Letters</div></div>
-                  <div class="heart-stat"><div class="heart-stat-val" id="hHubIGP">—</div><div class="heart-stat-lbl">IGP Works</div></div>
+                  <div class="heart-stat"><div class="heart-stat-val" id="hHubIGP">—</div><div class="heart-stat-lbl">Priority Works</div></div>
                 </div>
               </div>
               <div class="heart-module-footer"><span>Track all assignments and communications</span><button class="open-btn">Open Hub →</button></div>
@@ -1231,7 +1464,7 @@ select[multiple] option:selected {
               <option value="all">All Types</option>
               <option value="Command Register">Command Register</option>
               <option value="Correspondence">Correspondence</option>
-              <option value="IGP Works">IGP Works</option>
+              <option value="Priority Works">Priority Works</option>
             </select>
             
             <select id="hubStatusFilter" onchange="renderHub()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text1);font-size:13px;outline:none;">
@@ -1782,7 +2015,15 @@ select[multiple] option:selected {
 
         <!-- FOOTER -->
         <div class="app-footer">
-          AP Police Technical Services &nbsp;|&nbsp; IGP Office, Mangalagiri &nbsp;|&nbsp; 2026
+          🕉️ <strong>SWADHARMA</strong> — 
+          AP Police Technical Services Duty Management System
+          &nbsp;|&nbsp; Mangalagiri, Andhra Pradesh
+          <br>
+          <span style="font-style:italic;opacity:0.7">
+            Discipline &nbsp;·&nbsp; 
+            Duty &nbsp;·&nbsp; 
+            Devotion
+          </span>
         </div>
 
       </div><!-- end content-area -->
@@ -1872,7 +2113,7 @@ select[multiple] option:selected {
   </div>
 </div>
 
-<!-- Add IGP Work Modal -->
+<!-- Add Priority Work Modal -->
 
 
 <!-- Add VC Modal -->
@@ -1927,6 +2168,15 @@ select[multiple] option:selected {
      JAVASCRIPT
      ============================================================ -->
 <script>
+console.log('%c 🕉️ SWADHARMA ',
+  'background:#0d3b7a;color:#c9a84c;' +
+  'font-size:18px;font-weight:bold;' +
+  'padding:8px 16px;border-radius:6px');
+console.log('%c AP Police Technical Services ' +
+  'Duty Management System ',
+  'color:#0d3b7a;font-size:11px');
+console.log('%c Discipline. Duty. Devotion. ',
+  'color:#8b0000;font-size:11px;font-style:italic');
 // ============================================================
 // SECTION 1: CONFIGURATION & GLOBAL VARIABLES
 // ============================================================
@@ -2171,6 +2421,7 @@ function toggleTheme() {
 // SECTION 3: NAVIGATION & TOPBAR ACTIONS
 // ============================================================
 function showScreen(name) {
+  showPageLoader(name);
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.querySelectorAll('.bottom-nav-item').forEach(n => n.classList.remove('active'));
@@ -2217,6 +2468,8 @@ function showScreen(name) {
     loadStaffFromSheet();
   }
   if (name === 'admin') renderAdminCredentials();
+
+  setTimeout(() => hidePageLoader(), 400);
 }
 
 function toggleSidebar() {
@@ -2584,12 +2837,6 @@ async function doLogin() {
     localStorage.setItem('userPhone',  phone);
     window.currentUser = { ...staffData, id: staffDoc.id };
 
-    // Show app
-    const loginScr = document.getElementById('loginScreen');
-    if (loginScr) loginScr.style.display = 'none';
-    const appSh = document.getElementById('appShell');
-    if (appSh) appSh.style.display = 'block';
-
     // Update sidebar user info
     const sidebarName = document.getElementById('sidebarName');
     if (sidebarName) sidebarName.textContent = staffData.Full_Name || 'Staff';
@@ -2608,10 +2855,15 @@ async function doLogin() {
       adminBadge.style.display = (staffData.role === 'admin' || staffData.role === 'officer') ? 'inline-flex' : 'none';
     }
 
-    // Load all data
-    loadAllData();
-    showScreen('dashboard');
-    showToast('Welcome, ' + (staffData.Full_Name || 'Staff') + '!', 'success');
+    showSplashLoader(staffData.Full_Name || 'Officer');
+    setTimeout(() => {
+      document.getElementById('loginScreen').style.display='none';
+      document.getElementById('appShell').style.display='block';
+      loadAllData();
+      showScreen('dashboard');
+      showToast('🙏 Welcome to SWADHARMA, ' +
+        (staffData.Full_Name || 'Officer') + '!', 'success');
+    }, 2800);
 
   } catch(err) {
     if (errDiv) {
@@ -2692,7 +2944,7 @@ function renderDashboard() {
   const hub = allData.hub_entries || [];
   const tasksCount = hub.filter(h => h.Type === 'Command Register' && ['Pending', 'In Progress'].includes(h.Status)).length;
   const lettersCount = hub.filter(h => h.Type === 'Correspondence' && ['Pending', 'In Progress'].includes(h.Status)).length;
-  const igpCount = hub.filter(h => h.Type === 'IGP Works' && ['Pending', 'In Progress'].includes(h.Status)).length;
+  const igpCount = hub.filter(h => (h.Type === 'IGP Works' || h.Type === 'Priority Works') && ['Pending', 'In Progress'].includes(h.Status)).length;
   const activeHubItems = tasksCount + lettersCount + igpCount;
 
   const upcomingVC = (allData.vcschedule || []).filter(v => v.Status === 'Upcoming').length;
@@ -2735,11 +2987,11 @@ function renderDashboard() {
     tbody.innerHTML = recent.map(t => {
       let typeClass = 'badge-navy';
       if (t.Type === 'Correspondence') typeClass = 'badge-gold';
-      else if (t.Type === 'IGP Works') typeClass = 'badge-heart';
+      else if (t.Type === 'IGP Works' || t.Type === 'Priority Works') typeClass = 'badge-heart';
       
       return `
         <tr>
-          <td><span class="badge ${typeClass}">${t.Type || '—'}</span></td>
+          <td><span class="badge ${typeClass}">${t.Type === 'IGP Works' ? 'Priority Works' : (t.Type || '—')}</span></td>
           <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis"><strong>${t.Subject || '—'}</strong></td>
           <td>${t.Assigned_To || '—'}</td>
           <td>${priorityBadge(t.Priority)}</td>
@@ -3574,7 +3826,11 @@ function renderHub() {
 
     // Filter by type
     if (typeFilter !== 'all') {
-      data = data.filter(h => h.Type === typeFilter);
+      if (typeFilter === 'Priority Works') {
+        data = data.filter(h => h.Type === 'Priority Works' || h.Type === 'IGP Works');
+      } else {
+        data = data.filter(h => h.Type === typeFilter);
+      }
     }
 
     // Filter by status
@@ -3591,11 +3847,11 @@ function renderHub() {
       const realIndex = (allData.hub_entries || []).indexOf(t);
       let typeClass = 'badge-navy';
       if (t.Type === 'Correspondence') typeClass = 'badge-gold';
-      else if (t.Type === 'IGP Works') typeClass = 'badge-heart';
+      else if (t.Type === 'IGP Works' || t.Type === 'Priority Works') typeClass = 'badge-heart';
 
       return '<tr>' +
         '<td>' + (i + 1) + '</td>' +
-        '<td><span class="badge ' + typeClass + '">' + (t.Type || '—') + '</span></td>' +
+        '<td><span class="badge ' + typeClass + '">' + (t.Type === 'IGP Works' ? 'Priority Works' : (t.Type || '—')) + '</span></td>' +
         '<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis"><strong>' + (t.Subject || '—') + '</strong>' +
         (t.Category ? '<div style="font-size:11px;color:var(--text3);margin-top:2px"><i class="fa-solid fa-tag"></i> ' + t.Category + '</div>' : '') + '</td>' +
         '<td>' + (t.Assigned_To || '—') + '</td>' +
@@ -3653,7 +3909,7 @@ function editHubEntry(i) {
         <select id="hubType">
           <option value="Command Register">Command Register</option>
           <option value="Correspondence">Correspondence</option>
-          <option value="IGP Works">IGP Works</option>
+          <option value="Priority Works">Priority Works</option>
         </select>
       </div>
       <div class="form-group" id="hubCategoryGroup">
@@ -3737,7 +3993,7 @@ function openAddHubEntryModal() {
         <select id="hubType">
           <option value="Command Register">Command Register</option>
           <option value="Correspondence">Correspondence</option>
-          <option value="IGP Works">IGP Works</option>
+          <option value="Priority Works">Priority Works</option>
         </select>
       </div>
       <div class="form-group" id="hubCategoryGroup">
@@ -4193,9 +4449,9 @@ async function setupFirstAdmin() {
       Date_Joined:        today,
       Status:             'Active',
       Profile_Photo_URL:  '',
-      Assigned_Projects:  'AP Police TS Staff System',
+      Assigned_Projects:  'AP Police Technical Services Staff System',
       District_Assigned:  'Mangalagiri',
-      Reporting_Officer:  'IGP Office',
+      Reporting_Officer:  'Technical Services Division',
       Created_Date:       today,
       Daily_Duties:       'System Administration, Staff Monitoring',
       Weekly_Duties:      'Weekly Report Generation, Data Backup',
@@ -4209,6 +4465,71 @@ async function setupFirstAdmin() {
     alert('ERROR: ' + err.message);
   }
 }
+// --- SPLASH LOADER ---
+function showSplashLoader(userName) {
+  const splash = document.getElementById('splashLoader');
+  if (!splash) return;
+  const txt = document.getElementById('splashLoadingText');
+  if (txt) txt.innerHTML =
+    `Welcome, ${(userName||'').split(' ')[0]}
+     <span class="splash-dot"></span>
+     <span class="splash-dot"></span>
+     <span class="splash-dot"></span>`;
+  splash.classList.remove('hide');
+  splash.style.display = 'flex';
+  setTimeout(hideSplashLoader, 2800);
+}
+
+function hideSplashLoader() {
+  const splash = document.getElementById('splashLoader');
+  if (!splash) return;
+  splash.classList.add('hide');
+  setTimeout(() => splash.style.display = 'none', 600);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const splash = document.getElementById('splashLoader');
+  if (splash) splash.style.display = 'none';
+});
+
+// --- GLOBAL NAVIGATION LOADER ---
+const screenLabels = {
+  'dashboard':        'Dashboard',
+  'profile':          'My Profile',
+  'hub':              'Command & Correspondence Hub',
+  'vc':               'Conference & Meetings Hub',
+  'staff-management': 'Staff Management'
+};
+
+function showPageLoader(screenName) {
+  const bar = document.getElementById('pageLoaderBar');
+  if (bar) {
+    bar.style.width = '0%';
+    setTimeout(() => bar.style.width = '70%', 50);
+  }
+  const overlay = document.getElementById('contentOverlay');
+  const label   = document.getElementById('pageLoaderLabel');
+  if (overlay) overlay.classList.add('active');
+  if (label)   label.textContent =
+    'Loading ' +
+    (screenLabels[screenName] || screenName) + '...';
+}
+
+function hidePageLoader() {
+  const bar     = document.getElementById('pageLoaderBar');
+  const overlay = document.getElementById('contentOverlay');
+  if (bar) {
+    bar.style.width = '100%';
+    setTimeout(() => {
+      bar.style.transition = 'none';
+      bar.style.width = '0%';
+      setTimeout(() =>
+        bar.style.transition = 'width 0.3s ease', 50);
+    }, 300);
+  }
+  if (overlay) overlay.classList.remove('active');
+}
+
 window.setupFirstAdmin = setupFirstAdmin;
 </script>
 
@@ -4221,5 +4542,18 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+<div id="pageLoader">
+  <div id="pageLoaderBar"></div>
+</div>
+<div id="contentOverlay">
+  <div class="page-spinner">
+    <div class="page-spinner-icon">
+      <i class="fa-solid fa-shield-halved"></i>
+    </div>
+  </div>
+  <div class="page-loader-label" id="pageLoaderLabel">
+    Loading...
+  </div>
+</div>
 </body>
 </html>
