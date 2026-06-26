@@ -4673,11 +4673,11 @@ const screenLabels = {
 };
 
 const screenLoadMessages = {
-  'dashboard':        'Retrieving dashboard metrics & duty statistics',
-  'profile':          'Loading personnel profile & active duties',
-  'hub':              'Syncing command directives & official correspondence',
-  'vc':               'Fetching scheduled conferences & video meetings',
-  'staff-management': 'Loading staff directory & database records'
+  'dashboard':        'Opening Dashboard',
+  'profile':          'Loading My Profile',
+  'hub':              'Opening Command & Correspondence Hub',
+  'vc':               'Loading Conference & Meetings',
+  'staff-management': 'Loading Staff Management'
 };
 
 function showPageLoader(screenName) {
@@ -4692,9 +4692,9 @@ function showPageLoader(screenName) {
     overlay.classList.add('active');
     updateOverlayPosition();
   }
-  if (label) {
-    label.textContent = screenLoadMessages[screenName] || ('Loading ' + (screenLabels[screenName] || screenName) + '...');
-  }
+  if (label) label.textContent =
+    screenLoadMessages[screenName] || 
+    'Loading ' + screenName + '...';
 }
 
 function hidePageLoader() {
@@ -4728,29 +4728,55 @@ if ('serviceWorker' in navigator) {
   <div id="pageLoaderBar"></div>
 </div>
 <div id="contentOverlay">
-  <!-- Double-ripple rings -->
-  <div class="splash-ripple" style="width: 100px; height: 100px; border-width: 1.5px; animation-duration: 2s; border-color: rgba(201,168,76,0.25);"></div>
-  <div class="splash-ripple" style="width: 100px; height: 100px; border-width: 1.5px; animation-duration: 2s; animation-delay: 0.7s; border-color: rgba(201,168,76,0.25);"></div>
-  
-  <div class="splash-logo-wrap" style="margin-bottom: 16px;">
-    <img src="logo.png" alt="AP Police"
-         class="splash-logo"
-         style="width: 70px; height: 70px; border-width: 2px; box-shadow: 0 0 15px rgba(201,168,76,0.2), 0 0 30px rgba(13,59,122,0.4);"
+  <!-- Small ripple rings -->
+  <div style="position:absolute;width:70px;height:70px;
+              border-radius:50%;
+              border:1.5px solid rgba(201,168,76,0.25);
+              animation:rippleOut 1.8s ease-out infinite">
+  </div>
+  <div style="position:absolute;width:70px;height:70px;
+              border-radius:50%;
+              border:1.5px solid rgba(201,168,76,0.15);
+              animation:rippleOut 1.8s ease-out 0.6s infinite">
+  </div>
+
+  <!-- Logo -->
+  <div style="position:relative;z-index:2">
+    <img src="logo.png" alt="SWADHARMA"
+         style="width:60px;height:60px;border-radius:50%;
+                border:2px solid rgba(201,168,76,0.5);
+                padding:3px;object-fit:cover;
+                animation:splashLogoPulse 1.5s 
+                ease-in-out infinite"
          onerror="this.style.display='none';
-           document.getElementById('overlayLogoFb').style.display='flex'">
-    <div class="splash-logo-fallback"
-         id="overlayLogoFb" style="width: 70px; height: 70px; font-size: 28px; border-width: 2px; display:none">
+           document.getElementById('overlayIconFb')
+           .style.display='flex'">
+    <div id="overlayIconFb"
+         style="display:none;width:60px;height:60px;
+                border-radius:50%;
+                border:2px solid rgba(201,168,76,0.5);
+                background:rgba(255,255,255,0.08);
+                align-items:center;justify-content:center;
+                font-size:24px;color:#c9a84c">
       <i class="fa-solid fa-shield-halved"></i>
     </div>
   </div>
-  
-  <div class="splash-loading-text" id="pageLoaderLabel" style="font-size: 12px; color: rgba(255,255,255,0.7); font-weight: 500;">
+
+  <!-- Screen label -->
+  <div id="pageLoaderLabel"
+       style="font-family:'Rajdhani',sans-serif;
+              font-size:15px;font-weight:600;
+              color:rgba(255,255,255,0.8);
+              letter-spacing:2px;text-transform:uppercase;
+              position:relative;z-index:2">
     Loading...
   </div>
-  <div style="display: flex; gap: 4px; margin-top: -6px;">
-    <span class="splash-dot" style="background: var(--gold); width: 5px; height: 5px;"></span>
-    <span class="splash-dot" style="background: var(--gold); width: 5px; height: 5px; animation-delay: 0.2s;"></span>
-    <span class="splash-dot" style="background: var(--gold); width: 5px; height: 5px; animation-delay: 0.4s;"></span>
+
+  <!-- Loading dots -->
+  <div style="display:flex;gap:6px;position:relative;z-index:2">
+    <span class="splash-dot"></span>
+    <span class="splash-dot"></span>
+    <span class="splash-dot"></span>
   </div>
 </div>
 </body>
