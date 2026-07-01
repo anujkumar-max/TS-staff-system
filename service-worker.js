@@ -1,4 +1,4 @@
-const CACHE_NAME = 'swadharma-v2';
+const CACHE_NAME = 'apits-portal-v1';
 
 const ASSETS_TO_CACHE = [
   'index.html',
@@ -15,7 +15,7 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
       return cache.addAll(ASSETS_TO_CACHE).catch(err => {
-        console.warn('SWADHARMA Service Worker: Some assets failed to cache:', err);
+        console.warn('AP Police IT Services Service Worker: Some assets failed to cache:', err);
       });
     })
   );

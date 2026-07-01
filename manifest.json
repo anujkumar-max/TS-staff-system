@@ -1,7 +1,7 @@
 {
-  "name": "SWADHARMA — AP Police Technical Services Duty Management System",
-  "short_name": "SWADHARMA",
-  "description": "AP Police Technical Services Duty Management System. Discipline. Duty. Devotion.",
+  "name": "AP Police IT Services — Operations & Duty Management Portal",
+  "short_name": "AP Police IT",
+  "description": "AP Police IT Services Operations & Duty Management Portal. Discipline. Duty. Devotion.",
   "start_url": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
