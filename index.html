@@ -3435,8 +3435,8 @@ function renderProfileView(data) {
   const rank = data.Rank || '';
   const phone = data.Phone || localStorage.getItem('userPhone') || '';
   const itTitle = getITTitle(rank, phone);
-  const isAdmin = itTitle === 'Admin';
-  const rankFull = isAdmin
+  const isProfileAdmin = itTitle === 'Admin';
+  const rankFull = isProfileAdmin
     ? 'System Administrator'
     : (RANK_IT_MAP[rank]||{}).full || rank;
 
