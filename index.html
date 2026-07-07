@@ -1139,6 +1139,29 @@ select[multiple] option:selected {
   border-color: var(--navy); color: var(--navy);
   font-weight: 600;
 }
+
+/* Mini action buttons */
+.btn-mini {
+  padding: 4px 10px; font-size: 11px; font-weight: 600;
+  border: none; border-radius: 6px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 4px;
+  transition: all 0.15s; white-space: nowrap;
+}
+.btn-navy {
+  background: rgba(13,59,122,0.1);
+  color: var(--navy); border: 1px solid var(--navy);
+}
+.btn-navy:hover {
+  background: var(--navy); color: #fff;
+}
+.btn-delete {
+  background: rgba(185,28,28,0.08);
+  color: #b91c1c; border: 1px solid rgba(185,28,28,0.3);
+}
+.btn-delete:hover {
+  background: #b91c1c; color: #fff;
+  border-color: #b91c1c;
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
@@ -4387,7 +4410,7 @@ function renderHub() {
         '<td><div class="row-actions">' +
         '<button class="action-btn" onclick="viewHubEntry(' + realIndex + ')" title="View"><i class="fa-solid fa-eye"></i></button>' +
         '<button class="action-btn" onclick="editHubEntry(' + realIndex + ')" title="Edit"><i class="fa-solid fa-pen"></i></button>' +
-        '<button class="action-btn" onclick="deleteHubEntry(' + realIndex + ')" title="Delete" style="color:var(--danger)"><i class="fa-solid fa-trash"></i></button>' +
+        (isAdmin ? '<button class="btn-mini btn-delete" onclick="confirmDeleteHub(\'' + (t.Entry_ID || t.id) + '\', \'' + (t.Subject || '').replace(/'/g, "\\'") + '\')"><i class="fa-solid fa-trash"></i> Delete</button>' : '') +
         '</div></td>' +
         '</tr>';
     }).join('');
@@ -4725,7 +4748,7 @@ function renderVC() {
       '<td>' + (v.Remarks || '—') + '</td>' +
       '<td><div class="row-actions">' +
       '<button class="action-btn" onclick="editVC(' + realIndex + ')" title="Edit"><i class="fa-solid fa-pen"></i></button>' +
-      '<button class="action-btn" onclick="deleteVC(' + realIndex + ')" title="Delete" style="color:var(--danger)"><i class="fa-solid fa-trash"></i></button>' +
+      (isAdmin ? '<button class="btn-mini btn-delete" onclick="confirmDeleteVC(\'' + v.id + '\', \'' + (v.Subject || v.Title || '').replace(/'/g, "\\'") + '\')"><i class="fa-solid fa-trash"></i> Delete</button>' : '') +
       '</div></td>' +
       '</tr>';
   }).join('');
@@ -5090,6 +5113,107 @@ function hidePageLoader() {
   if (overlay) overlay.classList.remove('active');
 }
 
+// --- DELETE TASK (HUB) FUNCTIONS ---
+let pendingDeleteHubId = null;
+
+function confirmDeleteHub(docId, subject) {
+  if (localStorage.getItem('userRole') !== 'admin') {
+    showToast('⛔ Admin access only.', 'error');
+    return;
+  }
+  pendingDeleteHubId = docId;
+  const modal   = document.getElementById('deleteHubModal');
+  const preview = document.getElementById('deleteHubSubject');
+  if (preview) preview.textContent = subject || 'This entry';
+  if (modal)   modal.style.display = 'flex';
+}
+
+function closeDeleteHubModal() {
+  const modal = document.getElementById('deleteHubModal');
+  if (modal) modal.style.display = 'none';
+  pendingDeleteHubId = null;
+}
+
+async function executeDeleteHub() {
+  if (!pendingDeleteHubId) return;
+  const btn = document.getElementById('confirmDeleteHubBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Deleting...';
+  }
+  try {
+    await fsDeleteDoc(fsDoc(db, 'hub_entries', pendingDeleteHubId));
+    closeDeleteHubModal();
+    showToast('✅ Task deleted successfully.', 'success');
+    await loadHubEntries(); // refresh table
+  } catch(err) {
+    showToast('❌ Delete failed: ' + err.message, 'error');
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-trash"></i> Yes, Delete';
+    }
+  }
+}
+
+// Close modal on backdrop click
+document.getElementById('deleteHubModal')?.addEventListener('click', function(e) {
+  if (e.target === this) closeDeleteHubModal();
+});
+
+// --- DELETE VC FUNCTIONS ---
+let pendingDeleteVCId = null;
+
+function confirmDeleteVC(docId, subject) {
+  if (localStorage.getItem('userRole') !== 'admin') {
+    showToast('⛔ Admin access only.', 'error');
+    return;
+  }
+  pendingDeleteVCId = docId;
+  const modal   = document.getElementById('deleteVCModal');
+  const preview = document.getElementById('deleteVCSubject');
+  if (preview) preview.textContent = subject || 'This meeting';
+  if (modal)   modal.style.display = 'flex';
+}
+
+function closeDeleteVCModal() {
+  const modal = document.getElementById('deleteVCModal');
+  if (modal) modal.style.display = 'none';
+  pendingDeleteVCId = null;
+}
+
+async function executeDeleteVC() {
+  if (!pendingDeleteVCId) return;
+  const btn = document.getElementById('confirmDeleteVCBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Deleting...';
+  }
+  try {
+    await fsDeleteDoc(fsDoc(db, 'vc_meetings', pendingDeleteVCId));
+    closeDeleteVCModal();
+    showToast('✅ Meeting deleted successfully.', 'success');
+    await loadVCMeetings(); // refresh table
+  } catch(err) {
+    showToast('❌ Delete failed: ' + err.message, 'error');
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-trash"></i> Yes, Delete';
+    }
+  }
+}
+
+// Close modal on backdrop click
+document.getElementById('deleteVCModal')?.addEventListener('click', function(e) {
+  if (e.target === this) closeDeleteVCModal();
+});
+
+window.confirmDeleteHub = confirmDeleteHub;
+window.closeDeleteHubModal = closeDeleteHubModal;
+window.executeDeleteHub = executeDeleteHub;
+window.confirmDeleteVC = confirmDeleteVC;
+window.closeDeleteVCModal = closeDeleteVCModal;
+window.executeDeleteVC = executeDeleteVC;
+
 window.setupFirstAdmin = setupFirstAdmin;
 </script>
 
@@ -5155,6 +5279,168 @@ if ('serviceWorker' in navigator) {
     <span class="splash-dot"></span>
     <span class="splash-dot"></span>
     <span class="splash-dot"></span>
+  </div>
+</div>
+
+<!-- DELETE TASK MODAL (HUB) -->
+<div id="deleteHubModal"
+     style="display:none;position:fixed;inset:0;
+            z-index:9000;background:rgba(0,0,0,0.5);
+            align-items:center;justify-content:center">
+  <div style="background:var(--bg);border-radius:16px;
+              padding:28px;max-width:380px;width:90%;
+              box-shadow:0 20px 60px rgba(0,0,0,0.3);
+              border:1px solid var(--border)">
+
+    <!-- Icon -->
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="width:56px;height:56px;margin:0 auto;
+                  border-radius:50%;
+                  background:rgba(185,28,28,0.1);
+                  display:flex;align-items:center;
+                  justify-content:center">
+        <i class="fa-solid fa-trash"
+           style="font-size:22px;color:#b91c1c"></i>
+      </div>
+    </div>
+
+    <!-- Title -->
+    <div style="text-align:center;margin-bottom:8px;
+                font-family:'Rajdhani',sans-serif;
+                font-size:18px;font-weight:700;
+                color:var(--text1)">
+      Delete Task Entry?
+    </div>
+
+    <!-- Subject preview -->
+    <div style="text-align:center;margin-bottom:6px;
+                font-size:12px;color:var(--text3)">
+      You are about to permanently delete:
+    </div>
+    <div id="deleteHubSubject"
+         style="text-align:center;margin-bottom:20px;
+                font-size:13px;font-weight:600;
+                color:#b91c1c;padding:8px 12px;
+                background:rgba(185,28,28,0.06);
+                border-radius:8px;
+                border:1px solid rgba(185,28,28,0.15)">
+      —
+    </div>
+
+    <!-- Warning -->
+    <div style="font-size:11px;color:var(--text3);
+                text-align:center;margin-bottom:20px;
+                padding:8px;background:var(--bg3);
+                border-radius:8px">
+      ⚠️ This action cannot be undone.
+      The entry will be permanently removed
+      from Firebase.
+    </div>
+
+    <!-- Buttons -->
+    <div style="display:flex;gap:10px">
+      <button style="flex:1;padding:10px;
+                     border-radius:8px;border:none;
+                     background:var(--bg3);
+                     color:var(--text2);font-size:13px;
+                     font-weight:600;cursor:pointer"
+        onclick="closeDeleteHubModal()">
+        Cancel
+      </button>
+      <button id="confirmDeleteHubBtn"
+              style="flex:1;padding:10px;
+                     border-radius:8px;border:none;
+                     background:#b91c1c;color:#fff;
+                     font-size:13px;font-weight:700;
+                     cursor:pointer;
+                     display:flex;align-items:center;
+                     justify-content:center;gap:6px"
+        onclick="executeDeleteHub()">
+        <i class="fa-solid fa-trash"></i>
+        Yes, Delete
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE VC MODAL -->
+<div id="deleteVCModal"
+     style="display:none;position:fixed;inset:0;
+            z-index:9000;background:rgba(0,0,0,0.5);
+            align-items:center;justify-content:center">
+  <div style="background:var(--bg);border-radius:16px;
+              padding:28px;max-width:380px;width:90%;
+              box-shadow:0 20px 60px rgba(0,0,0,0.3);
+              border:1px solid var(--border)">
+
+    <!-- Icon -->
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="width:56px;height:56px;margin:0 auto;
+                  border-radius:50%;
+                  background:rgba(185,28,28,0.1);
+                  display:flex;align-items:center;
+                  justify-content:center">
+        <i class="fa-solid fa-video-slash"
+           style="font-size:22px;color:#b91c1c"></i>
+      </div>
+    </div>
+
+    <!-- Title -->
+    <div style="text-align:center;margin-bottom:8px;
+                font-family:'Rajdhani',sans-serif;
+                font-size:18px;font-weight:700;
+                color:var(--text1)">
+      Delete VC / Meeting?
+    </div>
+
+    <!-- Subject preview -->
+    <div style="text-align:center;margin-bottom:6px;
+                font-size:12px;color:var(--text3)">
+      You are about to permanently delete:
+    </div>
+    <div id="deleteVCSubject"
+         style="text-align:center;margin-bottom:20px;
+                font-size:13px;font-weight:600;
+                color:#b91c1c;padding:8px 12px;
+                background:rgba(185,28,28,0.06);
+                border-radius:8px;
+                border:1px solid rgba(185,28,28,0.15)">
+      —
+    </div>
+
+    <!-- Warning -->
+    <div style="font-size:11px;color:var(--text3);
+                text-align:center;margin-bottom:20px;
+                padding:8px;background:var(--bg3);
+                border-radius:8px">
+      ⚠️ This action cannot be undone.
+      The meeting will be permanently removed
+      from Firebase.
+    </div>
+
+    <!-- Buttons -->
+    <div style="display:flex;gap:10px">
+      <button style="flex:1;padding:10px;
+                     border-radius:8px;border:none;
+                     background:var(--bg3);
+                     color:var(--text2);font-size:13px;
+                     font-weight:600;cursor:pointer"
+        onclick="closeDeleteVCModal()">
+        Cancel
+      </button>
+      <button id="confirmDeleteVCBtn"
+              style="flex:1;padding:10px;
+                     border-radius:8px;border:none;
+                     background:#b91c1c;color:#fff;
+                     font-size:13px;font-weight:700;
+                     cursor:pointer;
+                     display:flex;align-items:center;
+                     justify-content:center;gap:6px"
+        onclick="executeDeleteVC()">
+        <i class="fa-solid fa-trash"></i>
+        Yes, Delete
+      </button>
+    </div>
   </div>
 </div>
 </body>
