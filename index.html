@@ -1304,9 +1304,9 @@ select[multiple] option:selected {
           <i class="fa-solid fa-circle-user"></i><span>My Profile</span>
         </div>
 
-        <div class="nav-section-label" style="margin-top:8px">❤ Operations Centre</div>
+        <div class="nav-section-label" style="margin-top:8px">❤ COMMAND SUITE</div>
         <div class="nav-item heart-item" onclick="showScreen('hub'); closeSidebar()">
-          <i class="fa-solid fa-layer-group"></i><span>Command & Correspondence Hub</span>
+          <i class="fa-solid fa-layer-group"></i><span>Task Matrix</span>
         </div>
         <div class="nav-item heart-item" onclick="showScreen('vc'); closeSidebar()">
           <i class="fa-solid fa-video"></i><span>Conf & Meetings</span>
@@ -1411,7 +1411,7 @@ select[multiple] option:selected {
               <div class="stat-icon heart"><i class="fa-solid fa-layer-group"></i></div>
               <div>
                 <div class="stat-value skeleton" id="statHub">—</div>
-                <div class="stat-label">Hub Items</div>
+                <div class="stat-label">Task Matrix</div>
                 <div style="font-size:9px;color:var(--heart);margin-top:2px">Click to open Hub →</div>
               </div>
             </div>
@@ -1427,13 +1427,13 @@ select[multiple] option:selected {
 
           <!-- Heart Modules -->
           <div class="section-header">
-            <div class="section-title"><span class="heart-dot"></span> Command & Correspondence Hub</div>
+            <div class="section-title"><span class="heart-dot"></span> Task Matrix</div>
           </div>
           <div class="heart-grid">
             <div class="heart-module-card" onclick="showScreen('hub')">
               <div class="heart-module-header">
                 <div class="heart-module-icon"><i class="fa-solid fa-layer-group"></i></div>
-                <div><div class="heart-module-title">Command & Correspondence Hub</div><div class="heart-module-sub">Unified Management Portal</div></div>
+                <div><div class="heart-module-title">Task Matrix</div><div class="heart-module-sub">Unified Management Portal for all work assignments and communications</div></div>
               </div>
               <div class="heart-module-body">
                 <div class="heart-stat-row">
@@ -1462,7 +1462,7 @@ select[multiple] option:selected {
 
           <!-- Recent Activity -->
           <div class="section-header">
-            <div class="section-title">Recent Hub Items</div>
+            <div class="section-title">Task Matrix — Recent Entries</div>
             <button class="view-all-btn" onclick="showScreen('hub')">View All</button>
           </div>
           <div class="card">
@@ -1482,7 +1482,7 @@ select[multiple] option:selected {
         <!-- ====== COMMAND & CORRESPONDENCE HUB ====== -->
         <div class="screen" id="screen-hub">
           <div class="page-header">
-            <h1><i class="fa-solid fa-layer-group" style="color:var(--navy)"></i> Command & Correspondence Hub</h1>
+            <h1><i class="fa-solid fa-table-cells-large" style="color:var(--navy)"></i> Task Matrix</h1>
             <p>Unified Management Portal for all work assignments and communications</p>
           </div>
           
@@ -1502,12 +1502,20 @@ select[multiple] option:selected {
           <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
             <input type="text" placeholder="Search by subject, description or user..." id="hubSearch" oninput="renderHub()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text1);font-size:13px;width:240px;outline:none;">
             
-            <select id="hubTypeFilter" onchange="renderHub()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text1);font-size:13px;outline:none;">
-              <option value="all">All Types</option>
-              <option value="Command Directives">Command Directives</option>
-              <option value="Official Correspondence">Official Correspondence</option>
-              <option value="Critical Tasks">Critical Tasks</option>
-            </select>
+            <div class="tab-pills">
+              <button class="tab-pill heart-pill active" onclick="filterHubByType('all', this)">
+                All Entries
+              </button>
+              <button class="tab-pill heart-pill" onclick="filterHubByType('Top Priority', this)">
+                🔴 Top Priority
+              </button>
+              <button class="tab-pill heart-pill" onclick="filterHubByType('General Work', this)">
+                🔵 General Work
+              </button>
+              <button class="tab-pill heart-pill" onclick="filterHubByType('Tapal / Letters', this)">
+                📄 Tapal / Letters
+              </button>
+            </div>
             
             <select id="hubStatusFilter" onchange="renderHub()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text1);font-size:13px;outline:none;">
               <option value="all">All Statuses</option>
@@ -2751,7 +2759,7 @@ function showScreen(name) {
   const titles = {
     dashboard: 'Dashboard',
     profile: 'My Profile',
-    hub: 'Command & Correspondence Hub',
+    hub: 'Task Matrix',
     vc: 'Conference & Meetings Hub',
     staff: 'Staff Directory',
     admin: 'Admin Panel',
@@ -3301,9 +3309,9 @@ function renderDashboard() {
   document.querySelectorAll('.skeleton').forEach(el => el.classList.remove('skeleton'));
 
   const hub = allData.hub_entries || [];
-  const tasksCount = hub.filter(h => (h.Type === 'Command Register' || h.Type === 'Command Directives') && ['Pending', 'In Progress'].includes(h.Status)).length;
-  const lettersCount = hub.filter(h => (h.Type === 'Correspondence' || h.Type === 'Official Correspondence') && ['Pending', 'In Progress'].includes(h.Status)).length;
-  const igpCount = hub.filter(h => (h.Type === 'IGP Works' || h.Type === 'Priority Works' || h.Type === 'Critical Tasks') && ['Pending', 'In Progress'].includes(h.Status)).length;
+  const tasksCount = hub.filter(h => (h.Type === 'General Work' || h.Type === 'Command Register' || h.Type === 'Command Directives') && ['Pending', 'In Progress'].includes(h.Status)).length;
+  const lettersCount = hub.filter(h => (h.Type === 'Tapal / Letters' || h.Type === 'Correspondence' || h.Type === 'Official Correspondence') && ['Pending', 'In Progress'].includes(h.Status)).length;
+  const igpCount = hub.filter(h => (h.Type === 'Top Priority' || h.Type === 'IGP Works' || h.Type === 'Priority Works' || h.Type === 'Critical Tasks') && ['Pending', 'In Progress'].includes(h.Status)).length;
   const activeHubItems = tasksCount + lettersCount + igpCount;
 
   const upcomingVC = (allData.vcschedule || []).filter(v => v.Status === 'Upcoming').length;
@@ -3342,24 +3350,9 @@ function renderDashboard() {
       return;
     }
     tbody.innerHTML = recent.map(t => {
-      const typeDisplay = {
-        'Command Register':    'Command Directives',
-        'Correspondence':      'Official Correspondence',
-        'Priority Works':      'Critical Tasks',
-        'IGP Works':           'Critical Tasks',
-        'Command Directives':  'Command Directives',
-        'Official Correspondence': 'Official Correspondence',
-        'Critical Tasks':      'Critical Tasks'
-      };
-      const displayType = typeDisplay[t.Type] || t.Type || '—';
-
-      let typeClass = 'badge-navy';
-      if (displayType === 'Official Correspondence') typeClass = 'badge-gold';
-      else if (displayType === 'Critical Tasks') typeClass = 'badge-heart';
-      
       return `
         <tr>
-          <td><span class="badge ${typeClass}">${displayType}</span></td>
+          <td><span class="badge ${getHubTypeBadge(t.Type)}">${t.Type || '—'}</span></td>
           <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis"><strong>${t.Subject || '—'}</strong></td>
           <td>${t.Assigned_To || '—'}</td>
           <td>${priorityBadge(t.Priority)}</td>
@@ -3617,10 +3610,7 @@ function loadMyAssignedWork(staffName) {
     tbody.innerHTML = tasks.map((t,i)=>`
       <tr>
         <td>${i+1}</td>
-        <td><span class="badge badge-${
-          t.type==='Command Directives'?'navy':
-          t.type==='Official Correspondence'?'gold':
-          'urgent'}">${t.type||'—'}</span></td>
+        <td><span class="badge ${getHubTypeBadge(t.type)}">${t.type||'—'}</span></td>
         <td>${t.subject||'—'}</td>
         <td><span class="badge badge-${
           t.priority==='High'?'high':
@@ -4243,13 +4233,47 @@ async function cleanUpUnusedSheets() {
 
 // --- COMMAND & CORRESPONDENCE HUB ---
 // --- COMMAND & CORRESPONDENCE HUB ---
+function getHubTypeBadge(type) {
+  const map = {
+    // NEW names
+    'Top Priority':   'badge-urgent',
+    'General Work':   'badge-progress',
+    'Tapal / Letters':'badge-navy',
+    // OLD names fallback (for existing data)
+    'Command Register':         'badge-navy',
+    'Command Directives':       'badge-navy',
+    'Correspondence':           'badge-progress',
+    'Official Correspondence':  'badge-progress',
+    'Priority Works':           'badge-urgent',
+    'Critical Tasks':           'badge-urgent',
+    'IGP Works':                'badge-urgent'
+  };
+  return map[type] || 'badge-pending';
+}
+
+window.currentHubTypeFilter = 'all';
+function filterHubByType(type, btn) {
+  document.querySelectorAll('#screen-hub .tab-pill')
+    .forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  window.currentHubTypeFilter = type;
+  renderHub();
+}
+
 function updateHubCategoryDropdown(type, selectedValue) {
   const group = document.getElementById('hubCategoryGroup');
   const label = document.getElementById('hubCategoryLabel');
   const select = document.getElementById('hubCategory');
   if (!group || !select) return;
 
-  if (type === 'Command Register' || type === 'Command Directives') {
+  const mainCategories = [
+    'Top Priority', 'Command Register', 'Command Directives', 'Priority Works', 'Critical Tasks', 'IGP Works'
+  ];
+  const correspondenceCategories = [
+    'General Work', 'Tapal / Letters', 'Correspondence', 'Official Correspondence'
+  ];
+
+  if (mainCategories.includes(type)) {
     group.style.display = 'block';
     label.textContent = 'Category *';
     select.innerHTML = `
@@ -4265,7 +4289,7 @@ function updateHubCategoryDropdown(type, selectedValue) {
       <option value="eOffice">eOffice</option>
     `;
     if (selectedValue) select.value = selectedValue;
-  } else if (type === 'Correspondence' || type === 'Official Correspondence') {
+  } else if (correspondenceCategories.includes(type)) {
     group.style.display = 'block';
     label.textContent = 'Correspondence Type *';
     select.innerHTML = `
@@ -4307,7 +4331,7 @@ function renderHub() {
     if (!tbody) return;
 
     const search = (document.getElementById('hubSearch')?.value || '').toLowerCase();
-    const typeFilter = document.getElementById('hubTypeFilter')?.value || 'all';
+    const typeFilter = window.currentHubTypeFilter || 'all';
     const statusFilter = document.getElementById('hubStatusFilter')?.value || 'all';
 
     let data = allData.hub_entries || [];
@@ -4325,15 +4349,16 @@ function renderHub() {
 
     // Filter by type
     if (typeFilter !== 'all') {
-      if (typeFilter === 'Command Directives') {
-        data = data.filter(h => h.Type === 'Command Directives' || h.Type === 'Command Register');
-      } else if (typeFilter === 'Official Correspondence') {
-        data = data.filter(h => h.Type === 'Official Correspondence' || h.Type === 'Correspondence');
-      } else if (typeFilter === 'Critical Tasks') {
-        data = data.filter(h => h.Type === 'Critical Tasks' || h.Type === 'Priority Works' || h.Type === 'IGP Works');
-      } else {
-        data = data.filter(h => h.Type === typeFilter);
-      }
+      const OLD_MAP = {
+        'Top Priority':   ['Top Priority','Command Register',
+                           'Command Directives','Priority Works',
+                           'Critical Tasks','IGP Works'],
+        'General Work':   ['General Work','Correspondence',
+                           'Official Correspondence'],
+        'Tapal / Letters':['Tapal / Letters']
+      };
+      const validTypes = OLD_MAP[typeFilter] || [typeFilter];
+      data = data.filter(e => validTypes.includes(e.Type || e.type));
     }
 
     // Filter by status
@@ -4342,31 +4367,16 @@ function renderHub() {
     }
 
     if (data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><i class="fa-solid fa-layer-group"></i><p>No hub entries found.</p></div></td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><i class="fa-solid fa-table-cells-large"></i><p>No Task Matrix entries found.</p></div></td></tr>';
       return;
     }
 
     tbody.innerHTML = data.map((t, i) => {
       const realIndex = (allData.hub_entries || []).indexOf(t);
-      
-      const typeDisplay = {
-        'Command Register':    'Command Directives',
-        'Correspondence':      'Official Correspondence',
-        'Priority Works':      'Critical Tasks',
-        'IGP Works':           'Critical Tasks',
-        'Command Directives':  'Command Directives',
-        'Official Correspondence': 'Official Correspondence',
-        'Critical Tasks':      'Critical Tasks'
-      };
-      const displayType = typeDisplay[t.Type] || t.Type || '—';
-
-      let typeClass = 'badge-navy';
-      if (displayType === 'Official Correspondence') typeClass = 'badge-gold';
-      else if (displayType === 'Critical Tasks') typeClass = 'badge-heart';
 
       return '<tr>' +
         '<td>' + (i + 1) + '</td>' +
-        '<td><span class="badge ' + typeClass + '">' + displayType + '</span></td>' +
+        '<td><span class="badge ' + getHubTypeBadge(t.Type) + '">' + (t.Type || '—') + '</span></td>' +
         '<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis"><strong>' + (t.Subject || '—') + '</strong>' +
         (t.Category ? '<div style="font-size:11px;color:var(--text3);margin-top:2px"><i class="fa-solid fa-tag"></i> ' + t.Category + '</div>' : '') + '</td>' +
         '<td>' + (t.Assigned_To || '—') + '</td>' +
@@ -4405,7 +4415,7 @@ function viewHubEntry(i) {
     ['Added By', t.Added_By],
     ['Added On', formatDate(t.Added_On)]
   );
-  showDetails('Hub Entry Details', detailRows(rows));
+  showDetails('Task Matrix Entry Details', detailRows(rows));
 }
 
 let hubEditContext = null;
@@ -4416,16 +4426,16 @@ function editHubEntry(i) {
   
   hubEditContext = { index: i, row: rowNumber(t, i), id: t.Entry_ID || t.ID || `H${Date.now()}` };
   
-  const modal = ensureDynamicModal('addHubEntryModal', 'Edit Hub Entry');
+  const modal = ensureDynamicModal('addHubEntryModal', 'Edit Task Matrix Entry');
   modal.querySelector('.modal-body').innerHTML = `
     <div class="form-grid">
       <div class="form-group">
         <label>Type *</label>
-        <select id="hubType">
+        <select id="hubType" required>
           <option value="">-- Select Type --</option>
-          <option value="Command Directives">Command Directives</option>
-          <option value="Official Correspondence">Official Correspondence</option>
-          <option value="Critical Tasks">Critical Tasks</option>
+          <option value="Top Priority">🔴 Top Priority</option>
+          <option value="General Work">🔵 General Work</option>
+          <option value="Tapal / Letters">📄 Tapal / Letters</option>
         </select>
       </div>
       <div class="form-group" id="hubCategoryGroup">
@@ -4480,15 +4490,18 @@ function editHubEntry(i) {
 
   // Populate values
   const typeDisplay = {
-    'Command Register':    'Command Directives',
-    'Correspondence':      'Official Correspondence',
-    'Priority Works':      'Critical Tasks',
-    'IGP Works':           'Critical Tasks',
-    'Command Directives':  'Command Directives',
-    'Official Correspondence': 'Official Correspondence',
-    'Critical Tasks':      'Critical Tasks'
+    'Command Register':         'Top Priority',
+    'Command Directives':       'Top Priority',
+    'Correspondence':           'General Work',
+    'Official Correspondence':  'General Work',
+    'Priority Works':           'Top Priority',
+    'Critical Tasks':           'Top Priority',
+    'IGP Works':                'Top Priority',
+    'Top Priority':             'Top Priority',
+    'General Work':             'General Work',
+    'Tapal / Letters':          'Tapal / Letters'
   };
-  const currentType = typeDisplay[t.Type] || t.Type || 'Command Directives';
+  const currentType = typeDisplay[t.Type] || t.Type || 'General Work';
   document.getElementById('hubType').value = currentType;
   updateHubCategoryDropdown(currentType, t.Category);
   document.getElementById('hubSubject').value = t.Subject || '';
@@ -4502,16 +4515,16 @@ function editHubEntry(i) {
 
 function openAddHubEntryModal() {
   hubEditContext = null;
-  const modal = ensureDynamicModal('addHubEntryModal', 'Add New Hub Entry');
+  const modal = ensureDynamicModal('addHubEntryModal', 'Add New Task Matrix Entry');
   modal.querySelector('.modal-body').innerHTML = `
     <div class="form-grid">
       <div class="form-group">
         <label>Type *</label>
-        <select id="hubType">
+        <select id="hubType" required>
           <option value="">-- Select Type --</option>
-          <option value="Command Directives">Command Directives</option>
-          <option value="Official Correspondence">Official Correspondence</option>
-          <option value="Critical Tasks">Critical Tasks</option>
+          <option value="Top Priority">🔴 Top Priority</option>
+          <option value="General Work">🔵 General Work</option>
+          <option value="Tapal / Letters">📄 Tapal / Letters</option>
         </select>
       </div>
       <div class="form-group" id="hubCategoryGroup">
@@ -4578,7 +4591,10 @@ async function submitHubEntry() {
   const dueDate = document.getElementById('hubDueDate').value;
   const description = document.getElementById('hubDescription').value.trim();
   const status = hubEditContext ? ((allData.hub_entries || [])[hubEditContext.index]?.Status || 'Pending') : 'Pending';
-  const category = (type === 'Command Register' || type === 'Command Directives' || type === 'Correspondence' || type === 'Official Correspondence') ? document.getElementById('hubCategory').value : '';
+  const category = (
+    type === 'Top Priority' || type === 'General Work' || type === 'Tapal / Letters' ||
+    type === 'Command Register' || type === 'Command Directives' || type === 'Correspondence' || type === 'Official Correspondence'
+  ) ? document.getElementById('hubCategory').value : '';
 
   if (!subject) {
     showToast('Please enter a subject/title', 'error');
@@ -4670,7 +4686,7 @@ function exportHubData() {
 
   const ws = XLSX.utils.json_to_sheet(rows);
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Command & Correspondence Hub");
+  XLSX.utils.book_append_sheet(wb, ws, "Task Matrix");
 
   const today = new Date().toISOString().split('T')[0];
   const filename = `AP_Police_TS_Hub_Export_${today}.xlsx`;
@@ -5029,7 +5045,7 @@ document.addEventListener('DOMContentLoaded', () => {
 const screenLabels = {
   'dashboard':        'Dashboard',
   'profile':          'My Profile',
-  'hub':              'Command & Correspondence Hub',
+  'hub':              'Task Matrix',
   'vc':               'Conference & Meetings Hub',
   'staff-management': 'Staff Management'
 };
@@ -5037,7 +5053,7 @@ const screenLabels = {
 const screenLoadMessages = {
   'dashboard':        'Opening Dashboard',
   'profile':          'Loading My Profile',
-  'hub':              'Opening Command & Correspondence Hub',
+  'hub':              'Opening Task Matrix',
   'vc':               'Loading Conference & Meetings',
   'staff-management': 'Loading Staff Management'
 };
