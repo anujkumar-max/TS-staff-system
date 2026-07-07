@@ -1678,6 +1678,10 @@ select[multiple] option:selected {
                   <input type="text" id="editFullName">
                 </div>
                 <div class="form-group">
+                  <label>IT Designation</label>
+                  <div id="profileRankDetail" style="padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px">—</div>
+                </div>
+                <div class="form-group">
                   <label>Gmail</label>
                   <input type="email" id="editGmail">
                 </div>
@@ -2450,6 +2454,12 @@ const RANK_IT_MAP = {
   }
 };
 
+// Helper function — get IT title from rank
+function getITTitle(rank) {
+  const info = RANK_IT_MAP[String(rank || '').trim()];
+  return info ? info.it : (rank || '');
+}
+
 function onRankChange() {
   const sel     = document.getElementById('ns_Rank');
   const card    = document.getElementById('rankInfoCard');
@@ -3163,6 +3173,7 @@ async function doLogin() {
     // Save session
     localStorage.setItem('userName',   staffData.Full_Name || '');
     localStorage.setItem('userRank',   staffData.Rank      || '');
+    localStorage.setItem('userITTitle', getITTitle(staffData.Rank) || staffData.Rank || '');
     localStorage.setItem('userRole',   staffData.role      || 'staff');
     localStorage.setItem('userDocId',  staffDoc.id);
     localStorage.setItem('userPhone',  phone);
@@ -3171,9 +3182,8 @@ async function doLogin() {
     // Update sidebar user info
     const sidebarName = document.getElementById('sidebarName');
     if (sidebarName) sidebarName.textContent = staffData.Full_Name || 'Staff';
-    const rankInfo = RANK_IT_MAP[staffData.Rank] || {};
     const sidebarRank = document.getElementById('sidebarRank');
-    if (sidebarRank) sidebarRank.textContent = rankInfo.it || staffData.Rank || '';
+    if (sidebarRank) sidebarRank.textContent = getITTitle(staffData.Rank) || staffData.Rank || '';
     const sidebarAvatar = document.getElementById('sidebarAvatar');
     if (sidebarAvatar) sidebarAvatar.textContent = (staffData.Full_Name || 'S').charAt(0).toUpperCase();
 
@@ -3193,8 +3203,13 @@ async function doLogin() {
       document.getElementById('appShell').style.display='block';
       loadAllData();
       showScreen('dashboard');
-      showToast('Welcome, ' +
-        (staffData.Full_Name || 'Officer') + '! — AP Police IT Services', 'success');
+      const itT = getITTitle(staffData.Rank || '');
+      showToast(
+        '✅ Welcome, ' + (staffData.Full_Name||'Officer').split(' ')[0] +
+        (itT ? ' · ' + itT : '') +
+        ' — AP Police IT Services',
+        'success'
+      );
     }, 2800);
 
   } catch(err) {
@@ -3410,32 +3425,36 @@ function renderProfileView(data) {
   if (pName) pName.textContent = data.Full_Name || '—';
   
   const rankInfo = RANK_IT_MAP[data.Rank] || {};
+  const itTitle = getITTitle(data.Rank);
+  const rankFull = rankInfo.full || data.Rank || '';
 
   const profileRankEl =
     document.getElementById('profileRank');
   if (profileRankEl) {
-    profileRankEl.innerHTML =
-      `<div style="font-weight:700;font-size:15px">
-         ${rankInfo.short || data.Rank || '—'}
-       </div>
-       ${rankInfo.full
-         ? `<div style="font-size:11px;
-                        color:var(--text3)">
-              ${rankInfo.full}</div>` : ''}
-       ${rankInfo.it
-         ? `<div style="font-size:11px;
-                        color:var(--heart);
-                        font-weight:600;margin-top:2px">
-              ${rankInfo.it}</div>` : ''}`;
+    profileRankEl.innerHTML = `
+      <div style="font-weight:700;font-size:16px;color:#fff">
+        ${itTitle}
+      </div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:2px">
+        ${rankFull}
+      </div>`;
   }
 
   // Update sidebar rank display
-  const sidebarRank =
+  const sidebarRankEl =
     document.getElementById('sidebarRank');
-  if (sidebarRank) {
-    sidebarRank.textContent =
-      rankInfo.it || rankInfo.short || data.Rank || '';
-  }
+  if (sidebarRankEl)
+    sidebarRankEl.textContent = itTitle || data.Rank;
+
+  // Profile details section — rank field
+  const profileRankDetail =
+    document.getElementById('profileRankDetail');
+  if (profileRankDetail)
+    profileRankDetail.innerHTML =
+      `<strong>${itTitle}</strong>
+       <small style="color:var(--text3);display:block;margin-top:2px">
+         ${rankFull}
+       </small>`;
   
   const badgesRow = document.getElementById('profileHeaderBadges');
   if (badgesRow) {
@@ -3730,8 +3749,8 @@ function populateAllStaffDropdowns(staffList) {
   const options = '<option value="">-- Select Staff --</option>' +
     staffList.map(s => {
       const name = s.Full_Name || 'Unknown';
-      const rank = s.Rank || '';
-      return `<option value="${name}">${rank ? rank + ' · ' : ''}${name}</option>`;
+      const itTitle = getITTitle(s.Rank || '');
+      return `<option value="${name}">${itTitle ? itTitle + ' · ' : ''}${name}</option>`;
     }).join('');
   dropdowns.forEach(sel => sel.innerHTML = options);
 
@@ -3743,14 +3762,13 @@ function populateAllottedCheckboxes(staffList) {
   if (!wrap) return;
   wrap.innerHTML = staffList.map(s => {
     const name = s.Full_Name || s.name || 'Unknown';
-    const rank = s.Rank || s.rank || '';
+    const itTitle = getITTitle(s.Rank || s.rank || '');
     return `
       <label class="staff-check-item" 
              onclick="updateAllottedCount()">
         <input type="checkbox" 
                class="allotted-cb" value="${name}">
-        ${rank ? '<small style="color:var(--text3)">'
-          +rank+'</small> · ' : ''}${name}
+        ${itTitle ? '<small style="color:var(--text3)">' + itTitle + '</small> · ' : ''}${name}
       </label>`;
   }).join('');
 }
@@ -4045,13 +4063,13 @@ function renderStaffManagement(list) {
         <strong>${s.Full_Name      || '—'}</strong>
       </td>
       <td>
-        <div style="font-weight:700;font-size:12px;
+        <div style="font-weight:600;font-size:12px;
                     color:var(--text1)">
-          ${(RANK_IT_MAP[s.Rank]||{}).short || s.Rank || '—'}
+          ${getITTitle(s.Rank)}
         </div>
         <div style="font-size:10px;color:var(--text3);
-                    margin-top:2px;line-height:1.3">
-          ${(RANK_IT_MAP[s.Rank]||{}).it || ''}
+                    margin-top:1px">
+          ${s.Rank || '—'}
         </div>
       </td>
       <td>${s.Badge_No         || '—'}</td>
@@ -4968,8 +4986,11 @@ function showSplashLoader(userName) {
   const splash = document.getElementById('splashLoader');
   if (!splash) return;
   const txt = document.getElementById('splashLoadingText');
+  const itTitle = getITTitle(
+    localStorage.getItem('userRank') || ''
+  );
   if (txt) txt.innerHTML =
-    `Welcome, ${(userName||'').split(' ')[0]}
+    `${itTitle || 'Welcome'}, ${(userName||'').split(' ')[0]}
      <span class="splash-dot"></span>
      <span class="splash-dot"></span>
      <span class="splash-dot"></span>`;
