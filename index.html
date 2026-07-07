@@ -1651,7 +1651,7 @@ select[multiple] option:selected {
                 </div>
                 <div style="flex:1;min-width:200px">
                   <h2 id="profileName" style="font-size:22px; font-weight:700;"></h2>
-                  <p id="profileRankBadge" style="font-size:14px; opacity:0.9; margin-top:4px; color:#fff"></p>
+                  <div id="profileRank" style="font-size:14px; opacity:0.9; margin-top:4px; color:#fff"></div>
                   <div class="profile-badge-row" id="profileHeaderBadges">
                     <!-- Status, Role, Gender, Staff ID, Badge No -->
                   </div>
@@ -1967,8 +1967,89 @@ select[multiple] option:selected {
     </div>
     <div class="form-group">
       <label>Rank *</label>
-      <input type="text" id="ns_Rank"
-             placeholder="e.g. Sub-Inspector, Constable">
+      <select id="ns_Rank" required onchange="onRankChange()">
+        <option value="">-- Select Rank --</option>
+        <option value="IGP">
+          IGP — Inspector General of Police
+        </option>
+        <option value="DIG">
+          DIG — Deputy Inspector General of Police
+        </option>
+        <option value="SP">
+          SP — Superintendent of Police
+        </option>
+        <option value="Addl.SP">
+          Addl.SP — Additional Superintendent of Police
+        </option>
+        <option value="DSP">
+          DSP — Deputy Superintendent of Police
+        </option>
+        <option value="Inspector">
+          Inspector — Inspector of Police
+        </option>
+        <option value="SI">
+          SI — Sub-Inspector of Police
+        </option>
+        <option value="ASI">
+          ASI — Assistant Sub-Inspector
+        </option>
+        <option value="HC">
+          HC — Head Constable
+        </option>
+        <option value="PC">
+          PC — Police Constable
+        </option>
+      </select>
+    </div>
+    <div id="rankInfoCard"
+         style="display:none;margin-top:8px;padding:12px 16px;
+                background:linear-gradient(135deg,
+                  rgba(13,59,122,0.07),
+                  rgba(201,168,76,0.05));
+                border:1px solid rgba(13,59,122,0.3);
+                border-radius:10px">
+      <div style="display:flex;align-items:center;
+                  justify-content:space-between;
+                  flex-wrap:wrap;gap:12px">
+
+        <!-- Police Rank -->
+        <div>
+          <div style="font-size:9px;color:var(--text3);
+                      text-transform:uppercase;
+                      letter-spacing:1px;margin-bottom:3px">
+            Police Rank
+          </div>
+          <div id="rankPoliceLabel"
+               style="font-family:'Rajdhani',sans-serif;
+                      font-size:16px;font-weight:700;
+                      color:var(--navy)">—</div>
+          <div id="rankPoliceFullLabel"
+               style="font-size:11px;color:var(--text3);
+                      margin-top:1px">—</div>
+        </div>
+
+        <!-- Divider -->
+        <div style="font-size:22px;color:var(--gold);
+                    font-weight:300">⇄</div>
+
+        <!-- IT Services Title -->
+        <div style="text-align:right">
+          <div style="font-size:9px;color:var(--text3);
+                      text-transform:uppercase;
+                      letter-spacing:1px;margin-bottom:3px">
+            IT Services Designation
+          </div>
+          <div id="rankITLabel"
+               style="font-family:'Rajdhani',sans-serif;
+                      font-size:16px;font-weight:700;
+                      color:var(--heart)">—</div>
+          <div id="rankRoleBadge"
+               style="display:inline-block;margin-top:3px;
+                      font-size:10px;font-weight:600;
+                      padding:2px 10px;border-radius:12px">
+          </div>
+        </div>
+      </div>
     </div>
     <div class="form-group">
       <label>Badge No</label>
@@ -2305,6 +2386,110 @@ let staffCache = []; // global cache
 const ADMIN_PHONE = '9493946020';
 const ADMIN_PASS  = '8421';
 const STAFF_PASS  = '1111';
+
+const RANK_IT_MAP = {
+  "IGP": {
+    short:  "IGP",
+    full:   "Inspector General of Police",
+    it:     "Director, Police IT Services",
+    role:   "officer"
+  },
+  "DIG": {
+    short:  "DIG",
+    full:   "Deputy Inspector General of Police",
+    it:     "Addl. Director, Police IT Services",
+    role:   "officer"
+  },
+  "SP": {
+    short:  "SP",
+    full:   "Superintendent of Police",
+    it:     "Joint Director, Police IT Services",
+    role:   "officer"
+  },
+  "Addl.SP": {
+    short:  "Addl.SP",
+    full:   "Additional Superintendent of Police",
+    it:     "Deputy Director, Police IT Services",
+    role:   "officer"
+  },
+  "DSP": {
+    short:  "DSP",
+    full:   "Deputy Superintendent of Police",
+    it:     "Assistant Director, Police IT Services",
+    role:   "officer"
+  },
+  "Inspector": {
+    short:  "Inspector",
+    full:   "Inspector of Police",
+    it:     "IT Manager",
+    role:   "officer"
+  },
+  "SI": {
+    short:  "SI",
+    full:   "Sub-Inspector of Police",
+    it:     "IT Team Lead",
+    role:   "officer"
+  },
+  "ASI": {
+    short:  "ASI",
+    full:   "Assistant Sub-Inspector",
+    it:     "Assistant IT Team Lead",
+    role:   "officer"
+  },
+  "HC": {
+    short:  "HC",
+    full:   "Head Constable",
+    it:     "Senior IT Officer",
+    role:   "staff"
+  },
+  "PC": {
+    short:  "PC",
+    full:   "Police Constable",
+    it:     "Junior IT Officer",
+    role:   "staff"
+  }
+};
+
+function onRankChange() {
+  const sel     = document.getElementById('ns_Rank');
+  const card    = document.getElementById('rankInfoCard');
+  const selected = sel ? sel.value : '';
+
+  if (!selected || !RANK_IT_MAP[selected]) {
+    if (card) card.style.display = 'none';
+    return;
+  }
+
+  const info = RANK_IT_MAP[selected];
+
+  // Show card
+  if (card) card.style.display = 'block';
+
+  // Fill police rank labels
+  const polShort = document.getElementById('rankPoliceLabel');
+  const polFull  = document.getElementById('rankPoliceFullLabel');
+  if (polShort) polShort.textContent = info.short;
+  if (polFull)  polFull.textContent  = info.full;
+
+  // Fill IT title
+  const itLabel = document.getElementById('rankITLabel');
+  if (itLabel) itLabel.textContent = info.it;
+
+  // Fill role badge
+  const badge = document.getElementById('rankRoleBadge');
+  if (badge) {
+    badge.textContent = info.role === 'officer'
+      ? '⭐ Officer' : '👤 Staff';
+    badge.style.background = info.role === 'officer'
+      ? 'rgba(139,0,0,0.1)' : 'rgba(13,59,122,0.1)';
+    badge.style.color = info.role === 'officer'
+      ? 'var(--heart)' : 'var(--navy)';
+  }
+
+  // Auto-set role dropdown
+  const roleEl = document.getElementById('ns_role');
+  if (roleEl) roleEl.value = info.role;
+}
 
 const OFFICER_RANKS = ['IGP', 'DIG', 'SP', 'DSP', 'ASP', 'Inspector', 'SI', 'RSI'];
 
@@ -2986,8 +3171,9 @@ async function doLogin() {
     // Update sidebar user info
     const sidebarName = document.getElementById('sidebarName');
     if (sidebarName) sidebarName.textContent = staffData.Full_Name || 'Staff';
+    const rankInfo = RANK_IT_MAP[staffData.Rank] || {};
     const sidebarRank = document.getElementById('sidebarRank');
-    if (sidebarRank) sidebarRank.textContent = staffData.Rank || '';
+    if (sidebarRank) sidebarRank.textContent = rankInfo.it || staffData.Rank || '';
     const sidebarAvatar = document.getElementById('sidebarAvatar');
     if (sidebarAvatar) sidebarAvatar.textContent = (staffData.Full_Name || 'S').charAt(0).toUpperCase();
 
@@ -3024,7 +3210,8 @@ async function doLogin() {
 }
 
 function isOfficerRank(rank) {
-  return OFFICER_RANKS.includes(rank);
+  const info = RANK_IT_MAP[rank];
+  return info ? info.role === 'officer' : OFFICER_RANKS.includes(rank);
 }
 
 function showLoginError(msg) {
@@ -3056,7 +3243,10 @@ function startApp() {
   const rank = document.getElementById('sidebarRank');
   if (avatar) avatar.textContent = (currentUser?.name || 'A')[0].toUpperCase();
   if (name) name.textContent = currentUser?.name || 'User';
-  if (rank) rank.textContent = currentUser?.rank || '—';
+  if (rank) {
+    const rankInfo = RANK_IT_MAP[currentUser?.Rank || currentUser?.rank] || {};
+    rank.textContent = rankInfo.it || currentUser?.Rank || currentUser?.rank || '—';
+  }
 
   initApp();
 }
@@ -3219,8 +3409,33 @@ function renderProfileView(data) {
   const pName = document.getElementById('profileName');
   if (pName) pName.textContent = data.Full_Name || '—';
   
-  const pRankB = document.getElementById('profileRankBadge');
-  if (pRankB) pRankB.textContent = (data.Rank || '—') + (data.Badge_No ? ` (Badge: ${data.Badge_No})` : '');
+  const rankInfo = RANK_IT_MAP[data.Rank] || {};
+
+  const profileRankEl =
+    document.getElementById('profileRank');
+  if (profileRankEl) {
+    profileRankEl.innerHTML =
+      `<div style="font-weight:700;font-size:15px">
+         ${rankInfo.short || data.Rank || '—'}
+       </div>
+       ${rankInfo.full
+         ? `<div style="font-size:11px;
+                        color:var(--text3)">
+              ${rankInfo.full}</div>` : ''}
+       ${rankInfo.it
+         ? `<div style="font-size:11px;
+                        color:var(--heart);
+                        font-weight:600;margin-top:2px">
+              ${rankInfo.it}</div>` : ''}`;
+  }
+
+  // Update sidebar rank display
+  const sidebarRank =
+    document.getElementById('sidebarRank');
+  if (sidebarRank) {
+    sidebarRank.textContent =
+      rankInfo.it || rankInfo.short || data.Rank || '';
+  }
   
   const badgesRow = document.getElementById('profileHeaderBadges');
   if (badgesRow) {
@@ -3829,7 +4044,16 @@ function renderStaffManagement(list) {
                ${(s.Full_Name||'?').charAt(0).toUpperCase()}</div>`}
         <strong>${s.Full_Name      || '—'}</strong>
       </td>
-      <td>${s.Rank             || '—'}</td>
+      <td>
+        <div style="font-weight:700;font-size:12px;
+                    color:var(--text1)">
+          ${(RANK_IT_MAP[s.Rank]||{}).short || s.Rank || '—'}
+        </div>
+        <div style="font-size:10px;color:var(--text3);
+                    margin-top:2px;line-height:1.3">
+          ${(RANK_IT_MAP[s.Rank]||{}).it || ''}
+        </div>
+      </td>
       <td>${s.Badge_No         || '—'}</td>
       <td>${s.Gender           || '—'}</td>
       <td>${s.Phone            || '—'}</td>
@@ -3871,6 +4095,13 @@ async function bulkImportStaff() {
     // Combine DASHBOARD_STAFF and STAFF_TEMPLATE
     const allStaffToImport = [];
 
+    const assignRole = (phone, rank) => {
+      if (String(phone).trim() === ADMIN_PHONE)
+        return 'admin';
+      const info = RANK_IT_MAP[String(rank).trim()];
+      return info ? info.role : 'staff';
+    };
+
     // Process DASHBOARD_STAFF: [Staff_ID, Full_Name, Rank, Badge_No, Gender, Gmail, Phone, District, Assigned_Projects, Daily_Duties, Weekly_Duties, Monthly_Duties]
     DASHBOARD_STAFF.forEach(row => {
       allStaffToImport.push({
@@ -3887,7 +4118,7 @@ async function bulkImportStaff() {
         department: row[7] || '',
         districtAssigned: row[7] || '',
         password: '1111',
-        role: row[6] === ADMIN_PHONE ? 'admin' : (isOfficerRank(row[2]) ? 'officer' : 'staff'),
+        role: assignRole(row[6], row[2]),
         dailyDuties: row[9] || '',
         weeklyDuties: row[10] || '',
         monthlyDuties: row[11] || '',
@@ -3929,7 +4160,7 @@ async function bulkImportStaff() {
         department: '',
         districtAssigned: '',
         password: '1111',
-        role: row[6] === ADMIN_PHONE ? 'admin' : (isOfficerRank(row[2]) ? 'officer' : 'staff'),
+        role: assignRole(row[6], row[2]),
         dailyDuties: '',
         weeklyDuties: '',
         monthlyDuties: '',
