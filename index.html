@@ -2454,8 +2454,12 @@ const RANK_IT_MAP = {
   }
 };
 
-// Helper function — get IT title from rank
-function getITTitle(rank) {
+function getITTitle(rank, phone) {
+  // Admin always shows "Admin" designation
+  const ADMIN_PHONES = ['9493946020'];
+  if (ADMIN_PHONES.includes(String(phone || '').trim())) {
+    return 'Admin';
+  }
   const info = RANK_IT_MAP[String(rank || '').trim()];
   return info ? info.it : (rank || '');
 }
@@ -3173,7 +3177,7 @@ async function doLogin() {
     // Save session
     localStorage.setItem('userName',   staffData.Full_Name || '');
     localStorage.setItem('userRank',   staffData.Rank      || '');
-    localStorage.setItem('userITTitle', getITTitle(staffData.Rank) || staffData.Rank || '');
+    localStorage.setItem('userITTitle', getITTitle(staffData.Rank, staffData.Phone));
     localStorage.setItem('userRole',   staffData.role      || 'staff');
     localStorage.setItem('userDocId',  staffDoc.id);
     localStorage.setItem('userPhone',  phone);
@@ -3183,7 +3187,7 @@ async function doLogin() {
     const sidebarName = document.getElementById('sidebarName');
     if (sidebarName) sidebarName.textContent = staffData.Full_Name || 'Staff';
     const sidebarRank = document.getElementById('sidebarRank');
-    if (sidebarRank) sidebarRank.textContent = getITTitle(staffData.Rank) || staffData.Rank || '';
+    if (sidebarRank) sidebarRank.textContent = getITTitle(staffData.Rank, staffData.Phone);
     const sidebarAvatar = document.getElementById('sidebarAvatar');
     if (sidebarAvatar) sidebarAvatar.textContent = (staffData.Full_Name || 'S').charAt(0).toUpperCase();
 
@@ -3203,11 +3207,15 @@ async function doLogin() {
       document.getElementById('appShell').style.display='block';
       loadAllData();
       showScreen('dashboard');
-      const itT = getITTitle(staffData.Rank || '');
+      const phone   = staffData.Phone || '';
+      const itT     = getITTitle(staffData.Rank, phone);
+      const isAdmin = itT === 'Admin';
+
       showToast(
-        '✅ Welcome, ' + (staffData.Full_Name||'Officer').split(' ')[0] +
-        (itT ? ' · ' + itT : '') +
-        ' — AP Police IT Services',
+        '✅ Welcome, ' +
+        (staffData.Full_Name||'').split(' ')[0] +
+        (isAdmin ? ' — Admin' : (itT ? ' · ' + itT : '')) +
+        ' | AP Police IT Services',
         'success'
       );
     }, 2800);
@@ -3260,7 +3268,7 @@ function startApp() {
   if (name) name.textContent = currentUser?.name || 'User';
   if (rank) {
     const rankInfo = RANK_IT_MAP[currentUser?.Rank || currentUser?.rank] || {};
-    rank.textContent = rankInfo.it || currentUser?.Rank || currentUser?.rank || '—';
+    rank.textContent = getITTitle(currentUser?.Rank || currentUser?.rank, currentUser?.Phone || currentUser?.phone) || '—';
   }
 
   initApp();
@@ -3424,9 +3432,13 @@ function renderProfileView(data) {
   const pName = document.getElementById('profileName');
   if (pName) pName.textContent = data.Full_Name || '—';
   
-  const rankInfo = RANK_IT_MAP[data.Rank] || {};
-  const itTitle = getITTitle(data.Rank);
-  const rankFull = rankInfo.full || data.Rank || '';
+  const rank = data.Rank || '';
+  const phone = data.Phone || localStorage.getItem('userPhone') || '';
+  const itTitle = getITTitle(rank, phone);
+  const isAdmin = itTitle === 'Admin';
+  const rankFull = isAdmin
+    ? 'System Administrator'
+    : (RANK_IT_MAP[rank]||{}).full || rank;
 
   const profileRankEl =
     document.getElementById('profileRank');
@@ -3444,7 +3456,7 @@ function renderProfileView(data) {
   const sidebarRankEl =
     document.getElementById('sidebarRank');
   if (sidebarRankEl)
-    sidebarRankEl.textContent = itTitle || data.Rank;
+    sidebarRankEl.textContent = itTitle || rank;
 
   // Profile details section — rank field
   const profileRankDetail =
@@ -3749,7 +3761,7 @@ function populateAllStaffDropdowns(staffList) {
   const options = '<option value="">-- Select Staff --</option>' +
     staffList.map(s => {
       const name = s.Full_Name || 'Unknown';
-      const itTitle = getITTitle(s.Rank || '');
+      const itTitle = getITTitle(s.Rank || '', s.Phone || s.phone || '');
       return `<option value="${name}">${itTitle ? itTitle + ' · ' : ''}${name}</option>`;
     }).join('');
   dropdowns.forEach(sel => sel.innerHTML = options);
@@ -3762,7 +3774,7 @@ function populateAllottedCheckboxes(staffList) {
   if (!wrap) return;
   wrap.innerHTML = staffList.map(s => {
     const name = s.Full_Name || s.name || 'Unknown';
-    const itTitle = getITTitle(s.Rank || s.rank || '');
+    const itTitle = getITTitle(s.Rank || s.rank || '', s.Phone || s.phone || '');
     return `
       <label class="staff-check-item" 
              onclick="updateAllottedCount()">
@@ -4065,11 +4077,13 @@ function renderStaffManagement(list) {
       <td>
         <div style="font-weight:600;font-size:12px;
                     color:var(--text1)">
-          ${getITTitle(s.Rank)}
+          ${getITTitle(s.Rank, s.Phone)}
         </div>
         <div style="font-size:10px;color:var(--text3);
                     margin-top:1px">
-          ${s.Rank || '—'}
+          ${s.Rank
+            ? s.Rank
+            : (s.role === 'admin' ? 'Administrator' : '—')}
         </div>
       </td>
       <td>${s.Badge_No         || '—'}</td>
@@ -4957,7 +4971,7 @@ async function setupFirstAdmin() {
     await fsAddDoc(staffRef, {
       Staff_ID:           'TS-ADM-001',
       Full_Name:          'Anuj Kumar',
-      Rank:               'Technical Officer',
+      Rank:               '',
       Badge_No:           'ADM-001',
       Gender:             'Male',
       Gmail:              'tangulaanojkumar@gmail.com',
