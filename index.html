@@ -2916,6 +2916,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 window.addEventListener('load', async () => {
   try {
+    await autoSeedFirstAdmin();
+  } catch(err) {
+    console.error('Seeding error:', err);
+  }
+  try {
     const staff = await fetchSheet('Staff_Master');
     allData.staff = mergeStaffData(staff);
   } catch(e) {
