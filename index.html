@@ -3348,8 +3348,16 @@ function startClock() {
 
 // --- LOGIN ---
 async function doLogin() {
-  const phone    = document.getElementById('loginEmail').value.trim();
-  const password = document.getElementById('loginPass').value.trim();
+  const phone = String(
+    document.getElementById('loginEmail')?.value ||
+    document.getElementById('loginPhone')?.value ||
+    ''
+  ).trim();
+  const password = String(
+    document.getElementById('loginPass')?.value ||
+    ''
+  ).trim();
+
   const btn      = document.getElementById('loginBtn');
   const errDiv   = document.getElementById('loginError');
 
@@ -3383,9 +3391,12 @@ async function doLogin() {
 
     const staffDoc  = snap.docs[0];
     const staffData = staffDoc.data();
-    const stored    = String(staffData.password || '1111').trim();
+    
+    // Convert BOTH sides to String to avoid type mismatch (number 8421 vs string "8421")
+    const storedPass  = String(staffData.password  ?? '').trim();
+    const enteredPass = password;
 
-    if (stored !== password) {
+    if (storedPass !== enteredPass) {
       throw new Error('Incorrect password. Please try again.');
     }
 
