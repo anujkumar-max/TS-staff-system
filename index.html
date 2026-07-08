@@ -397,10 +397,13 @@ ul { list-style: none; }
   padding: 16px; box-shadow: var(--card-shadow);
   border: 1px solid var(--border);
   display: flex; align-items: center; gap: 14px;
-  transition: transform 0.15s, box-shadow 0.15s;
+  transition: transform 0.2s, box-shadow 0.2s;
   cursor: pointer;
 }
-.stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(13,59,122,0.15); }
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
 .stat-icon {
   width: 46px; height: 46px; border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
@@ -1162,6 +1165,20 @@ select[multiple] option:selected {
   background: #b91c1c; color: #fff;
   border-color: #b91c1c;
 }
+.project-check-chip {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 12px; border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: var(--bg); cursor: pointer;
+  font-size: 12px; color: var(--text2);
+  transition: all 0.15s; white-space: nowrap;
+}
+.project-check-chip input { display: none; }
+.project-check-chip.checked {
+  border-color: var(--navy);
+  background: rgba(13,59,122,0.1);
+  color: var(--navy); font-weight: 600;
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
@@ -1450,6 +1467,16 @@ select[multiple] option:selected {
                 <div class="stat-value skeleton" id="statVC">—</div>
                 <div class="stat-label">Upcoming VCs</div>
                 <div style="font-size:9px;color:var(--info);margin-top:2px">Click to view meetings →</div>
+              </div>
+            </div>
+            <div class="stat-card" onclick="showScreen('projects')" style="cursor:pointer" title="Click to view Project Dashboard">
+              <div class="stat-icon" style="background:rgba(146,64,14,0.1);display:flex;align-items:center;justify-content:center;border-radius:12px;width:44px;height:44px;">
+                <i class="fa-solid fa-cubes" style="color:#92400e;font-size:22px"></i>
+              </div>
+              <div>
+                <div class="stat-value skeleton" id="dashProjectCount">0</div>
+                <div class="stat-label">Total Projects</div>
+                <div style="font-size:9px;color:#92400e;margin-top:2px">Click to view all →</div>
               </div>
             </div>
           </div>
@@ -1790,46 +1817,96 @@ select[multiple] option:selected {
                   <input type="email" id="editGmail">
                 </div>
                 <div class="form-group">
-                  <label>Date of Joining</label>
-                  <input type="date" id="editDateJoined">
+                  <label>Date of Joining <span style="font-size:10px;color:var(--text3)">(Editable by you)</span></label>
+                  <input type="date" id="editDateJoined" onchange="previewExperience()">
+                  <div id="expPreview" style="font-size:11px;color:var(--navy);margin-top:4px;font-weight:600"></div>
                 </div>
  
                  <!-- ADMIN ONLY fields -->
-                 <div class="form-group admin-only-section">
-                   <label>Rank / Designation</label>
-                   <input type="text" id="editRank">
-                 </div>
-                 <div class="form-group admin-only-section">
-                   <label>Badge No</label>
-                   <input type="text" id="editBadgeNo">
-                 </div>
-                 <div class="form-group admin-only-section">
-                   <label>Staff ID</label>
-                   <input type="text" id="editStaffId">
-                 </div>
-                 <div class="form-group admin-only-section">
-                   <label>Phone (Login ID)</label>
-                   <input type="tel" id="editPhone">
-                 </div>
-                 <div class="form-group admin-only-section">
-                   <label>Assigned Projects</label>
-                   <input type="text" id="editProjects">
-                 </div>
-                 <div class="form-group admin-only-section">
-                   <label>Status</label>
-                   <select id="editStatus">
-                     <option value="Active">Active</option>
-                     <option value="Inactive">Inactive</option>
-                   </select>
-                 </div>
-                 <div class="form-group admin-only-section">
-                   <label>Role</label>
-                   <select id="editRole">
-                     <option value="staff">Staff</option>
-                     <option value="officer">Officer</option>
-                     <option value="admin">Admin</option>
-                   </select>
-                 </div>
+                  <div class="admin-only-section" style="grid-column: 1 / -1;">
+                    <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                      <div class="form-group">
+                        <label>Rank</label>
+                        <select id="editRank" onchange="onEditRankChange()">
+                          <option value="">-- Select Rank --</option>
+                          <optgroup label="Gazetted Officers">
+                            <option value="IGP">IGP</option>
+                            <option value="DIG">DIG</option>
+                            <option value="SP">SP</option>
+                            <option value="Addl.SP">Addl.SP</option>
+                            <option value="DSP">DSP</option>
+                            <option value="Inspector">Inspector</option>
+                            <option value="SI">SI</option>
+                            <option value="ASI">ASI</option>
+                          </optgroup>
+                          <optgroup label="Non-Gazetted Staff">
+                            <option value="HC">HC</option>
+                            <option value="HCOI">HCOI</option>
+                            <option value="HC(C)">HC(C)</option>
+                            <option value="HCOI(C)">HCOI(C)</option>
+                            <option value="PC">PC</option>
+                            <option value="WPC">WPC</option>
+                            <option value="PC(C)">PC(C)</option>
+                            <option value="WPC(C)">WPC(C)</option>
+                          </optgroup>
+                        </select>
+                      </div>
+                      <div class="form-group">
+                        <label>IT Designation (Auto)</label>
+                        <input type="text" id="editITTitle" readonly
+                               style="background:var(--bg3);
+                                      color:var(--text3)">
+                      </div>
+                      <div class="form-group">
+                        <label>Badge No</label>
+                        <input type="text" id="editBadgeNo">
+                      </div>
+                      <div class="form-group">
+                        <label>Staff ID</label>
+                        <input type="text" id="editStaffId">
+                      </div>
+                      <div class="form-group">
+                        <label>Phone (Login ID)</label>
+                        <input type="tel" id="editPhone">
+                      </div>
+                      <div class="form-group">
+                        <label>Status</label>
+                        <select id="editStatus">
+                          <option value="Active">Active</option>
+                          <option value="Inactive">Inactive</option>
+                          <option value="On Leave">On Leave</option>
+                        </select>
+                      </div>
+                      <div class="form-group">
+                        <label>Role</label>
+                        <select id="editRole">
+                          <option value="admin">Admin</option>
+                          <option value="officer">Officer</option>
+                          <option value="staff">Staff</option>
+                        </select>
+                      </div>
+                      <div class="form-group">
+                        <label>Assigned Projects</label>
+                        <input type="text" id="editProjects">
+                      </div>
+                      <div class="form-group" style="grid-column:1/-1">
+                        <label>Daily Duties</label>
+                        <textarea id="editDailyDuties" rows="3"></textarea>
+                      </div>
+                      <div class="form-group" style="grid-column:1/-1">
+                        <label>Weekly Duties</label>
+                        <textarea id="editWeeklyDuties" rows="2"></textarea>
+                      </div>
+                      <div class="form-group" style="grid-column:1/-1">
+                        <label>Monthly Duties</label>
+                        <textarea id="editMonthlyDuties" rows="2"></textarea>
+                      </div>
+                      <div class="form-group" style="grid-column:1/-1">
+                        <label>Yearly Duties</label>
+                        <textarea id="editYearlyDuties" rows="2"></textarea>
+                      </div>
+                    </div>
+                  </div>
               </div>
               <div class="form-actions">
                 <button class="btn-primary" 
@@ -3445,6 +3522,11 @@ function renderDashboard() {
   if (statStaff) statStaff.textContent = totalStaff;
   if (statHub) statHub.textContent = activeHubItems;
   if (statVC) statVC.textContent = upcomingVC;
+  const dashProjectCount = document.getElementById('dashProjectCount');
+  if (dashProjectCount) {
+    dashProjectCount.textContent = (allProjects || []).length;
+    dashProjectCount.classList.remove('skeleton');
+  }
 
   // Heart module stats
   const hHubTasks = document.getElementById('hHubTasks');
@@ -3511,22 +3593,38 @@ function formatDutyText(dutiesStr) {
 function calculateExperience(dateJoined) {
   if (!dateJoined) return null;
   const start = new Date(dateJoined);
-  const now   = new Date();
   if (isNaN(start.getTime())) return null;
+  const now = new Date();
+  if (start > now) return 'Future date';
 
   let years  = now.getFullYear() - start.getFullYear();
   let months = now.getMonth()    - start.getMonth();
+  let days   = now.getDate()     - start.getDate();
 
+  if (days   < 0) { months--; }
   if (months < 0) { years--; months += 12; }
 
+  if (years < 0)  return 'Less than 1 day';
   if (years === 0 && months === 0)
     return 'Less than 1 month';
   if (years === 0)
-    return months + (months === 1 ? ' Month' : ' Months');
+    return months + (months === 1
+      ? ' Month' : ' Months');
   if (months === 0)
-    return years + (years === 1 ? ' Year' : ' Years');
-  return years + (years === 1 ? ' Year ' : ' Years ')
-       + months + (months === 1 ? ' Month' : ' Months');
+    return years + (years === 1
+      ? ' Year' : ' Years') + ' of Service';
+  return years  + (years  === 1 ? ' Year '  : ' Years ')
+       + months + (months === 1 ? ' Month'  : ' Months')
+       + ' of Service';
+}
+
+function setValue(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.value = val;
+}
+function setSelect(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.value = val;
 }
 
 async function loadMyAssignedProjects(staffIdentifier) {
@@ -3640,27 +3738,29 @@ function renderProfileView(data) {
       <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:2px">
         ${rankFull}
       </div>
-      ${data.Date_Joined ? `
-      <div style="display:inline-flex;align-items:center;
-                  gap:8px;padding:8px 16px;
+      <div id="profileExpCard"
+           style="display:${data.Date_Joined ? 'flex' : 'none'};
+                  align-items:center;gap:8px;
+                  padding:8px 16px;
                   background:rgba(255,255,255,0.1);
                   border-radius:20px;margin-top:10px;
                   border:1px solid rgba(255,255,255,0.15)">
         <i class="fa-solid fa-clock"
            style="color:var(--gold);font-size:14px"></i>
         <div>
-          <div style="font-size:10px;
+          <div style="font-size:9px;
                       color:rgba(255,255,255,0.5);
                       letter-spacing:1px;
                       text-transform:uppercase">
             Service Experience
           </div>
-          <div style="font-size:14px;font-weight:700;
+          <div id="profileExperience"
+               style="font-size:14px;font-weight:700;
                       color:#fff">
             ${exp || '—'}
           </div>
         </div>
-      </div>` : ''}
+      </div>
     `;
   }
 
@@ -3675,7 +3775,7 @@ function renderProfileView(data) {
     detailsList.innerHTML = `
       <div class="profile-detail-row" style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border)">
         <label style="font-weight:600; color:var(--text3)">Date of Joining</label>
-        <span style="font-weight:600; color:var(--text1)">${data.Date_Joined || 'Not set'}</span>
+        <span id="profileDateJoined" style="font-weight:600; color:var(--text1)">${data.Date_Joined || 'Not set'}</span>
       </div>
       <div class="profile-detail-row" style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border)">
         <label style="font-weight:600; color:var(--text3)">Service Experience</label>
@@ -3723,7 +3823,107 @@ function renderProfileView(data) {
     document.getElementById('editProjects').value = data.Assigned_Projects || '';
     document.getElementById('editStatus').value = data.Status || 'Active';
     document.getElementById('editRole').value = data.role || 'staff';
+    document.getElementById('editDailyDuties').value = data.Daily_Duties || '';
+    document.getElementById('editWeeklyDuties').value = data.Weekly_Duties || '';
+    document.getElementById('editMonthlyDuties').value = data.Monthly_Duties || '';
+    document.getElementById('editYearlyDuties').value = data.Yearly_Duties || '';
+    onEditRankChange();
   }
+  previewExperience();
+}
+
+function onEditRankChange() {
+  const rankSel = document.getElementById('editRank');
+  const itEl    = document.getElementById('editITTitle');
+  if (!rankSel) return;
+  const info = RANK_IT_MAP[rankSel.value] || {};
+  if (itEl) itEl.value = info.it || '';
+}
+
+function previewExperience() {
+  const val = document.getElementById('editDateJoined')?.value;
+  const preview = document.getElementById('expPreview');
+  if (!preview) return;
+  const exp = calculateExperience(val);
+  preview.textContent = exp ? '📅 ' + exp : '';
+}
+
+window.onEditRankChange = onEditRankChange;
+window.previewExperience = previewExperience;
+
+async function saveMyProfileDetails() {
+  const docId = localStorage.getItem('userDocId');
+  if (!docId) {
+    showToast('Session error. Please login again.','error');
+    return;
+  }
+  const isAdmin =
+    localStorage.getItem('userRole') === 'admin';
+
+  // Fields editable by ALL users
+  const data = {
+    Full_Name:   (document.getElementById('editFullName')?.value || '').trim(),
+    Gmail:       (document.getElementById('editGmail')?.value || '').trim(),
+    Date_Joined: document.getElementById('editDateJoined')?.value || ''
+  };
+
+  // Fields editable by ADMIN only
+  if (isAdmin) {
+    data.Rank         = document.getElementById('editRank')?.value     || '';
+    data.Badge_No     = document.getElementById('editBadgeNo')?.value  || '';
+    data.Staff_ID     = document.getElementById('editStaffId')?.value  || '';
+    data.Phone        = document.getElementById('editPhone')?.value    || '';
+    data.Status       = document.getElementById('editStatus')?.value   || '';
+    data.role         = document.getElementById('editRole')?.value     || '';
+    data.Daily_Duties = document.getElementById('editDailyDuties')?.value||'';
+    data.Weekly_Duties= document.getElementById('editWeeklyDuties')?.value||'';
+    data.Monthly_Duties=document.getElementById('editMonthlyDuties')?.value||'';
+    data.Yearly_Duties= document.getElementById('editYearlyDuties')?.value||'';
+  }
+
+  // Validate date
+  if (data.Date_Joined && isNaN(new Date(data.Date_Joined).getTime())) {
+    showToast('Invalid Date of Joining format.','error');
+    return;
+  }
+
+  const saveBtn = document.querySelector('#screen-profile .btn-primary');
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+  }
+
+  try {
+    await fsUpdateDoc(fsDoc(db, 'staff', docId), data);
+
+    // Update localStorage cache
+    if (data.Full_Name)
+      localStorage.setItem('userName', data.Full_Name);
+
+    // Instantly recalculate & refresh experience
+    if (data.Date_Joined) {
+      const exp = calculateExperience(data.Date_Joined);
+      // Update experience display immediately
+      const expEl = document.getElementById('profileExperience');
+      if (expEl) expEl.textContent = exp || '—';
+      const expCardEl = document.getElementById('profileExpCard');
+      if (expCardEl) expCardEl.style.display = 'flex';
+      const joinEl = document.getElementById('profileDateJoined');
+      if (joinEl) joinEl.textContent = data.Date_Joined;
+    }
+
+    // Reload profile to reflect all changes instantly
+    await loadMyProfile();
+    showToast('✅ Profile updated successfully!','success');
+  } catch(e) {
+    showToast('❌ Save failed: '+e.message,'error');
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Details';
+    }
+  }
+}
 }
 
 let currentDutyTab = 'Daily';
@@ -3772,35 +3972,6 @@ async function saveAdminDuty() {
   }
 }
 
-async function saveMyProfileDetails() {
-  const docId = localStorage.getItem('userDocId');
-  if (!docId) return;
-  const isAdmin = localStorage.getItem('userRole') === 'admin';
-  const data = {
-    Full_Name:          document.getElementById('editFullName').value.trim(),
-    Gmail:              document.getElementById('editGmail').value.trim(),
-    Date_Joined:        document.getElementById('editDateJoined').value
-  };
-  if (isAdmin) {
-    data.Rank              = document.getElementById('editRank').value.trim();
-    data.Badge_No          = document.getElementById('editBadgeNo').value.trim();
-    data.Staff_ID          = document.getElementById('editStaffId').value.trim();
-    data.Phone             = document.getElementById('editPhone').value.trim();
-    data.Assigned_Projects = document.getElementById('editProjects').value.trim();
-    data.Status            = document.getElementById('editStatus').value;
-    data.role              = document.getElementById('editRole').value;
-  }
-  try {
-    await fsUpdateDoc(fsDoc(db,'staff',docId), data);
-    localStorage.setItem('userName', data.Full_Name);
-    document.getElementById('sidebarName').textContent = data.Full_Name;
-    await loadStaffFromFirestore();
-    loadMyProfile();
-    showToast('Profile updated successfully!','success');
-  } catch(err) {
-    showToast('Update failed: '+err.message,'error');
-  }
-}
 
 function showMyWorkTab(tab, btn) {
   document.querySelectorAll(
@@ -5531,6 +5702,13 @@ async function loadProjects() {
   allProjects.sort((a,b) => a.name.localeCompare(b.name));
   renderProjectsGrid(allProjects);
   populateProjectDropdowns();
+
+  // Update dashboard count
+  const countEl = document.getElementById('dashProjectCount');
+  if (countEl) {
+    countEl.textContent = allProjects.length;
+    countEl.classList.remove('skeleton');
+  }
 }
 
 async function autoSeedProjects() {
@@ -6432,17 +6610,25 @@ async function adminEditStaff(docId) {
     if (rankSel) rankSel.value = s.Rank || '';
     onAERankChange();
 
-    // Populate project dropdown
-    const projSel = document.getElementById('aeProject');
-    if (projSel && allProjects.length) {
-      projSel.innerHTML =
-        '<option value="">-- Select Project --</option>' +
-        allProjects.map(p =>
-          `<option value="${p.name}"
-            ${p.assignedStaff?.includes(
-              s.Staff_ID||docId) ? 'selected':''}>
-            ${p.name}</option>`
-        ).join('');
+    // Populate project checkboxes
+    const staffKey = s.Staff_ID || docId;
+    const assignedInProjects = allProjects
+      .filter(p => (p.assignedStaff||[]).includes(staffKey))
+      .map(p => p.id);
+
+    const checkboxWrap = document.getElementById('aeProjectCheckboxes');
+    if (checkboxWrap && allProjects.length) {
+      checkboxWrap.innerHTML = allProjects.map(p => `
+        <label class="project-check-chip${assignedInProjects.includes(p.id) ? ' checked' : ''}"
+          id="pchip_${p.id}"
+          onclick="toggleProjectChip('${p.id}',this)">
+          <input type="checkbox"
+                 class="ae-proj-cb"
+                 value="${p.id}"
+                 ${assignedInProjects.includes(p.id) ? 'checked' : ''}>
+          ${p.name}
+        </label>`).join('');
+      updateAEProjectCount();
     }
 
     document.getElementById('adminEditStaffModal')
@@ -6450,6 +6636,21 @@ async function adminEditStaff(docId) {
   } catch(e) {
     showToast('Load error: '+e.message,'error');
   }
+}
+
+function toggleProjectChip(projId, chipEl) {
+  const cb = chipEl.querySelector('input[type="checkbox"]');
+  if (!cb) return;
+  setTimeout(() => {
+    chipEl.classList.toggle('checked', cb.checked);
+    updateAEProjectCount();
+  }, 10);
+}
+
+function updateAEProjectCount() {
+  const checked = document.querySelectorAll('.ae-proj-cb:checked').length;
+  const counter = document.getElementById('aeProjectCount');
+  if (counter) counter.textContent = checked + ' selected';
 }
 
 function onAERankChange() {
@@ -6495,30 +6696,45 @@ async function saveAdminEditStaff() {
   try {
     await fsUpdateDoc(fsDoc(db,'staff',docId), data);
 
-    // Update project assignment if changed
-    const selProject = document.getElementById('aeProject').value;
-    if (selProject && allProjects.length) {
-      const proj = allProjects.find(p => p.name === selProject);
-      if (proj) {
-        const assigned = proj.assignedStaff || [];
-        const staffKey = data.Staff_ID || docId;
-        if (!assigned.includes(staffKey)) {
-          await fsUpdateDoc(
-            fsDoc(db,'projects', proj.id),
-            { assignedStaff: [...assigned, staffKey] }
-          );
-        }
+    // Get all selected project IDs
+    const selectedProjectIds = Array.from(
+      document.querySelectorAll('.ae-proj-cb:checked')
+    ).map(cb => cb.value);
+
+    const staffKey = data.Staff_ID || docId;
+
+    // Update ALL projects — add or remove staff
+    for (const proj of allProjects) {
+      const current = proj.assignedStaff || [];
+      const shouldHave = selectedProjectIds.includes(proj.id);
+      const hasStaff = current.includes(staffKey);
+
+      if (shouldHave && !hasStaff) {
+        await fsUpdateDoc(
+          fsDoc(db,'projects',proj.id),
+          { assignedStaff: [...current, staffKey] }
+        );
+        proj.assignedStaff = [...current, staffKey];
+      } else if (!shouldHave && hasStaff) {
+        await fsUpdateDoc(
+          fsDoc(db,'projects',proj.id),
+          { assignedStaff: current.filter(s => s !== staffKey) }
+        );
+        proj.assignedStaff = current.filter(s => s !== staffKey);
       }
     }
 
     closeAdminEditStaff();
-    showToast('✅ Staff details updated!','success');
+    showToast('✅ Staff & projects updated!','success');
     await loadStaffFromFirestore();
     renderStaffManagement();
   } catch(e) {
     showToast('❌ Save failed: '+e.message,'error');
   }
 }
+
+window.toggleProjectChip = toggleProjectChip;
+window.updateAEProjectCount = updateAEProjectCount;
 
 // --- DELETE STAFF FUNCTIONS ---
 let pendingDeleteStaffId = null;
@@ -7140,11 +7356,25 @@ if ('serviceWorker' in navigator) {
           <option value="admin">Admin</option>
         </select>
       </div>
-      <div class="form-group">
-        <label>Assigned Project</label>
-        <select id="aeProject">
-          <option value="">-- Select Project --</option>
-        </select>
+      <div class="form-group" style="grid-column:1/-1">
+        <label style="display:flex;justify-content:space-between;
+                      align-items:center">
+          <span>Assign Projects</span>
+          <span id="aeProjectCount"
+                style="font-size:11px;color:var(--navy);
+                       font-weight:600">
+            0 selected
+          </span>
+        </label>
+        <div id="aeProjectCheckboxes"
+             style="display:flex;flex-wrap:wrap;gap:8px;
+                    padding:12px;border:1px solid var(--border);
+                    border-radius:10px;max-height:200px;
+                    overflow-y:auto;background:var(--bg3)">
+          <div style="font-size:12px;color:var(--text3)">
+            Loading projects...
+          </div>
+        </div>
       </div>
       <div class="form-group" style="grid-column:1/-1">
         <label>Assigned Projects / Duties</label>
