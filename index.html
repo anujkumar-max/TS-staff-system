@@ -4747,6 +4747,21 @@ function editHubEntry(i) {
 function openAddHubEntryModal() {
   hubEditContext = null;
   const modal = ensureDynamicModal('addHubEntryModal', 'Add New Task Matrix Entry');
+  
+  // Custom header with Download Proforma button
+  const header = modal.querySelector('.modal-header');
+  if (header) {
+    header.innerHTML = `
+      <div class="modal-title">Add New Task Matrix Entry</div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="btn-mini btn-navy" onclick="downloadBulkTemplate()" style="padding:6px 12px;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:4px;background:var(--navy);color:#fff;border:none;border-radius:4px;">
+          <i class="fa-solid fa-file-excel"></i> Proforma
+        </button>
+        <button class="modal-close" onclick="closeModal('addHubEntryModal')" style="background:none;border:none;font-size:16px;cursor:pointer;color:var(--text3)"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+    `;
+  }
+
   modal.querySelector('.modal-body').innerHTML = `
     <div class="form-grid">
       <div class="form-group">
@@ -6094,44 +6109,75 @@ function downloadBulkTemplate() {
     'Project'
   ];
   
+  const activeStaff = (allData.staff || [])
+    .filter(s => s.Status === 'Active')
+    .map(s => s.Full_Name);
+
+  const projectNames = (allProjects || []).map(p => p.name);
+
   const sampleRows = [
     {
       'Type': 'Top Priority',
       'Subject': 'Review CCTV surveillance network integrations',
       'Category': 'IGP Works',
-      'Assigned To': 'Md. Anwar',
+      'Assigned To': activeStaff[0] || 'Md. Anwar',
       'Priority': 'High',
       'Due Date': '2026-07-15',
       'Description': 'Follow up on CCTV network installation status.',
-      'Project': 'CCTV'
+      'Project': projectNames[0] || 'CCTV'
     },
     {
       'Type': 'General Work',
       'Subject': 'Prepare e-Office integration notes',
       'Category': 'Correspondence',
-      'Assigned To': 'L. Trinadha Rao',
+      'Assigned To': activeStaff[1] || 'L. Trinadha Rao',
       'Priority': 'Medium',
       'Due Date': '2026-07-20',
       'Description': 'Draft the integration notes.',
-      'Project': 'e-Office'
+      'Project': projectNames[1] || 'e-Office'
     },
     {
       'Type': 'Tapal / Letters',
       'Subject': 'Nodal officer letter regarding CEIR device blocking',
       'Category': '',
-      'Assigned To': 'D. Aashik',
+      'Assigned To': activeStaff[2] || 'D. Aashik',
       'Priority': 'Low',
       'Due Date': '2026-07-12',
       'Description': 'Incoming letter regarding CEIR node access requests.',
-      'Project': 'CEIR'
+      'Project': projectNames[2] || 'CEIR'
     }
   ];
 
   const ws = XLSX.utils.json_to_sheet(sampleRows, { header: headers });
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Tasks Template");
+
+  // Create Dropdown Options sheet
+  const maxLength = Math.max(
+    activeStaff.length,
+    projectNames.length,
+    3, // Types
+    3  // Priorities
+  );
+
+  const optionsRows = [];
+  const types = ['Top Priority', 'General Work', 'Tapal / Letters'];
+  const priorities = ['High', 'Medium', 'Low'];
+
+  for (let i = 0; i < maxLength; i++) {
+    optionsRows.push({
+      'Valid Task Types': types[i] || '',
+      'Valid Priorities': priorities[i] || '',
+      'Active Staff List (Assigned To)': activeStaff[i] || '',
+      'Available Projects': projectNames[i] || ''
+    });
+  }
+
+  const wsOptions = XLSX.utils.json_to_sheet(optionsRows);
+  XLSX.utils.book_append_sheet(wb, wsOptions, "Dropdown Options Reference");
+
   XLSX.writeFile(wb, "Task_Matrix_Bulk_Import_Template.xlsx");
-  showToast("📥 Template downloaded successfully!", "success");
+  showToast("📥 Template with reference options downloaded!", "success");
 }
 
 async function handleTaskImport(event) {
