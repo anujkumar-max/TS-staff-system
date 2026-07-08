@@ -5314,6 +5314,26 @@ let currentProjectDoc= null;
 
 // ── Load Projects ──────────────────────────────────
 async function loadProjects() {
+  const DEFAULT_PROJECTS = [
+    { name:"CCTNS", fullName:"Crime & Criminal Tracking Network System", category:"Crime & Justice", icon:"fa-fingerprint", color:"#8b0000" },
+    { name:"ICJS", fullName:"Inter-operable Criminal Justice System", category:"Crime & Justice", icon:"fa-scale-balanced", color:"#8b0000" },
+    { name:"CriMAC", fullName:"Crime Mapping Analytics & Predictive System", category:"Crime & Justice", icon:"fa-map-location-dot", color:"#8b0000" },
+    { name:"APCOPS", fullName:"Andhra Pradesh Cops Operations System", category:"Crime & Justice", icon:"fa-shield-halved", color:"#8b0000" },
+    { name:"NATGRID", fullName:"National Intelligence Grid", category:"Intelligence & Security", icon:"fa-network-wired", color:"#0d3b7a" },
+    { name:"XDR & SASE", fullName:"Extended Detection Response & Secure Access Service Edge (Global Protect VPN)", category:"Intelligence & Security", icon:"fa-shield-virus", color:"#0d3b7a" },
+    { name:"AI4AP", fullName:"Artificial Intelligence for Andhra Pradesh Police", category:"Intelligence & Security", icon:"fa-robot", color:"#0d3b7a" },
+    { name:"PM Gati Shakti", fullName:"PM Gati Shakti National Master Plan Portal", category:"Intelligence & Security", icon:"fa-route", color:"#0d3b7a" },
+    { name:"AP Police Website", fullName:"AP Police Website & Citizen Portal", category:"Citizen Services", icon:"fa-globe", color:"#1a7a4a" },
+    { name:"CEIR", fullName:"Central Equipment Identity Register", category:"Citizen Services", icon:"fa-mobile-screen-button", color:"#1a7a4a" },
+    { name:"Dial-112", fullName:"Emergency Response Support System Dial-112", category:"Citizen Services", icon:"fa-phone-volume", color:"#1a7a4a" },
+    { name:"e-Challan", fullName:"Electronic Challan System", category:"Citizen Services", icon:"fa-receipt", color:"#1a7a4a" },
+    { name:"Drones", fullName:"AP Police Drone Surveillance Operations", category:"Surveillance", icon:"fa-helicopter", color:"#6b21a8" },
+    { name:"CCTV", fullName:"CCTV Surveillance & Monitoring Network", category:"Surveillance", icon:"fa-video", color:"#6b21a8" },
+    { name:"e-Office", fullName:"Electronic Office Management System", category:"Administration", icon:"fa-file-signature", color:"#92400e" },
+    { name:"GeM Procurements", fullName:"Government e-Marketplace Procurement Portal", category:"Administration", icon:"fa-cart-shopping", color:"#92400e" },
+    { name:"APOLIS", fullName:"Andhra Pradesh Police Information System", category:"Administration", icon:"fa-database", color:"#92400e" }
+  ];
+
   try {
     let snap = await fsGetDocs(fsCollection(db, 'projects'));
     allProjects = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -5324,13 +5344,25 @@ async function loadProjects() {
       snap = await fsGetDocs(fsCollection(db, 'projects'));
       allProjects = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     }
-
-    allProjects.sort((a,b) => a.name.localeCompare(b.name));
-    renderProjectsGrid(allProjects);
-    populateProjectDropdowns();
   } catch(e) {
-    console.error('loadProjects error:', e);
+    console.warn('loadProjects Firestore error (using local fallbacks):', e);
   }
+
+  // Fallback to defaults if Firestore read failed or returned empty
+  if (!allProjects || allProjects.length === 0) {
+    allProjects = DEFAULT_PROJECTS.map((p, idx) => ({
+      id: 'local_p_' + idx,
+      ...p,
+      description:    '',
+      importantLinks: [],
+      assignedStaff:  [],
+      status:         'Active'
+    }));
+  }
+
+  allProjects.sort((a,b) => a.name.localeCompare(b.name));
+  renderProjectsGrid(allProjects);
+  populateProjectDropdowns();
 }
 
 async function autoSeedProjects() {
