@@ -3895,7 +3895,8 @@ function loadHubEntries() {
         Description: data.description || '',
         Added_By: data.createdBy || '',
         Added_On: data.createdAt ? (data.createdAt.seconds ? new Date(data.createdAt.seconds * 1000).toISOString() : String(data.createdAt)) : '',
-        Category: data.category || ''
+        Category: data.category || '',
+        project: data.project || data.Project || ''
       };
     });
     allData.hub_entries = entries;
@@ -4409,6 +4410,7 @@ function renderHub() {
   try {
     const tbody = document.getElementById('hubBody');
     if (!tbody) return;
+    const isAdmin = localStorage.getItem('userRole') === 'admin';
 
     const search = (document.getElementById('hubSearch')?.value || '').toLowerCase();
     const typeFilter = window.currentHubTypeFilter || 'all';
@@ -4565,6 +4567,18 @@ function editHubEntry(i) {
     staffSelect.innerHTML = (allData.staff || [])
       .filter(s => s.Status === 'Active')
       .map(s => `<option value="${s.Full_Name}">${s.Full_Name} (${s.Rank})</option>`).join('');
+  }
+
+  const projectSelect = document.getElementById('hubProject');
+  if (projectSelect) {
+    projectSelect.innerHTML = '<option value="">-- Select Project --</option>' +
+      (allProjects || []).map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+  }
+
+  const projectSelect = document.getElementById('hubProject');
+  if (projectSelect) {
+    projectSelect.innerHTML = '<option value="">-- Select Project --</option>' +
+      (allProjects || []).map(p => `<option value="${p.name}">${p.name}</option>`).join('');
   }
 
   const typeSelect = document.getElementById('hubType');
@@ -4795,6 +4809,7 @@ function exportHubData() {
 function renderVC() {
   const tbody = document.getElementById('vcBody');
   if (!tbody) return;
+  const isAdmin = localStorage.getItem('userRole') === 'admin';
   const search = (document.getElementById('vcSearch')?.value || '').toLowerCase();
   let data = allData.vcschedule || [];
   if (search) {
