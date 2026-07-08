@@ -1335,6 +1335,12 @@ select[multiple] option:selected {
           <i class="fa-solid fa-video"></i><span>Conf & Meetings</span>
         </div>
 
+        <!-- PROJECT SUITE -->
+        <div class="nav-section-label" style="margin-top:8px">📦 PROJECT SUITE</div>
+        <div class="nav-item" onclick="showScreen('projects'); closeSidebar()">
+          <i class="fa-solid fa-cubes"></i><span>Project Dashboard</span>
+        </div>
+
         <div class="nav-section-label" style="margin-top:8px">Admin</div>
         <div class="nav-item" id="staffMgmtNavItem" onclick="showScreen('staff-management'); closeSidebar()" style="display:none">
           <i class="fa-solid fa-users-gear"></i><span>Staff Management</span>
@@ -1641,13 +1647,55 @@ select[multiple] option:selected {
             <div class="table-wrap">
               <table>
                 <thead class="heart-thead"><tr>
-                  <th>S.No</th><th>Subject</th><th>Date & Time</th><th>Platform</th><th>Project</th>
-                  <th>Speaker</th><th>Persons</th><th>Status</th><th>Actions</th>
+                  <th>S.No</th><th>Date & Time</th><th>Subject</th><th>Platform</th><th>Project</th>
+                  <th>Speaker</th><th>Organiser</th><th>Status</th><th>Link</th><th>Remarks</th><th>Actions</th>
                 </tr></thead>
                 <tbody id="vcBody">
-                  <tr><td colspan="9"><div class="loading"><div class="spinner"></div></div></td></tr>
+                  <tr><td colspan="11"><div class="loading"><div class="spinner"></div></div></td></tr>
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ====== PROJECT SUITE SCREEN ====== -->
+        <div id="screen-projects" class="screen" style="display:none">
+          <!-- Page Header -->
+          <div class="page-header">
+            <h1>
+              <i class="fa-solid fa-cubes"></i>
+              Project Suite
+            </h1>
+            <p>AP Police IT Services — All 17 Projects</p>
+          </div>
+
+          <!-- Category filter pills -->
+          <div class="tab-pills" style="margin-bottom:20px; flex-wrap:wrap">
+            <button class="tab-pill active" onclick="filterProjects('all',this)">
+              All Projects
+            </button>
+            <button class="tab-pill" onclick="filterProjects('Crime & Justice',this)">
+              🔴 Crime & Justice
+            </button>
+            <button class="tab-pill" onclick="filterProjects('Intelligence & Security',this)">
+              🔵 Intelligence & Security
+            </button>
+            <button class="tab-pill" onclick="filterProjects('Citizen Services',this)">
+              🟢 Citizen Services
+            </button>
+            <button class="tab-pill" onclick="filterProjects('Surveillance',this)">
+              🟣 Surveillance
+            </button>
+            <button class="tab-pill" onclick="filterProjects('Administration',this)">
+              ⚪ Administration
+            </button>
+          </div>
+
+          <!-- Projects Grid -->
+          <div id="projectsGrid" style="display:grid; grid-template-columns: repeat(auto-fill,minmax(300px,1fr)); gap:16px; margin-bottom:24px">
+            <div class="empty-state">
+              <i class="fa-solid fa-spinner fa-spin"></i>
+              <p>Loading projects...</p>
             </div>
           </div>
         </div>
@@ -2130,9 +2178,10 @@ select[multiple] option:selected {
              placeholder="Reporting officer name">
     </div>
     <div class="form-group">
-      <label>Assigned Projects</label>
-      <input type="text" id="ns_Assigned_Projects"
-             placeholder="Project 1, Project 2 ...">
+      <label>Assigned Project</label>
+      <select id="ns_project">
+        <option value="">-- Select Project --</option>
+      </select>
     </div>
     <div class="form-group">
       <label>Profile Photo URL</label>
@@ -2361,7 +2410,9 @@ select[multiple] option:selected {
           <select id="vcOrganiser"></select>
         </div>
         <div class="form-group"><label>Project Name</label>
-          <select id="vcProject"></select>
+          <select id="vcProjectName">
+            <option value="">-- Select Project --</option>
+          </select>
         </div>
         <div class="form-group" style="grid-column:1/-1"><label>VC Link</label><input type="text" id="vcLink" placeholder="Paste meeting link here"></div>
         <div class="form-group" style="grid-column:1/-1">
@@ -2784,6 +2835,7 @@ function showScreen(name) {
     profile: 'My Profile',
     hub: 'Task Matrix',
     vc: 'Conference & Meetings Hub',
+    projects: 'Project Suite',
     staff: 'Staff Directory',
     admin: 'Admin Panel',
     staffmgmt: 'Staff Management',
@@ -2808,6 +2860,9 @@ function showScreen(name) {
     renderHub();
   }
   if (name === 'vc') renderVC();
+  if (name === 'projects') {
+    loadProjects();
+  }
   if (name === 'staff') {
     loadStaffFromSheet();
   }
@@ -2953,6 +3008,7 @@ async function loadAllData() {
     loadHubEntries();
     loadVCMeetings();
     loadNotices();
+    loadProjects();
     return true;
   } catch(err) {
     console.error('loadAllData error:', err);
@@ -4019,7 +4075,7 @@ async function addNewStaff() {
       Date_Joined:        get('ns_Date_Joined'),
       Status:             get('ns_Status') || 'Active',
       Profile_Photo_URL:  get('ns_Profile_Photo_URL'),
-      Assigned_Projects:  get('ns_Assigned_Projects'),
+      Assigned_Projects:  document.getElementById('ns_project')?.value || '',
       District_Assigned:  get('ns_District_Assigned'),
       Reporting_Officer:  get('ns_Reporting_Officer'),
       Created_Date:       now,
@@ -4048,7 +4104,7 @@ async function addNewStaff() {
 function clearNewStaffForm() {
   ['ns_Staff_ID','ns_Full_Name','ns_Rank','ns_Badge_No',
    'ns_Gmail','ns_Phone','ns_Date_Joined','ns_Profile_Photo_URL',
-   'ns_Assigned_Projects','ns_District_Assigned',
+   'ns_project','ns_District_Assigned',
    'ns_Reporting_Officer','ns_Daily_Duties','ns_Weekly_Duties',
    'ns_Monthly_Duties','ns_Yearly_Duties'].forEach(id => {
     const el = document.getElementById(id);
@@ -4343,7 +4399,8 @@ function renderEntriesTable(entries) {
     Description: item.Description,
     Added_By: item.Added_By,
     Added_On: item.Added_On,
-    Category: item.Category
+    Category: item.Category,
+    project: item.project || item.Project || ''
   }));
   renderHub();
 }
@@ -4466,6 +4523,12 @@ function editHubEntry(i) {
         <select id="hubCategory"></select>
       </div>
       <div class="form-group">
+        <label>PROJECT</label>
+        <select id="hubProject">
+          <option value="">-- Select Project --</option>
+        </select>
+      </div>
+      <div class="form-group">
         <label>Subject/Title *</label>
         <input type="text" id="hubSubject" placeholder="Enter subject/title">
       </div>
@@ -4532,6 +4595,9 @@ function editHubEntry(i) {
   document.getElementById('hubPriority').value = t.Priority || 'Medium';
   document.getElementById('hubDueDate').value = String(t.Due_Date || '').split('T')[0];
   document.getElementById('hubDescription').value = t.Description || '';
+  if (document.getElementById('hubProject')) {
+    document.getElementById('hubProject').value = t.project || t.Project || '';
+  }
 
   openModal('addHubEntryModal');
 }
@@ -4553,6 +4619,12 @@ function openAddHubEntryModal() {
       <div class="form-group" id="hubCategoryGroup">
         <label id="hubCategoryLabel">Category *</label>
         <select id="hubCategory"></select>
+      </div>
+      <div class="form-group">
+        <label>PROJECT</label>
+        <select id="hubProject">
+          <option value="">-- Select Project --</option>
+        </select>
       </div>
       <div class="form-group">
         <label>Subject/Title *</label>
@@ -4618,7 +4690,8 @@ async function submitHubEntry() {
     type === 'Top Priority' || type === 'General Work' || type === 'Tapal / Letters' ||
     type === 'Command Register' || type === 'Command Directives' || type === 'Correspondence' || type === 'Official Correspondence'
   ) ? document.getElementById('hubCategory').value : '';
-
+  const project = document.getElementById('hubProject')?.value || '';
+  
   if (!subject) {
     showToast('Please enter a subject/title', 'error');
     return;
@@ -4635,6 +4708,7 @@ async function submitHubEntry() {
     description,
     status,
     category,
+    project,
     createdBy: addedBy,
     updatedAt: fsTimestamp()
   };
@@ -4783,7 +4857,7 @@ function editVC(i) {
   document.getElementById('vcPlatform').value = v.Platform || 'BharatVC';
   document.getElementById('vcLink').value = v.VC_Link || '';
   document.getElementById('vcRemarks').value = v.Remarks || '';
-  document.getElementById('vcProject').value = v.Project_Name || 'Miscellaneous';
+  document.getElementById('vcProjectName').value = v.Project_Name || v.project || 'Miscellaneous';
   document.getElementById('vcOrganiser').value = v.Organiser || '';
   document.getElementById('vcSpeaker').value = v.Speaker || '';
   
@@ -4816,7 +4890,8 @@ async function submitVC() {
     venue: document.getElementById('vcPlatform').value,
     link: document.getElementById('vcLink').value.trim(),
     agenda: document.getElementById('vcRemarks').value.trim(),
-    projectName: document.getElementById('vcProject').value,
+    projectName: document.getElementById('vcProjectName').value,
+    project: document.getElementById('vcProjectName').value,
     chairperson: document.getElementById('vcOrganiser').value,
     speaker: document.getElementById('vcSpeaker').value,
     participants: selectedPersons,
@@ -5070,6 +5145,7 @@ const screenLabels = {
   'profile':          'My Profile',
   'hub':              'Task Matrix',
   'vc':               'Conference & Meetings Hub',
+  'projects':         'Project Suite',
   'staff-management': 'Staff Management'
 };
 
@@ -5078,6 +5154,7 @@ const screenLoadMessages = {
   'profile':          'Loading My Profile',
   'hub':              'Opening Task Matrix',
   'vc':               'Loading Conference & Meetings',
+  'projects':         'Loading Project Suite',
   'staff-management': 'Loading Staff Management'
 };
 
@@ -5213,6 +5290,573 @@ window.executeDeleteHub = executeDeleteHub;
 window.confirmDeleteVC = confirmDeleteVC;
 window.closeDeleteVCModal = closeDeleteVCModal;
 window.executeDeleteVC = executeDeleteVC;
+
+// Global project cache
+let allProjects      = [];
+let currentProjectId = null;
+let currentProjectDoc= null;
+
+// ── Load Projects ──────────────────────────────────
+async function loadProjects() {
+  try {
+    const snap = await fsGetDocs(fsCollection(db, 'projects'));
+    allProjects = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    allProjects.sort((a,b) => a.name.localeCompare(b.name));
+    renderProjectsGrid(allProjects);
+    populateProjectDropdowns();
+  } catch(e) {
+    console.error('loadProjects error:', e);
+  }
+}
+
+// ── Render Project Cards Grid ──────────────────────
+function renderProjectsGrid(list) {
+  const grid = document.getElementById('projectsGrid');
+  if (!grid) return;
+  if (!list.length) {
+    grid.innerHTML = `<div class="empty-state">
+      <i class="fa-solid fa-cubes"></i>
+      <p>No projects found.</p></div>`;
+    return;
+  }
+
+  const categoryColors = {
+    'Crime & Justice':        '#8b0000',
+    'Intelligence & Security':'#0d3b7a',
+    'Citizen Services':       '#1a7a4a',
+    'Surveillance':           '#6b21a8',
+    'Administration':         '#92400e'
+  };
+
+  grid.innerHTML = list.map(p => {
+    const color = categoryColors[p.category] || p.color || '#0d3b7a';
+    const staff = (p.assignedStaff||[]).length;
+    return `
+    <div class="card" style="cursor:pointer;
+         border-left:4px solid ${color};
+         transition:transform 0.2s,box-shadow 0.2s"
+         onmouseenter="this.style.transform='translateY(-3px)';
+                       this.style.boxShadow='0 8px 24px rgba(0,0,0,0.12)'"
+         onmouseleave="this.style.transform='none';
+                       this.style.boxShadow=''"
+         onclick="openProjectDetail('${p.id}')">
+      <div style="display:flex;align-items:flex-start;
+                  gap:12px;margin-bottom:12px">
+        <div style="width:44px;height:44px;
+                    border-radius:10px;flex-shrink:0;
+                    background:${color}18;
+                    display:flex;align-items:center;
+                    justify-content:center;
+                    font-size:18px;color:${color}">
+          <i class="fa-solid ${p.icon||'fa-cubes'}"></i>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-family:'Rajdhani',sans-serif;
+                      font-size:17px;font-weight:700;
+                      color:var(--text1)">
+            ${p.name}</div>
+          <div style="font-size:11px;color:var(--text3);
+                      line-height:1.3;margin-top:2px">
+            ${p.fullName||''}</div>
+        </div>
+      </div>
+      <div style="font-size:11px;font-weight:600;
+                  color:${color};
+                  background:${color}15;
+                  padding:3px 10px;border-radius:12px;
+                  display:inline-block;margin-bottom:10px">
+        ${p.category||''}
+      </div>
+      ${p.description
+        ? `<div style="font-size:12px;color:var(--text3);
+                       line-height:1.5;margin-bottom:12px;
+                       display:-webkit-box;
+                       -webkit-line-clamp:2;
+                       -webkit-box-orient:vertical;
+                       overflow:hidden">
+             ${p.description}</div>` : ''}
+      <div style="display:flex;gap:12px;
+                  border-top:1px solid var(--border);
+                  padding-top:10px;margin-top:4px">
+        <div style="font-size:12px;color:var(--text3)">
+          <i class="fa-solid fa-users"
+             style="color:var(--navy)"></i>
+          ${staff} Personnel
+        </div>
+        <div style="font-size:12px;color:var(--text3)">
+          <i class="fa-solid fa-link"
+             style="color:var(--gold)"></i>
+          ${(p.importantLinks||[]).length} Links
+        </div>
+        <div style="margin-left:auto;
+                    font-size:11px;color:${color};
+                    font-weight:600">
+          View Details →
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Filter by Category ─────────────────────────────
+function filterProjects(cat, btn) {
+  document.querySelectorAll('#screen-projects .tab-pill').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderProjectsGrid(
+    cat === 'all'
+      ? allProjects
+      : allProjects.filter(p => p.category === cat)
+  );
+}
+
+// ── Open Project Detail ────────────────────────────
+async function openProjectDetail(projectId) {
+  const p = allProjects.find(x => x.id === projectId);
+  if (!p) return;
+  currentProjectId  = projectId;
+  currentProjectDoc = p;
+
+  const isAdmin = localStorage.getItem('userRole') === 'admin';
+  const catColor = {
+    'Crime & Justice':        '#8b0000',
+    'Intelligence & Security':'#0d3b7a',
+    'Citizen Services':       '#1a7a4a',
+    'Surveillance':           '#6b21a8',
+    'Administration':         '#92400e'
+  }[p.category] || p.color || '#0d3b7a';
+
+  // Fill header
+  const iconEl = document.getElementById('pdIcon');
+  if (iconEl) {
+    iconEl.style.background = catColor;
+    iconEl.innerHTML = `<i class="fa-solid ${p.icon||'fa-cubes'}"></i>`;
+  }
+  setText('pdName',     p.name     || '—');
+  setText('pdFullName', p.fullName || '—');
+  const catEl = document.getElementById('pdCategory');
+  if (catEl) {
+    catEl.textContent = p.category || '';
+    catEl.style.background = catColor + '20';
+    catEl.style.color      = catColor;
+  }
+
+  // Description
+  const descEl = document.getElementById('pdDescription');
+  if (descEl) descEl.textContent = p.description || 'No description added yet.';
+  const descInput = document.getElementById('pdDescInput');
+  if (descInput) descInput.value = p.description || '';
+  countProjectWords();
+
+  // Admin edit section
+  const editSec = document.getElementById('pdEditSection');
+  if (editSec) editSec.style.display = isAdmin ? 'block' : 'none';
+
+  // Stats
+  setText('pdStaffCount', (p.assignedStaff||[]).length);
+  setText('pdLinkCount', (p.importantLinks||[]).length);
+
+  // Load tasks count for this project
+  loadProjectTasks(p.name);
+
+  // Show modal
+  const modal = document.getElementById('projectDetailModal');
+  if (modal) modal.style.display = 'block';
+  showProjectTab('overview', null);
+}
+
+function closeProjectDetail() {
+  const modal = document.getElementById('projectDetailModal');
+  if (modal) modal.style.display = 'none';
+  currentProjectId = currentProjectDoc = null;
+}
+
+// ── Project Tabs ───────────────────────────────────
+function showProjectTab(tab, btn) {
+  ['overview','staff','tasks','links'].forEach(t => {
+    const el = document.getElementById('pdTab' + t.charAt(0).toUpperCase() + t.slice(1));
+    if (el) el.style.display = t === tab ? 'block' : 'none';
+  });
+  document.querySelectorAll('#projectDetailModal .tab-pill').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+
+  if (tab === 'staff')  renderProjectStaff();
+  if (tab === 'tasks')  loadProjectTasks(currentProjectDoc?.name);
+  if (tab === 'links')  renderProjectLinks();
+}
+
+// ── Description — Word Count (100 word limit) ─────
+function countProjectWords() {
+  const txt = (document.getElementById('pdDescInput')?.value||'').trim();
+  const words = txt ? txt.split(/\s+/).length : 0;
+  const counter = document.getElementById('pdWordCount');
+  if (counter) {
+    counter.textContent = words + ' / 100 words';
+    counter.style.color = words > 100 ? '#b91c1c' : 'var(--text3)';
+  }
+}
+
+async function saveProjectDescription() {
+  if (!currentProjectId) return;
+  const txt = (document.getElementById('pdDescInput')?.value || '').trim();
+  const words = txt ? txt.split(/\s+/).length : 0;
+  if (words > 100) {
+    showToast('⚠️ Max 100 words allowed. Currently: ' + words, 'error');
+    return;
+  }
+  try {
+    await fsUpdateDoc(fsDoc(db,'projects', currentProjectId), { description: txt });
+    if (currentProjectDoc) currentProjectDoc.description = txt;
+    const descEl = document.getElementById('pdDescription');
+    if (descEl) descEl.textContent = txt || 'No description added yet.';
+    // Update local cache
+    const idx = allProjects.findIndex(x => x.id === currentProjectId);
+    if (idx > -1) allProjects[idx].description = txt;
+    showToast('✅ Description saved!','success');
+  } catch(e) {
+    showToast('❌ Save failed: '+e.message,'error');
+  }
+}
+
+// ── Staff Assignment ───────────────────────────────
+function renderProjectStaff() {
+  if (!currentProjectDoc) return;
+  const list = document.getElementById('pdStaffList');
+  if (!list) return;
+  const assigned = currentProjectDoc.assignedStaff||[];
+  const isAdmin  = localStorage.getItem('userRole') === 'admin';
+
+  if (!assigned.length) {
+    list.innerHTML = `<div class="empty-state">
+      <i class="fa-solid fa-users-slash"></i>
+      <p>No personnel assigned yet.</p></div>`;
+  } else {
+    list.innerHTML = assigned.map(staffId => {
+      const s = window.staffCache?.find(x => x.Staff_ID === staffId || x.id === staffId || x.Full_Name === staffId) || {};
+      const name = s.Full_Name || staffId;
+      const it   = getITTitle(s.Rank||'', s.Phone||'');
+      return `
+      <div style="display:flex;align-items:center;
+                  justify-content:space-between;
+                  padding:10px 12px;
+                  background:var(--bg3);
+                  border-radius:8px;margin-bottom:8px;
+                  border:1px solid var(--border)">
+        <div style="display:flex;align-items:center;
+                    gap:10px">
+          <div style="width:36px;height:36px;
+                      border-radius:50%;
+                      background:var(--navy);
+                      color:#fff;font-size:13px;
+                      display:flex;align-items:center;
+                      justify-content:center;
+                      font-weight:700">
+            ${name.charAt(0)}
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:600;
+                        color:var(--text1)">${name}</div>
+            <div style="font-size:11px;
+                        color:var(--text3)">${it}</div>
+          </div>
+        </div>
+        ${isAdmin
+          ? `<button class="btn-mini btn-delete"
+               onclick="removeStaffFromProject('${staffId}')">
+               <i class="fa-solid fa-user-minus"></i>
+             </button>`
+          : ''}
+      </div>`;
+    }).join('');
+  }
+
+  // Populate assign dropdown
+  const sel = document.getElementById('pdAssignStaffSel');
+  if (sel && window.staffCache) {
+    sel.innerHTML = '<option value="">-- Select Staff --</option>' +
+      window.staffCache
+        .filter(s => !assigned.includes(s.Staff_ID || s.id || s.Full_Name))
+        .map(s => {
+          const it = getITTitle(s.Rank||'', s.Phone||'');
+          return `<option value="${s.Staff_ID || s.id || s.Full_Name}">
+            ${it} · ${s.Full_Name}
+          </option>`;
+        }).join('');
+  }
+}
+
+async function assignStaffToProject() {
+  if (!currentProjectId) return;
+  const sel = document.getElementById('pdAssignStaffSel');
+  const staffId = sel?.value;
+  if (!staffId) {
+    showToast('Select a staff member first.','error');
+    return;
+  }
+  const current = currentProjectDoc?.assignedStaff || [];
+  if (current.includes(staffId)) {
+    showToast('Already assigned.','error'); return;
+  }
+  const updated = [...current, staffId];
+  try {
+    await fsUpdateDoc(fsDoc(db,'projects',currentProjectId), { assignedStaff: updated });
+    if (currentProjectDoc) currentProjectDoc.assignedStaff = updated;
+    const idx = allProjects.findIndex(x => x.id === currentProjectId);
+    if (idx > -1) allProjects[idx].assignedStaff = updated;
+    setText('pdStaffCount', updated.length);
+    renderProjectStaff();
+    showToast('✅ Staff assigned to project!','success');
+  } catch(e) {
+    showToast('❌ Failed: '+e.message,'error');
+  }
+}
+
+async function removeStaffFromProject(staffId) {
+  if (!currentProjectId) return;
+  const current = currentProjectDoc?.assignedStaff||[];
+  const updated  = current.filter(s => s !== staffId);
+  try {
+    await fsUpdateDoc(fsDoc(db,'projects',currentProjectId), { assignedStaff: updated });
+    if (currentProjectDoc) currentProjectDoc.assignedStaff = updated;
+    const idx = allProjects.findIndex(x => x.id === currentProjectId);
+    if (idx > -1) allProjects[idx].assignedStaff = updated;
+    setText('pdStaffCount', updated.length);
+    renderProjectStaff();
+    showToast('✅ Staff removed from project.','success');
+  } catch(e) {
+    showToast('❌ Failed: '+e.message,'error');
+  }
+}
+
+// ── Important Links ────────────────────────────────
+function renderProjectLinks() {
+  if (!currentProjectDoc) return;
+  const list = document.getElementById('pdLinkList');
+  if (!list) return;
+  const links = currentProjectDoc.importantLinks || [];
+  const isAdmin = localStorage.getItem('userRole') === 'admin';
+
+  if (!links.length) {
+    list.innerHTML = `<div class="empty-state">
+      <i class="fa-solid fa-link-slash"></i>
+      <p>No important links added yet.</p></div>`;
+    return;
+  }
+  list.innerHTML = links.map((l,i) => `
+    <div style="display:flex;align-items:center;
+                gap:10px;padding:10px 12px;
+                background:var(--bg3);
+                border-radius:8px;margin-bottom:8px;
+                border:1px solid var(--border)">
+      <i class="fa-solid fa-link"
+         style="color:var(--gold);font-size:14px;
+                flex-shrink:0"></i>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;
+                    color:var(--text1)">
+          ${l.label||'Link'}</div>
+        <a href="${l.url}" target="_blank"
+           style="font-size:11px;color:var(--navy);
+                  text-decoration:none;
+                  word-break:break-all">
+          ${l.url}
+        </a>
+      </div>
+      <a href="${l.url}" target="_blank"
+         class="btn-mini btn-navy">
+        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+        Open
+      </a>
+      ${isAdmin
+        ? `<button class="btn-mini btn-delete"
+             onclick="deleteProjectLink(${i})">
+             <i class="fa-solid fa-trash"></i>
+           </button>` : ''}
+    </div>`).join('');
+}
+
+async function addProjectLink() {
+  if (!currentProjectId) return;
+  const label = document.getElementById('pdLinkLabel')?.value.trim();
+  const url   = document.getElementById('pdLinkURL')?.value.trim();
+  if (!label || !url) {
+    showToast('Enter both label and URL.','error'); return;
+  }
+  if (!url.startsWith('http')) {
+    showToast('Enter a valid URL starting with https://','error');
+    return;
+  }
+  const current = currentProjectDoc?.importantLinks || [];
+  const updated = [...current, { label, url }];
+  try {
+    await fsUpdateDoc(fsDoc(db,'projects',currentProjectId), { importantLinks: updated });
+    if (currentProjectDoc) currentProjectDoc.importantLinks = updated;
+    const idx = allProjects.findIndex(x => x.id === currentProjectId);
+    if (idx > -1) allProjects[idx].importantLinks = updated;
+    setText('pdLinkCount', updated.length);
+    document.getElementById('pdLinkLabel').value = '';
+    document.getElementById('pdLinkURL').value   = '';
+    renderProjectLinks();
+    showToast('✅ Link added!','success');
+  } catch(e) {
+    showToast('❌ Failed: '+e.message,'error');
+  }
+}
+
+async function deleteProjectLink(index) {
+  if (!currentProjectId) return;
+  const current = currentProjectDoc?.importantLinks || [];
+  const updated = current.filter((_,i) => i !== index);
+  try {
+    await fsUpdateDoc(fsDoc(db,'projects',currentProjectId), { importantLinks: updated });
+    if (currentProjectDoc) currentProjectDoc.importantLinks = updated;
+    const idx = allProjects.findIndex(x => x.id === currentProjectId);
+    if (idx > -1) allProjects[idx].importantLinks = updated;
+    setText('pdLinkCount', updated.length);
+    renderProjectLinks();
+    showToast('✅ Link removed.','success');
+  } catch(e) {
+    showToast('❌ Failed: '+e.message,'error');
+  }
+}
+
+// ── Active Tasks for Project ───────────────────────
+async function loadProjectTasks(projectName) {
+  const list = document.getElementById('pdTaskList');
+  if (!list || !projectName) return;
+  try {
+    const q = fsQuery(
+      fsCollection(db,'hub_entries'),
+      fsWhere('project','==', projectName)
+    );
+    const snap = await fsGetDocs(q);
+    const tasks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    setText('pdTaskCount', tasks.length);
+    if (!tasks.length) {
+      list.innerHTML = `<div class="empty-state">
+        <i class="fa-solid fa-inbox"></i>
+        <p>No tasks linked to this project.</p>
+        <small style="color:var(--text3)">
+          When adding tasks in Task Matrix, select "${projectName}" as the project.
+        </small></div>`;
+      return;
+    }
+    list.innerHTML = tasks.map(t => `
+      <div style="display:flex;align-items:flex-start;
+                  gap:10px;padding:10px 12px;
+                  background:var(--bg3);
+                  border-radius:8px;margin-bottom:8px;
+                  border:1px solid var(--border)">
+        <span class="badge ${getHubTypeBadge(t.type)}"
+              style="flex-shrink:0">
+          ${t.type||'—'}
+        </span>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600;
+                      color:var(--text1)">
+            ${t.subject||'—'}</div>
+          <div style="font-size:11px;color:var(--text3);
+                      margin-top:2px">
+            Assigned: ${t.assignedTo||'—'} &nbsp;|&nbsp;
+            Due: ${t.dueDate||'—'}
+          </div>
+        </div>
+        <span class="badge badge-${(t.status||'pending').toLowerCase().replace(' ','')}">
+          ${t.status||'Pending'}
+        </span>
+      </div>`).join('');
+  } catch(e) {
+    list.innerHTML = '<p style="color:var(--text3)">Error loading tasks.</p>';
+  }
+}
+
+// Helper
+function setText(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+// ── Global Project Dropdowns ────────────────────────
+function populateProjectDropdowns() {
+  const options = '<option value="">-- Select Project --</option>' +
+    allProjects.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+
+  const dropdownIds = [
+    'hubProject',
+    'vcProjectName',
+    'ns_project',
+    'vcProjectFilter'
+  ];
+
+  dropdownIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      if (id === 'vcProjectFilter') {
+        el.innerHTML = '<option value="all">All Projects</option>' +
+          allProjects.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+      } else {
+        el.innerHTML = options;
+      }
+    }
+  });
+}
+
+// ── One-time default projects seed ────────────────
+async function setupProjects() {
+  const PROJECTS = [
+    { name:"CCTNS", fullName:"Crime & Criminal Tracking Network System", category:"Crime & Justice", icon:"fa-fingerprint", color:"#8b0000" },
+    { name:"ICJS", fullName:"Inter-operable Criminal Justice System", category:"Crime & Justice", icon:"fa-scale-balanced", color:"#8b0000" },
+    { name:"CriMAC", fullName:"Crime Mapping Analytics & Predictive System", category:"Crime & Justice", icon:"fa-map-location-dot", color:"#8b0000" },
+    { name:"APCOPS", fullName:"Andhra Pradesh Cops Operations System", category:"Crime & Justice", icon:"fa-shield-halved", color:"#8b0000" },
+    { name:"NATGRID", fullName:"National Intelligence Grid", category:"Intelligence & Security", icon:"fa-network-wired", color:"#0d3b7a" },
+    { name:"XDR & SASE", fullName:"Extended Detection Response & Secure Access Service Edge (Global Protect VPN)", category:"Intelligence & Security", icon:"fa-shield-virus", color:"#0d3b7a" },
+    { name:"AI4AP", fullName:"Artificial Intelligence for Andhra Pradesh Police", category:"Intelligence & Security", icon:"fa-robot", color:"#0d3b7a" },
+    { name:"PM Gati Shakti", fullName:"PM Gati Shakti National Master Plan Portal", category:"Intelligence & Security", icon:"fa-route", color:"#0d3b7a" },
+    { name:"AP Police Website", fullName:"AP Police Website & Citizen Portal", category:"Citizen Services", icon:"fa-globe", color:"#1a7a4a" },
+    { name:"CEIR", fullName:"Central Equipment Identity Register", category:"Citizen Services", icon:"fa-mobile-screen-button", color:"#1a7a4a" },
+    { name:"Dial-112", fullName:"Emergency Response Support System Dial-112", category:"Citizen Services", icon:"fa-phone-volume", color:"#1a7a4a" },
+    { name:"e-Challan", fullName:"Electronic Challan System", category:"Citizen Services", icon:"fa-receipt", color:"#1a7a4a" },
+    { name:"Drones", fullName:"AP Police Drone Surveillance Operations", category:"Surveillance", icon:"fa-helicopter", color:"#6b21a8" },
+    { name:"CCTV", fullName:"CCTV Surveillance & Monitoring Network", category:"Surveillance", icon:"fa-video", color:"#6b21a8" },
+    { name:"e-Office", fullName:"Electronic Office Management System", category:"Administration", icon:"fa-file-signature", color:"#92400e" },
+    { name:"GeM Procurements", fullName:"Government e-Marketplace Procurement Portal", category:"Administration", icon:"fa-cart-shopping", color:"#92400e" },
+    { name:"APOLIS", fullName:"Andhra Pradesh Police Information System", category:"Administration", icon:"fa-database", color:"#92400e" }
+  ];
+
+  const today = new Date().toISOString().split('T')[0];
+  let count = 0;
+
+  for (const p of PROJECTS) {
+    try {
+      await fsAddDoc(fsCollection(db,'projects'), {
+        ...p,
+        description:    '',
+        importantLinks: [],
+        assignedStaff:  [],
+        status:         'Active',
+        createdDate:    today,
+        createdBy:      'Anuj Kumar'
+      });
+      console.log('✅ Added:', p.name);
+      count++;
+    } catch(e) {
+      console.error('❌ Failed:', p.name, e.message);
+    }
+  }
+  alert('Setup complete! ' + count + '/17 projects created.');
+}
+
+window.loadProjects = loadProjects;
+window.filterProjects = filterProjects;
+window.openProjectDetail = openProjectDetail;
+window.closeProjectDetail = closeProjectDetail;
+window.showProjectTab = showProjectTab;
+window.countProjectWords = countProjectWords;
+window.saveProjectDescription = saveProjectDescription;
+window.assignStaffToProject = assignStaffToProject;
+window.removeStaffFromProject = removeStaffFromProject;
+window.addProjectLink = addProjectLink;
+window.deleteProjectLink = deleteProjectLink;
+window.setupProjects = setupProjects;
 
 window.setupFirstAdmin = setupFirstAdmin;
 </script>
@@ -5441,6 +6085,215 @@ if ('serviceWorker' in navigator) {
         Yes, Delete
       </button>
     </div>
+  </div>
+</div>
+<!-- PROJECT DETAIL MODAL -->
+<div id="projectDetailModal"
+     style="display:none;position:fixed;inset:0;
+            z-index:8000;background:rgba(0,0,0,0.5);
+            overflow-y:auto;padding:20px">
+  <div style="background:var(--bg);
+              border-radius:16px;max-width:680px;
+              margin:0 auto;padding:28px;
+              border:1px solid var(--border)">
+
+    <!-- Modal Header -->
+    <div style="display:flex;justify-content:space-between;
+                align-items:flex-start;margin-bottom:20px">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div id="pdIcon"
+             style="width:52px;height:52px;
+                    border-radius:12px;
+                    display:flex;align-items:center;
+                    justify-content:center;
+                    font-size:22px;color:#fff">
+          <i class="fa-solid fa-database"></i>
+        </div>
+        <div>
+          <div id="pdName"
+               style="font-family:'Rajdhani',sans-serif;
+                      font-size:22px;font-weight:700;
+                      color:var(--text1)">—</div>
+          <div id="pdFullName"
+               style="font-size:12px;color:var(--text3)">
+            —</div>
+          <div id="pdCategory"
+               style="font-size:11px;font-weight:600;
+                      margin-top:3px;padding:2px 8px;
+                      border-radius:12px;
+                      display:inline-block">—</div>
+        </div>
+      </div>
+      <button onclick="closeProjectDetail()"
+              style="background:none;border:none;
+                     font-size:20px;cursor:pointer;
+                     color:var(--text3);padding:4px">
+        ✕
+      </button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tab-pills" style="margin-bottom:16px">
+      <button class="tab-pill active"
+        onclick="showProjectTab('overview',this)">
+        Overview
+      </button>
+      <button class="tab-pill"
+        onclick="showProjectTab('staff',this)">
+        👥 Personnel
+      </button>
+      <button class="tab-pill"
+        onclick="showProjectTab('tasks',this)">
+        📋 Active Tasks
+      </button>
+      <button class="tab-pill"
+        onclick="showProjectTab('links',this)">
+        🔗 Links
+      </button>
+    </div>
+
+    <!-- OVERVIEW TAB -->
+    <div id="pdTabOverview">
+      <div id="pdDescription"
+           style="font-size:13px;color:var(--text2);
+                  line-height:1.7;padding:14px;
+                  background:var(--bg3);
+                  border-radius:8px;margin-bottom:16px;
+                  min-height:60px">
+        No description added yet.
+      </div>
+
+      <!-- Admin Edit Description -->
+      <div id="pdEditSection" class="admin-only-section"
+           style="display:none">
+        <div class="form-group">
+          <label style="display:flex;
+                        justify-content:space-between">
+            <span>Edit Description</span>
+            <span id="pdWordCount"
+                  style="font-size:11px;
+                         color:var(--text3)">
+              0 / 100 words
+            </span>
+          </label>
+          <textarea id="pdDescInput" rows="4"
+            placeholder="Enter project description (max 100 words)..."
+            oninput="countProjectWords()"
+            style="resize:vertical"></textarea>
+        </div>
+        <button class="btn-primary btn-sm"
+          onclick="saveProjectDescription()">
+          <i class="fa-solid fa-floppy-disk"></i>
+          Save Description
+        </button>
+      </div>
+
+      <!-- Stats row -->
+      <div style="display:grid;
+                  grid-template-columns:repeat(3,1fr);
+                  gap:12px;margin-top:16px">
+        <div style="text-align:center;padding:14px;
+                    background:var(--bg3);
+                    border-radius:10px">
+          <div id="pdStaffCount"
+               style="font-size:24px;font-weight:700;
+                      color:var(--navy);
+                      font-family:'Rajdhani',sans-serif">
+            0</div>
+          <div style="font-size:11px;color:var(--text3)">
+            Personnel</div>
+        </div>
+        <div style="text-align:center;padding:14px;
+                    background:var(--bg3);
+                    border-radius:10px">
+          <div id="pdTaskCount"
+               style="font-size:24px;font-weight:700;
+                      color:var(--heart);
+                      font-family:'Rajdhani',sans-serif">
+            0</div>
+          <div style="font-size:11px;color:var(--text3)">
+            Active Tasks</div>
+        </div>
+        <div style="text-align:center;padding:14px;
+                    background:var(--bg3);
+                    border-radius:10px">
+          <div id="pdLinkCount"
+               style="font-size:24px;font-weight:700;
+                      color:var(--gold);
+                      font-family:'Rajdhani',sans-serif">
+            0</div>
+          <div style="font-size:11px;color:var(--text3)">
+            Links</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STAFF TAB -->
+    <div id="pdTabStaff" style="display:none">
+      <div id="pdStaffList"></div>
+
+      <!-- Admin: Assign Staff -->
+      <div class="admin-only-section"
+           style="margin-top:16px;padding:14px;
+                  background:var(--bg3);
+                  border-radius:10px">
+        <label style="font-size:12px;font-weight:600;
+                      color:var(--text2);
+                      margin-bottom:8px;display:block">
+          Assign Staff to Project
+        </label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <select id="pdAssignStaffSel"
+                  style="flex:1;min-width:200px">
+            <option value="">-- Select Staff --</option>
+          </select>
+          <button class="btn-primary btn-sm"
+            onclick="assignStaffToProject()">
+            <i class="fa-solid fa-user-plus"></i>
+            Assign
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TASKS TAB -->
+    <div id="pdTabTasks" style="display:none">
+      <div id="pdTaskList">
+        <div class="empty-state">
+          <i class="fa-solid fa-inbox"></i>
+          <p>No tasks linked to this project yet.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- LINKS TAB -->
+    <div id="pdTabLinks" style="display:none">
+      <div id="pdLinkList"></div>
+
+      <!-- Admin: Add Link -->
+      <div class="admin-only-section"
+           style="margin-top:16px;padding:14px;
+                  background:var(--bg3);
+                  border-radius:10px">
+        <label style="font-size:12px;font-weight:600;
+                      color:var(--text2);
+                      margin-bottom:8px;display:block">
+          Add Important Link
+        </label>
+        <div class="form-grid"
+             style="grid-template-columns:1fr 2fr auto">
+          <input type="text" id="pdLinkLabel"
+                 placeholder="Label (e.g. Portal Login)">
+          <input type="url"  id="pdLinkURL"
+                 placeholder="https://...">
+          <button class="btn-primary btn-sm"
+            onclick="addProjectLink()">
+            <i class="fa-solid fa-plus"></i> Add
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 </body>
