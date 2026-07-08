@@ -3369,8 +3369,13 @@ async function doLogin() {
 
   try {
     const staffRef = fsCollection(db, 'staff');
-    const q        = fsQuery(staffRef, fsWhere('Phone', '==', phone));
-    const snap     = await fsGetDocs(q);
+    let q        = fsQuery(staffRef, fsWhere('Phone', '==', phone));
+    let snap     = await fsGetDocs(q);
+
+    if (snap.empty) {
+      q    = fsQuery(staffRef, fsWhere('phone', '==', phone));
+      snap = await fsGetDocs(q);
+    }
 
     if (snap.empty) {
       throw new Error('Phone number not registered. Contact admin.');
@@ -3484,7 +3489,51 @@ function startApp() {
   initApp();
 }
 
-function initApp() {
+async function autoSeedFirstAdmin() {
+  try {
+    const staffRef = fsCollection(db, 'staff');
+    let q = fsQuery(staffRef, fsWhere('Phone', '==', '9493946020'));
+    let snap = await fsGetDocs(q);
+    if (snap.empty) {
+      q = fsQuery(staffRef, fsWhere('phone', '==', '9493946020'));
+      snap = await fsGetDocs(q);
+    }
+    if (snap.empty) {
+      console.log('Admin not found in Firestore. Seeding default admin user...');
+      const today = new Date().toISOString().split('T')[0];
+      await fsAddDoc(staffRef, {
+        Staff_ID:           'TS-ADM-001',
+        Full_Name:          'Anuj Kumar',
+        Rank:               '',
+        Badge_No:           'ADM-001',
+        Gender:             'Male',
+        Gmail:              'tangulaanojkumar@gmail.com',
+        Phone:              '9493946020',
+        Date_Joined:        today,
+        Status:             'Active',
+        Profile_Photo_URL:  '',
+        Assigned_Projects:  'AP Police Technical Services Staff System',
+        District_Assigned:  'Mangalagiri',
+        Reporting_Officer:  'Technical Services Division',
+        Created_Date:       today,
+        Daily_Duties:       'System Administration, Staff Monitoring',
+        Weekly_Duties:      'Weekly Report Generation, Data Backup',
+        Monthly_Duties:     'Monthly Performance Review',
+        Yearly_Duties:      'Annual System Audit, Staff Evaluation',
+        role:               'admin',
+        password:           '8421'
+      });
+      console.log('✅ Seeding first admin successful!');
+    } else {
+      console.log('Admin user 9493946020 already exists.');
+    }
+  } catch(e) {
+    console.error('autoSeedFirstAdmin error:', e);
+  }
+}
+
+async function initApp() {
+  await autoSeedFirstAdmin();
   loadStaffFromSheet();
   loadStaffList();
   loadAllData();
@@ -4143,7 +4192,7 @@ function renderStaffManagement(staffList) {
 }
 
 function populateAllStaffDropdowns() {
-  if (!window.staffCache || !window.staffCache.length) {
+  if (!staffCache || !staffCache.length) {
     console.warn('staffCache empty — retrying in 1s');
     setTimeout(populateAllStaffDropdowns, 1000);
     return;
@@ -4151,7 +4200,7 @@ function populateAllStaffDropdowns() {
 
   const staffOptions =
     '<option value="">-- Select Officer --</option>' +
-    window.staffCache.map(s => {
+    staffCache.map(s => {
       const name  = s.Full_Name || '';
       const it    = getITTitle(s.Rank||'', s.Phone||'');
       return `<option value="${name}">${it ? it + ' — ' : ''}${name}</option>`;
@@ -4174,7 +4223,7 @@ function populateAllStaffDropdowns() {
   });
 
   // Allotted checkboxes for VC
-  populateAllottedCheckboxes(window.staffCache);
+  populateAllottedCheckboxes(staffCache);
 }
 
 function populateAllottedCheckboxes(staffList) {
@@ -6003,7 +6052,7 @@ function renderProjectStaff() {
       <p>No personnel assigned yet.</p></div>`;
   } else {
     list.innerHTML = assigned.map(staffId => {
-      const s = window.staffCache?.find(x => x.Staff_ID === staffId || x.id === staffId || x.Full_Name === staffId) || {};
+      const s = staffCache?.find(x => x.Staff_ID === staffId || x.id === staffId || x.Full_Name === staffId) || {};
       const name = s.Full_Name || staffId;
       const it   = getITTitle(s.Rank||'', s.Phone||'');
       return `
@@ -6043,9 +6092,9 @@ function renderProjectStaff() {
 
   // Populate assign dropdown
   const sel = document.getElementById('pdAssignStaffSel');
-  if (sel && window.staffCache) {
+  if (sel && staffCache) {
     sel.innerHTML = '<option value="">-- Select Staff --</option>' +
-      window.staffCache
+      staffCache
         .filter(s => !assigned.includes(s.Staff_ID || s.id || s.Full_Name))
         .map(s => {
           const it = getITTitle(s.Rank||'', s.Phone||'');
