@@ -3126,10 +3126,12 @@ function optimisticAdd(sheetKey, obj, renderFn) {
 async function loadAllData() {
   try {
     loadStaffFromFirestore();
-    loadHubEntries();
-    loadVCMeetings();
-    loadNotices();
-    loadProjects();
+    populateAllStaffDropdowns();
+    populateProjectDropdowns();
+    await loadHubEntries();
+    await loadVCMeetings();
+    await loadProjects();
+    renderDashboard();
     return true;
   } catch(err) {
     console.error('loadAllData error:', err);
@@ -4140,19 +4142,39 @@ function renderStaffManagement(staffList) {
   if (statStaff) statStaff.textContent = staffList.length;
 }
 
-function populateAllStaffDropdowns(staffList) {
-  const dropdowns = document.querySelectorAll(
-    '#assignedTo, #taskAssignedTo, #hubAssignedTo, #vcSpeaker, #vcOrganiser, #sfReporting, #corrAllocBy, #corrAllocTo, select[name="assignedTo"], select[data-staff-dropdown]'
-  );
-  const options = '<option value="">-- Select Staff --</option>' +
-    staffList.map(s => {
-      const name = s.Full_Name || 'Unknown';
-      const itTitle = getITTitle(s.Rank || '', s.Phone || s.phone || '');
-      return `<option value="${name}">${itTitle ? itTitle + ' · ' : ''}${name}</option>`;
-    }).join('');
-  dropdowns.forEach(sel => sel.innerHTML = options);
+function populateAllStaffDropdowns() {
+  if (!window.staffCache || !window.staffCache.length) {
+    console.warn('staffCache empty — retrying in 1s');
+    setTimeout(populateAllStaffDropdowns, 1000);
+    return;
+  }
 
-  populateAllottedCheckboxes(staffList);
+  const staffOptions =
+    '<option value="">-- Select Officer --</option>' +
+    window.staffCache.map(s => {
+      const name  = s.Full_Name || '';
+      const it    = getITTitle(s.Rank||'', s.Phone||'');
+      return `<option value="${name}">${it ? it + ' — ' : ''}${name}</option>`;
+    }).join('');
+
+  // ALL dropdowns that need staff list
+  [
+    'hubAssignedTo',    // Add Task Matrix
+    'ehubAssignedTo',   // Edit Task Matrix
+    'vcSpeaker',        // VC form
+    'vcOrganiser',      // VC form
+    'pdAssignStaffSel', // Project assign
+  ].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      const prev = el.value; // preserve selection
+      el.innerHTML = staffOptions;
+      if (prev) el.value = prev;
+    }
+  });
+
+  // Allotted checkboxes for VC
+  populateAllottedCheckboxes(window.staffCache);
 }
 
 function populateAllottedCheckboxes(staffList) {
@@ -4944,10 +4966,8 @@ function openAddHubEntryModal() {
 
       <!-- ROW 3: CURRENTLY WITH + STATUS -->
       <div class="form-group">
-        <label>CURRENTLY WITH <span style="font-size:10px;color:var(--text3)">(Who has it right now?)</span></label>
-        <select id="hubCurrentlyWith">
-          <option value="">-- Select Person --</option>
-        </select>
+        <label>CURRENTLY WITH <span style="font-size:10px;color:var(--text3)">(Who is handling it right now?)</span></label>
+        <input type="text" id="hubCurrentlyWith" placeholder="Enter name or department...">
       </div>
       <div class="form-group">
         <label>STATUS</label>
@@ -5001,22 +5021,19 @@ function openAddHubEntryModal() {
     <button class="btn-primary" onclick="addHubEntry()" style="background:var(--navy);color:#fff;"><i class="fa-solid fa-plus"></i> Save Entry</button>
   `;
 
-  // Populate projects
+  // Reset fields to defaults
+  ['hubType','hubProject','hubAssignedTo','hubStatus','hubPriority'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = id === 'hubStatus' ? 'Pending' : id === 'hubPriority' ? 'Medium' : '';
+  });
+  ['hubSubject','hubDesc','hubRemarks','hubTaskLink','hubDueDate','hubCurrentlyWith'].forEach(id => {
+     const el = document.getElementById(id);
+     if (el) el.value = '';
+  });
+
+  // Repopulate fresh every time
+  populateAllStaffDropdowns();
   populateProjectDropdowns();
-
-  // Populate staff dropdowns
-  const staffOpts = '<option value="">-- Select Person --</option>' +
-    (window.staffCache || []).map(s => {
-      const name = s.Full_Name || '';
-      const it = getITTitle(s.Rank||'', s.Phone||'');
-      return `<option value="${name}">${it ? it + ' — ' : ''}${name}</option>`;
-    }).join('');
-
-  const assignedSel = document.getElementById('hubAssignedTo');
-  if (assignedSel) assignedSel.innerHTML = staffOpts;
-
-  const currentlyWithSel = document.getElementById('hubCurrentlyWith');
-  if (currentlyWithSel) currentlyWithSel.innerHTML = staffOpts;
 
   // Set default due date to today
   document.getElementById('hubDueDate').value = new Date().toISOString().split('T')[0];
@@ -6831,31 +6848,97 @@ async function openEditHubModal(docId) {
       showToast('Entry not found.','error'); return;
     }
     const t = snap.data();
+    const isAdmin =
+      localStorage.getItem('userRole') === 'admin';
+
     document.getElementById('editHubDocId').value = docId;
 
-    // Set badge
+    // Reference badge
     const badge =
       document.getElementById('editHubRefBadge');
     if (badge) badge.textContent =
       t.refNo || 'TM-' + docId.slice(-6).toUpperCase();
 
-    // Fill fields
-    setVal('ehubType',     t.type || t.Type || '');
-    setVal('ehubSubject',  t.subject || t.Subject || '');
-    setVal('ehubPriority', t.priority || t.Priority || 'Medium');
-    setVal('ehubDueDate',  t.dueDate || t.Due_Date || '');
-    setVal('ehubDesc',     t.description || t.Description || '');
-    setVal('ehubRemarks',  t.remarks || t.Remarks || '');
-    setVal('ehubTaskLink', t.taskLink || t.TaskLink || '');
-    setVal('ehubCompletionDate', t.completionDate || t.CompletionDate || '');
+    // Fill ALL fields
+    setVal('ehubType',         t.type || t.Type || '');
+    setVal('ehubSubject',      t.subject || t.Subject || '');
+    setVal('ehubAssignedTo',   t.assignedTo || t.Assigned_To || '');
+    setVal('ehubCurrentlyWith',t.currentlyWith || t.Currently_With || '');
+    setVal('ehubStatus',       t.status || t.Status || 'Pending');
+    setVal('ehubPriority',     t.priority || t.Priority || 'Medium');
+    setVal('ehubDueDate',      t.dueDate || t.Due_Date || '');
+    setVal('ehubDesc',         t.description || t.Description || '');
+    setVal('ehubRemarks',      t.remarks || t.Remarks || '');
+    setVal('ehubTaskLink',     t.taskLink || t.TaskLink || '');
+    setVal('ehubCompletionDate',t.completionDate || t.CompletionDate || '');
 
-    // Repopulate dynamic dropdowns
-    populateEditHubDropdowns(t);
+    // Populate project dropdown
+    populateEditHubProjectDropdown(t.project||t.Project||'');
+    populateAllStaffDropdowns();
+    setTimeout(() => {
+      setVal('ehubAssignedTo', t.assignedTo||t.Assigned_To||'');
+    }, 100);
 
-    // Status
-    setVal('ehubStatus', t.status || t.Status || 'Pending');
+    // ── ROLE-BASED FIELD LOCKING ──────────────────
+    // Fields ONLY editable by admin
+    const adminOnlyFields = [
+      'ehubType',
+      'ehubSubject',
+      'ehubProject',
+      'ehubAssignedTo',
+      'ehubPriority',
+      'ehubDueDate',
+      'ehubDesc',
+      'ehubTaskLink',
+      'ehubCompletionDate'
+    ];
+
+    // Fields editable by ALL roles
+    const editableByAll = [
+      'ehubStatus',
+      'ehubRemarks',
+      'ehubCurrentlyWith'
+    ];
+
+    if (isAdmin) {
+      // Admin — unlock ALL fields
+      [...adminOnlyFields, ...editableByAll]
+        .forEach(id => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          el.disabled = false;
+          el.style.opacity = '1';
+          el.style.cursor = '';
+          el.style.background = '';
+          el.style.color = '';
+        });
+      // Show admin notice
+      showEditNotice('admin');
+    } else {
+      // Officer/Staff — lock admin-only fields
+      adminOnlyFields.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.disabled = true;
+        el.style.opacity = '0.5';
+        el.style.cursor  = 'not-allowed';
+        el.style.background = 'var(--bg3)';
+      });
+      // Unlock editable fields
+      editableByAll.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.disabled = false;
+        el.style.opacity = '1';
+        el.style.cursor  = '';
+        el.style.background = '';
+        el.style.color = '';
+      });
+      // Show staff notice
+      showEditNotice('staff');
+    }
+
     checkCompletedNotice();
-
     document.getElementById('editHubModal')
       .style.display = 'block';
   } catch(e) {
@@ -6863,44 +6946,57 @@ async function openEditHubModal(docId) {
   }
 }
 
-function populateEditHubDropdowns(t) {
-  // Project dropdown
-  const projOpts =
+// Show role-based notice in edit modal
+function showEditNotice(role) {
+  let noticeEl =
+    document.getElementById('editRoleNotice');
+  if (!noticeEl) {
+    noticeEl = document.createElement('div');
+    noticeEl.id = 'editRoleNotice';
+    const form =
+      document.querySelector('#editHubModal .form-grid');
+    if (form) form.parentNode.insertBefore(
+      noticeEl, form);
+  }
+  if (role === 'admin') {
+    noticeEl.innerHTML = `
+      <div style="padding:8px 12px;margin-bottom:12px;
+                  background:rgba(13,59,122,0.08);
+                  border:1px solid rgba(13,59,122,0.25);
+                  border-radius:8px;font-size:12px;
+                  color:var(--navy);
+                  display:flex;gap:8px;align-items:center">
+        <i class="fa-solid fa-shield-halved"></i>
+        <strong>Admin Mode</strong> — All fields editable.
+      </div>`;
+  } else {
+    noticeEl.innerHTML = `
+      <div style="padding:8px 12px;margin-bottom:12px;
+                  background:rgba(201,168,76,0.08);
+                  border:1px solid rgba(201,168,76,0.3);
+                  border-radius:8px;font-size:12px;
+                  color:#92400e;
+                  display:flex;gap:8px;align-items:center">
+        <i class="fa-solid fa-lock"></i>
+        You can only update:
+        <strong>Status · Remarks · Currently With</strong>
+      </div>`;
+  }
+}
+
+function populateEditHubProjectDropdown(selectedProject) {
+  const sel = document.getElementById('ehubProject');
+  if (!sel) return;
+  sel.innerHTML =
     '<option value="">-- Select Project --</option>' +
     (allProjects||[]).map(p =>
       `<option value="${p.name}"
-        ${(t.project||t.Project)===p.name?'selected':''}>
+        ${selectedProject===p.name?'selected':''}>
         ${p.name}</option>`
     ).join('') +
     `<option value="Other"
-      ${(t.project||t.Project)==='Other'?'selected':''}>
+      ${selectedProject==='Other'?'selected':''}>
       📌 Other</option>`;
-
-  setHtml('ehubProject', projOpts);
-
-  // Staff dropdowns
-  const staffOpts =
-    '<option value="">-- Select --</option>' +
-    (window.staffCache||[]).map(s => {
-      const name = s.Full_Name || '';
-      const it   = getITTitle(s.Rank||'',s.Phone||'');
-      return `<option value="${name}"
-        ${(t.assignedTo||t.Assigned_To)===name?'selected':''}>
-        ${it ? it+' — ' : ''}${name}</option>`;
-    }).join('');
-
-  const cwOpts =
-    '<option value="">-- Select --</option>' +
-    (window.staffCache||[]).map(s => {
-      const name = s.Full_Name || '';
-      const it   = getITTitle(s.Rank||'',s.Phone||'');
-      return `<option value="${name}"
-        ${(t.currentlyWith||t.Currently_With)===name?'selected':''}>
-        ${it ? it+' — ' : ''}${name}</option>`;
-    }).join('');
-
-  setHtml('ehubAssignedTo',   staffOpts);
-  setHtml('ehubCurrentlyWith',cwOpts);
 }
 
 function checkCompletedNotice() {
@@ -6934,33 +7030,52 @@ async function saveEditHubEntry() {
     document.getElementById('editHubDocId').value;
   if (!docId) return;
 
-  const status = document.getElementById('ehubStatus')
-                   ?.value || 'Pending';
-  const today  = new Date().toISOString().split('T')[0];
+  const isAdmin =
+    localStorage.getItem('userRole') === 'admin';
+  const today   =
+    new Date().toISOString().split('T')[0];
+  const status  =
+    document.getElementById('ehubStatus')?.value||'Pending';
 
-  const data = {
-    type:          document.getElementById('ehubType')?.value         || '',
-    project:       document.getElementById('ehubProject')?.value      || '',
-    subject:       document.getElementById('ehubSubject')?.value?.trim()||'',
-    assignedTo:    document.getElementById('ehubAssignedTo')?.value   || '',
-    currentlyWith: document.getElementById('ehubCurrentlyWith')?.value|| '',
+  // Base data — editable by ALL
+  let data = {
     status:        status,
-    priority:      document.getElementById('ehubPriority')?.value     || 'Medium',
-    dueDate:       document.getElementById('ehubDueDate')?.value      || '',
-    description:   document.getElementById('ehubDesc')?.value?.trim() || '',
-    remarks:       document.getElementById('ehubRemarks')?.value?.trim()||'',
-    taskLink:      document.getElementById('ehubTaskLink')?.value     || '',
-    completionDate:status === 'Completed'
-      ? (document.getElementById('ehubCompletionDate')
-           ?.value || today)
-      : '',
+    remarks:       (document.getElementById('ehubRemarks')
+                     ?.value||'').trim(),
+    currentlyWith: (document.getElementById('ehubCurrentlyWith')
+                     ?.value||'').trim(),
     updatedBy:     localStorage.getItem('userName') || '',
     updatedAt:     fsTimestamp()
   };
 
-  if (!data.subject) {
-    showToast('Subject/Title is required.','error');
-    return;
+  // Auto-set completion date
+  if (status === 'Completed') {
+    data.completionDate =
+      document.getElementById('ehubCompletionDate')
+        ?.value || today;
+  }
+
+  // Admin gets to save ALL fields too
+  if (isAdmin) {
+    data = {
+      ...data,
+      type:        document.getElementById('ehubType')
+                     ?.value || '',
+      project:     document.getElementById('ehubProject')
+                     ?.value || '',
+      subject:     (document.getElementById('ehubSubject')
+                     ?.value||'').trim(),
+      assignedTo:  document.getElementById('ehubAssignedTo')
+                     ?.value || '',
+      priority:    document.getElementById('ehubPriority')
+                     ?.value || 'Medium',
+      dueDate:     document.getElementById('ehubDueDate')
+                     ?.value || '',
+      description: (document.getElementById('ehubDesc')
+                     ?.value||'').trim(),
+      taskLink:    document.getElementById('ehubTaskLink')
+                     ?.value || ''
+    };
   }
 
   const saveBtn = document.querySelector(
@@ -6976,7 +7091,9 @@ async function saveEditHubEntry() {
       fsDoc(db,'hub_entries',docId), data
     );
     closeEditHubModal();
-    showToast('✅ Task updated successfully!','success');
+    const who = isAdmin ? 'All fields' :
+      'Status, Remarks & Currently With';
+    showToast('✅ Task updated! (' + who + ')', 'success');
     await loadHubEntries();
   } catch(e) {
     showToast('❌ Save failed: '+e.message,'error');
@@ -7752,10 +7869,14 @@ if ('serviceWorker' in navigator) {
         </select>
       </div>
       <div class="form-group">
-        <label>CURRENTLY WITH</label>
-        <select id="ehubCurrentlyWith">
-          <option value="">-- Select --</option>
-        </select>
+        <label>
+          CURRENTLY WITH
+          <span style="font-size:10px;color:var(--text3)">
+            (Who is handling it right now?)
+          </span>
+        </label>
+        <input type="text" id="ehubCurrentlyWith"
+               placeholder="Enter name or department...">
       </div>
       <div class="form-group">
         <label>STATUS</label>
