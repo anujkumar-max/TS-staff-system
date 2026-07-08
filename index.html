@@ -1594,10 +1594,12 @@ select[multiple] option:selected {
               <table>
                 <thead class="heart-thead">
                   <tr>
-                    <th>S.No</th>
+                    <th>Ref No</th>
                     <th>Type</th>
+                    <th>Project</th>
                     <th>Subject</th>
                     <th>Assigned To</th>
+                    <th>Currently With</th>
                     <th>Priority</th>
                     <th>Due Date</th>
                     <th>Status</th>
@@ -1606,7 +1608,7 @@ select[multiple] option:selected {
                   </tr>
                 </thead>
                 <tbody id="hubBody">
-                  <tr><td colspan="9"><div class="loading"><div class="spinner"></div></div></td></tr>
+                  <tr><td colspan="11"><div class="loading"><div class="spinner"></div></div></td></tr>
                 </tbody>
               </table>
             </div>
@@ -3924,7 +3926,6 @@ async function saveMyProfileDetails() {
     }
   }
 }
-}
 
 let currentDutyTab = 'Daily';
 
@@ -4727,7 +4728,8 @@ function renderHub() {
   try {
     const tbody = document.getElementById('hubBody');
     if (!tbody) return;
-    const isAdmin = localStorage.getItem('userRole') === 'admin';
+    const role   = localStorage.getItem('userRole') || 'staff';
+    const isAdmin = role === 'admin';
 
     const search = (document.getElementById('hubSearch')?.value || '').toLowerCase();
     const typeFilter = window.currentHubTypeFilter || 'all';
@@ -4738,11 +4740,11 @@ function renderHub() {
     // Filter by search query
     if (search) {
       data = data.filter(h => 
-        (h.Subject || '').toLowerCase().includes(search) ||
-        (h.Description || '').toLowerCase().includes(search) ||
-        (h.Assigned_To || '').toLowerCase().includes(search) ||
-        (h.Added_By || '').toLowerCase().includes(search) ||
-        (h.Category || '').toLowerCase().includes(search)
+        (h.Subject || h.subject || '').toLowerCase().includes(search) ||
+        (h.Description || h.description || '').toLowerCase().includes(search) ||
+        (h.Assigned_To || h.assignedTo || '').toLowerCase().includes(search) ||
+        (h.Currently_With || h.currentlyWith || '').toLowerCase().includes(search) ||
+        (h.refNo || '').toLowerCase().includes(search)
       );
     }
 
@@ -4762,38 +4764,111 @@ function renderHub() {
 
     // Filter by status
     if (statusFilter !== 'all') {
-      data = data.filter(h => h.Status === statusFilter);
+      data = data.filter(h => (h.Status || h.status) === statusFilter);
     }
 
     if (data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><i class="fa-solid fa-table-cells-large"></i><p>No Task Matrix entries found.</p></div></td></tr>';
+      tbody.innerHTML = '<tr><td colspan="11"><div class="empty-state"><i class="fa-solid fa-table-cells-large"></i><p>No Task Matrix entries found.</p></div></td></tr>';
       return;
     }
 
-    tbody.innerHTML = data.map((t, i) => {
-      const realIndex = (allData.hub_entries || []).indexOf(t);
+    tbody.innerHTML = data.map((t) => {
+      const docId = t.id || t.Entry_ID || t.ID || '';
+      const type = t.type || t.Type || '';
+      const project = t.project || t.Project || '';
+      const subject = t.subject || t.Subject || '';
+      const assignedTo = t.assignedTo || t.Assigned_To || '';
+      const currentlyWith = t.currentlyWith || t.Currently_With || '';
+      const priority = t.priority || t.Priority || 'Medium';
+      const dueDate = t.dueDate || t.Due_Date || '';
+      const status = t.status || t.Status || 'Pending';
+      const remarks = t.remarks || t.Remarks || '';
 
-      return '<tr>' +
-        '<td>' + (i + 1) + '</td>' +
-        '<td><span class="badge ' + getHubTypeBadge(t.Type) + '">' + (t.Type || '—') + '</span></td>' +
-        '<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis"><strong>' + (t.Subject || '—') + '</strong>' +
-        (t.Category ? '<div style="font-size:11px;color:var(--text3);margin-top:2px"><i class="fa-solid fa-tag"></i> ' + t.Category + '</div>' : '') + '</td>' +
-        '<td>' + (t.Assigned_To || '—') + '</td>' +
-        '<td>' + priorityBadge(t.Priority) + '</td>' +
-        '<td>' + formatDate(t.Due_Date) + '</td>' +
-        '<td>' + statusBadge(t.Status) + '</td>' +
-        '<td>' + formatDate(t.Added_On || t.Created_Date) + '</td>' +
-        '<td><div class="row-actions">' +
-        '<button class="action-btn" onclick="viewHubEntry(' + realIndex + ')" title="View"><i class="fa-solid fa-eye"></i></button>' +
-        '<button class="action-btn" onclick="editHubEntry(' + realIndex + ')" title="Edit"><i class="fa-solid fa-pen"></i></button>' +
-        (isAdmin ? '<button class="btn-mini btn-delete" onclick="confirmDeleteHub(\'' + (t.Entry_ID || t.id) + '\', \'' + (t.Subject || '').replace(/'/g, "\\'") + '\')"><i class="fa-solid fa-trash"></i> Delete</button>' : '') +
-        '</div></td>' +
-        '</tr>';
+      let addedOnStr = '—';
+      if (t.createdAt?.toDate) {
+        addedOnStr = t.createdAt.toDate().toLocaleDateString('en-IN');
+      } else if (t.Added_On || t.Created_Date) {
+        addedOnStr = formatDate(t.Added_On || t.Created_Date);
+      } else if (t.addedOn) {
+        addedOnStr = formatDate(t.addedOn);
+      }
+
+      return `<tr>
+        <td style="font-size:10px;color:var(--text3)">${t.refNo || '—'}</td>
+        <td><span class="badge ${getHubTypeBadge(type)}">${type||'—'}</span></td>
+        <td style="font-size:12px">${project||'—'}</td>
+        <td>
+          <div style="font-weight:600;font-size:13px">${subject||'—'}</div>
+          ${remarks ? `<div style="font-size:10px;color:var(--text3);margin-top:2px;font-style:italic">📝 ${remarks.substring(0,40)}...</div>` : ''}
+        </td>
+        <td style="font-size:12px">${assignedTo||'—'}</td>
+        <td style="font-size:12px;color:var(--navy);font-weight:600">${currentlyWith||'—'}</td>
+        <td>
+          <span class="badge badge-${priority==='High' ? 'urgent' : priority==='Low' ? 'low' : 'medium'}">
+            ${priority||'Medium'}
+          </span>
+        </td>
+        <td style="font-size:12px">${dueDate||'—'}</td>
+        <td>
+          <span class="badge badge-${status==='Completed' ? 'completed' : status==='In Progress' ? 'progress' : 'pending'}">
+            ${status||'Pending'}
+          </span>
+        </td>
+        <td style="font-size:11px;color:var(--text3)">${addedOnStr}</td>
+        <td>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <!-- EDIT — ALL users can edit -->
+            <button class="btn-mini btn-navy" onclick="openEditHubModal('${docId}')">
+              <i class="fa-solid fa-pen"></i> Edit
+            </button>
+
+            <!-- VIEW — ALL users -->
+            <button class="btn-mini" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2)" onclick="viewHubEntryDirect('${docId}')">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+
+            <!-- DELETE — ADMIN ONLY + COMPLETED tasks ONLY -->
+            ${isAdmin && status === 'Completed' ? `
+              <button class="btn-mini btn-delete" onclick="confirmDeleteHub('${docId}', '${subject.replace(/'/g,"\\'")}')">
+                <i class="fa-solid fa-trash"></i> Delete
+              </button>
+            ` : isAdmin && status !== 'Completed' ? `
+              <button class="btn-mini" style="background:var(--bg3);border:1px dashed var(--border);color:var(--text3);cursor:not-allowed" title="Can only delete Completed tasks" disabled>
+                <i class="fa-solid fa-lock"></i>
+              </button>
+            ` : ''}
+          </div>
+        </td>
+      </tr>`;
     }).join('');
   } catch (err) {
     console.error('Error rendering hub:', err);
   }
 }
+
+function viewHubEntryDirect(docId) {
+  const t = (allData.hub_entries || []).find(x => (x.id === docId || x.Entry_ID === docId || x.ID === docId));
+  if (!t) return;
+  const rows = [
+    ['Ref No', t.refNo || '—'],
+    ['Type', t.type || t.Type || '—'],
+    ['Project', t.project || t.Project || '—'],
+    ['Subject/Title', t.subject || t.Subject || '—'],
+    ['Assigned To', t.assignedTo || t.Assigned_To || '—'],
+    ['Currently With', t.currentlyWith || t.Currently_With || '—'],
+    ['Priority', t.priority || t.Priority || '—'],
+    ['Due Date', t.dueDate || t.Due_Date || '—'],
+    ['Status', t.status || t.Status || '—'],
+    ['Description', t.description || t.Description || '—'],
+    ['Remarks / Latest Update', t.remarks || t.Remarks || '—'],
+    ['Task Link / URL', t.taskLink ? `<a href="${t.taskLink}" target="_blank" style="color:var(--navy);text-decoration:underline">${t.taskLink}</a>` : '—'],
+    ['Added By', t.createdBy || t.Added_By || '—'],
+    ['Added On', t.createdAt?.toDate ? t.createdAt.toDate().toLocaleDateString('en-IN') : formatDate(t.Added_On || t.Created_Date)]
+  ];
+  showDetails('Task Matrix Entry Details', detailRows(rows));
+}
+
+window.viewHubEntryDirect = viewHubEntryDirect;
 
 function viewHubEntry(i) {
   const t = (allData.hub_entries || [])[i];
@@ -4817,116 +4892,6 @@ function viewHubEntry(i) {
   showDetails('Task Matrix Entry Details', detailRows(rows));
 }
 
-let hubEditContext = null;
-
-function editHubEntry(i) {
-  const t = (allData.hub_entries || [])[i];
-  if (!t) return;
-  
-  hubEditContext = { index: i, row: rowNumber(t, i), id: t.Entry_ID || t.ID || `H${Date.now()}` };
-  
-  const modal = ensureDynamicModal('addHubEntryModal', 'Edit Task Matrix Entry');
-  modal.querySelector('.modal-body').innerHTML = `
-    <div class="form-grid">
-      <div class="form-group">
-        <label>Type *</label>
-        <select id="hubType" required>
-          <option value="">-- Select Type --</option>
-          <option value="Top Priority">🔴 Top Priority</option>
-          <option value="General Work">🔵 General Work</option>
-          <option value="Tapal / Letters">📄 Tapal / Letters</option>
-        </select>
-      </div>
-      <div class="form-group" id="hubCategoryGroup">
-        <label id="hubCategoryLabel">Category *</label>
-        <select id="hubCategory"></select>
-      </div>
-      <div class="form-group">
-        <label>PROJECT</label>
-        <select id="hubProject">
-          <option value="">-- Select Project --</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Subject/Title *</label>
-        <input type="text" id="hubSubject" placeholder="Enter subject/title">
-      </div>
-      <div class="form-group">
-        <label>Assigned To *</label>
-        <select id="hubAssignedTo"></select>
-      </div>
-      <div class="form-group">
-        <label>Priority</label>
-        <select id="hubPriority">
-          <option>High</option>
-          <option selected>Medium</option>
-          <option>Low</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Due Date</label>
-        <input type="date" id="hubDueDate">
-      </div>
-      <div class="form-group" style="grid-column:1/-1">
-        <label>Description</label>
-        <textarea id="hubDescription" placeholder="Enter description details..."></textarea>
-      </div>
-    </div>
-  `;
-  modal.querySelector('.modal-footer').innerHTML = `
-    <button class="btn-secondary" onclick="closeModal('addHubEntryModal')">Cancel</button>
-    <button class="btn-heart" onclick="submitHubEntry()" style="background:var(--navy);color:#fff;">Save Entry</button>
-  `;
-
-  // Populate dropdowns first
-  const staffSelect = document.getElementById('hubAssignedTo');
-  if (staffSelect) {
-    staffSelect.innerHTML = (allData.staff || [])
-      .filter(s => s.Status === 'Active')
-      .map(s => `<option value="${s.Full_Name}">${s.Full_Name} (${s.Rank})</option>`).join('');
-  }
-
-  const projectSelect = document.getElementById('hubProject');
-  if (projectSelect) {
-    projectSelect.innerHTML = '<option value="">-- Select Project --</option>' +
-      (allProjects || []).map(p => `<option value="${p.name}">${p.name}</option>`).join('');
-  }
-
-  const typeSelect = document.getElementById('hubType');
-  if (typeSelect) {
-    typeSelect.addEventListener('change', (e) => {
-      updateHubCategoryDropdown(e.target.value);
-    });
-  }
-
-  // Populate values
-  const typeDisplay = {
-    'Command Register':         'Top Priority',
-    'Command Directives':       'Top Priority',
-    'Correspondence':           'General Work',
-    'Official Correspondence':  'General Work',
-    'Priority Works':           'Top Priority',
-    'Critical Tasks':           'Top Priority',
-    'IGP Works':                'Top Priority',
-    'Top Priority':             'Top Priority',
-    'General Work':             'General Work',
-    'Tapal / Letters':          'Tapal / Letters'
-  };
-  const currentType = typeDisplay[t.Type] || t.Type || 'General Work';
-  document.getElementById('hubType').value = currentType;
-  updateHubCategoryDropdown(currentType, t.Category);
-  document.getElementById('hubSubject').value = t.Subject || '';
-  document.getElementById('hubAssignedTo').value = t.Assigned_To || '';
-  document.getElementById('hubPriority').value = t.Priority || 'Medium';
-  document.getElementById('hubDueDate').value = String(t.Due_Date || '').split('T')[0];
-  document.getElementById('hubDescription').value = t.Description || '';
-  if (document.getElementById('hubProject')) {
-    document.getElementById('hubProject').value = t.project || t.Project || '';
-  }
-
-  openModal('addHubEntryModal');
-}
-
 function openAddHubEntryModal() {
   hubEditContext = null;
   const modal = ensureDynamicModal('addHubEntryModal', 'Add New Task Matrix Entry');
@@ -4947,76 +4912,111 @@ function openAddHubEntryModal() {
 
   modal.querySelector('.modal-body').innerHTML = `
     <div class="form-grid">
+      <!-- ROW 1: TYPE + PROJECT -->
       <div class="form-group">
-        <label>Type *</label>
+        <label>TYPE *</label>
         <select id="hubType" required>
-          <option value="">-- Select Type --</option>
+          <option value="" disabled selected>-- Select Type --</option>
           <option value="Top Priority">🔴 Top Priority</option>
           <option value="General Work">🔵 General Work</option>
           <option value="Tapal / Letters">📄 Tapal / Letters</option>
         </select>
       </div>
-      <div class="form-group" id="hubCategoryGroup">
-        <label id="hubCategoryLabel">Category *</label>
-        <select id="hubCategory"></select>
-      </div>
       <div class="form-group">
         <label>PROJECT</label>
         <select id="hubProject">
           <option value="">-- Select Project --</option>
+          <option value="Other">📌 Other</option>
+        </select>
+      </div>
+
+      <!-- ROW 2: SUBJECT + ASSIGNED TO -->
+      <div class="form-group">
+        <label>SUBJECT / TITLE *</label>
+        <input type="text" id="hubSubject" placeholder="Enter task subject or title">
+      </div>
+      <div class="form-group">
+        <label>ASSIGNED TO *</label>
+        <select id="hubAssignedTo">
+          <option value="">-- Select Officer --</option>
+        </select>
+      </div>
+
+      <!-- ROW 3: CURRENTLY WITH + STATUS -->
+      <div class="form-group">
+        <label>CURRENTLY WITH <span style="font-size:10px;color:var(--text3)">(Who has it right now?)</span></label>
+        <select id="hubCurrentlyWith">
+          <option value="">-- Select Person --</option>
         </select>
       </div>
       <div class="form-group">
-        <label>Subject/Title *</label>
-        <input type="text" id="hubSubject" placeholder="Enter subject/title">
+        <label>STATUS</label>
+        <select id="hubStatus">
+          <option value="Pending" selected>🕐 Pending</option>
+          <option value="In Progress">🔄 In Progress</option>
+          <option value="Completed">✅ Completed</option>
+        </select>
       </div>
+
+      <!-- ROW 4: PRIORITY + DUE DATE -->
       <div class="form-group">
-        <label>Assigned To *</label>
-        <select id="hubAssignedTo"></select>
-      </div>
-      <div class="form-group">
-        <label>Priority</label>
+        <label>PRIORITY</label>
         <select id="hubPriority">
-          <option>High</option>
-          <option selected>Medium</option>
-          <option>Low</option>
+          <option value="Low">🟢 Low</option>
+          <option value="Medium" selected>🟡 Medium</option>
+          <option value="High">🔴 High</option>
         </select>
       </div>
       <div class="form-group">
-        <label>Due Date</label>
+        <label>DUE DATE</label>
         <input type="date" id="hubDueDate">
       </div>
+
+      <!-- ROW 5: DESCRIPTION -->
       <div class="form-group" style="grid-column:1/-1">
-        <label>Description</label>
-        <textarea id="hubDescription" placeholder="Enter description details..."></textarea>
+        <label>DESCRIPTION <span style="font-size:10px;color:var(--text3)">(Details, instructions, context...)</span></label>
+        <textarea id="hubDesc" rows="3" placeholder="Enter detailed description, instructions or context..."></textarea>
+      </div>
+
+      <!-- ROW 6: REMARKS -->
+      <div class="form-group" style="grid-column:1/-1">
+        <label>REMARKS / LATEST UPDATE <span style="font-size:10px;color:var(--text3)">(Any notes or progress update)</span></label>
+        <textarea id="hubRemarks" rows="2" placeholder="Add any remarks or latest progress notes..."></textarea>
+      </div>
+
+      <!-- ROW 7: REFERENCE NO + TASK LINK -->
+      <div class="form-group">
+        <label>TASK REFERENCE NO</label>
+        <input type="text" id="hubRefNo" readonly style="background:var(--bg3);color:var(--text3);font-size:12px" placeholder="Auto-generated on save">
+      </div>
+      <div class="form-group">
+        <label>TASK LINK / URL</label>
+        <input type="url" id="hubTaskLink" placeholder="https://... (optional)">
       </div>
     </div>
   `;
+
   modal.querySelector('.modal-footer').innerHTML = `
     <button class="btn-secondary" onclick="closeModal('addHubEntryModal')">Cancel</button>
-    <button class="btn-heart" onclick="submitHubEntry()" style="background:var(--navy);color:#fff;">Save Entry</button>
+    <button class="btn-primary" onclick="addHubEntry()" style="background:var(--navy);color:#fff;"><i class="fa-solid fa-plus"></i> Save Entry</button>
   `;
 
-  const staffSelect = document.getElementById('hubAssignedTo');
-  if (staffSelect) {
-    staffSelect.innerHTML = (allData.staff || [])
-      .filter(s => s.Status === 'Active')
-      .map(s => `<option value="${s.Full_Name}">${s.Full_Name} (${s.Rank})</option>`).join('');
-  }
+  // Populate projects
+  populateProjectDropdowns();
 
-  const projectSelect = document.getElementById('hubProject');
-  if (projectSelect) {
-    projectSelect.innerHTML = '<option value="">-- Select Project --</option>' +
-      (allProjects || []).map(p => `<option value="${p.name}">${p.name}</option>`).join('');
-  }
+  // Populate staff dropdowns
+  const staffOpts = '<option value="">-- Select Person --</option>' +
+    (window.staffCache || []).map(s => {
+      const name = s.Full_Name || '';
+      const it = getITTitle(s.Rank||'', s.Phone||'');
+      return `<option value="${name}">${it ? it + ' — ' : ''}${name}</option>`;
+    }).join('');
 
-  const typeSelect = document.getElementById('hubType');
-  if (typeSelect) {
-    typeSelect.addEventListener('change', (e) => {
-      updateHubCategoryDropdown(e.target.value);
-    });
-  }
-  updateHubCategoryDropdown(typeSelect.value);
+  const assignedSel = document.getElementById('hubAssignedTo');
+  if (assignedSel) assignedSel.innerHTML = staffOpts;
+
+  const currentlyWithSel = document.getElementById('hubCurrentlyWith');
+  if (currentlyWithSel) currentlyWithSel.innerHTML = staffOpts;
 
   // Set default due date to today
   document.getElementById('hubDueDate').value = new Date().toISOString().split('T')[0];
@@ -5024,68 +5024,63 @@ function openAddHubEntryModal() {
   openModal('addHubEntryModal');
 }
 
-async function submitHubEntry() {
-  const type = document.getElementById('hubType').value;
-  const subject = document.getElementById('hubSubject').value.trim();
-  const assignedTo = document.getElementById('hubAssignedTo').value;
-  const priority = document.getElementById('hubPriority').value;
-  const dueDate = document.getElementById('hubDueDate').value;
-  const description = document.getElementById('hubDescription').value.trim();
-  const status = hubEditContext ? ((allData.hub_entries || [])[hubEditContext.index]?.Status || 'Pending') : 'Pending';
-  const category = (
-    type === 'Top Priority' || type === 'General Work' || type === 'Tapal / Letters' ||
-    type === 'Command Register' || type === 'Command Directives' || type === 'Correspondence' || type === 'Official Correspondence'
-  ) ? document.getElementById('hubCategory').value : '';
-  const project = document.getElementById('hubProject')?.value || '';
-  
+async function addHubEntry() {
+  const type    = document.getElementById('hubType')?.value;
+  const subject = (document.getElementById('hubSubject')?.value||'').trim();
+
+  if (!type) {
+    showToast('Please select a Type.','error'); return;
+  }
   if (!subject) {
-    showToast('Please enter a subject/title', 'error');
+    showToast('Please enter a Subject/Title.','error');
     return;
   }
 
-  const addedBy = currentUser?.name || 'Admin';
+  const status = document.getElementById('hubStatus')?.value || 'Pending';
+  const today  = new Date().toISOString().split('T')[0];
 
-  const docData = {
-    type,
-    subject,
-    assignedTo,
-    priority,
-    dueDate,
-    description,
-    status,
-    category,
-    project,
-    createdBy: addedBy,
-    updatedAt: fsTimestamp()
+  // Auto-generate reference number
+  const refNo  = 'TM-' + today.replace(/-/g,'') +
+                 '-' + Math.random().toString(36)
+                   .substr(2,4).toUpperCase();
+
+  const data = {
+    refNo:         refNo,
+    type:          type,
+    project:       document.getElementById('hubProject')?.value || '',
+    subject:       subject,
+    assignedTo:    document.getElementById('hubAssignedTo')?.value || '',
+    currentlyWith: document.getElementById('hubCurrentlyWith')?.value || '',
+    status:        status,
+    priority:      document.getElementById('hubPriority')?.value || 'Medium',
+    dueDate:       document.getElementById('hubDueDate')?.value || '',
+    description:   (document.getElementById('hubDesc')?.value||'').trim(),
+    remarks:       (document.getElementById('hubRemarks')?.value||'').trim(),
+    taskLink:      document.getElementById('hubTaskLink')?.value || '',
+    completionDate: status === 'Completed' ? today : '',
+    createdBy:     localStorage.getItem('userName') || '',
+    createdAt:     fsTimestamp()
   };
 
-  closeModal('addHubEntryModal');
-  showToast('Saving entry...', 'info');
-
-  try {
-    if (hubEditContext) {
-      const id = hubEditContext.id;
-      await fsUpdateDoc(fsDoc(db, "hub_entries", id), docData);
-      showToast('Entry updated successfully!', 'success');
-    } else {
-      await fsAddDoc(fsCollection(db, "hub_entries"), {
-        ...docData,
-        createdAt: fsTimestamp()
-      });
-      showToast('Entry added successfully!', 'success');
-    }
-
-    // Clear form fields
-    document.getElementById('hubSubject').value = '';
-    document.getElementById('hubDescription').value = '';
-    const catSelect = document.getElementById('hubCategory');
-    if (catSelect) catSelect.value = '';
-  } catch (error) {
-    console.error("Firestore save error:", error);
-    showToast('Failed to save. Check your connection.', 'error');
+  const saveBtn = document.querySelector('#addHubEntryModal .btn-primary');
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
   }
 
-  hubEditContext = null;
+  try {
+    await fsAddDoc(fsCollection(db,'hub_entries'), data);
+    closeModal('addHubEntryModal');
+    showToast('✅ Task entry added! Ref: '+refNo,'success');
+    await loadHubEntries();
+  } catch(e) {
+    showToast('❌ Failed: '+e.message,'error');
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Save Entry';
+    }
+  }
 }
 
 async function deleteHubEntry(i) {
@@ -5560,10 +5555,29 @@ function closeDeleteHubModal() {
 
 async function executeDeleteHub() {
   if (localStorage.getItem('userRole') !== 'admin') {
-    showToast('⛔ Admin access only.', 'error');
-    return;
+    showToast('⛔ Admin access only.','error'); return;
   }
   if (!pendingDeleteHubId) return;
+
+  // Verify task is Completed before deleting
+  try {
+    const snap = await fsGetDoc(
+      fsDoc(db,'hub_entries',pendingDeleteHubId)
+    );
+    if (snap.exists()) {
+      const status = snap.data().status || snap.data().Status || '';
+      if (status !== 'Completed') {
+        closeDeleteHubModal();
+        showToast(
+          '⚠️ Only COMPLETED tasks can be deleted. '+
+          'Current status: ' + status,
+          'error'
+        );
+        return;
+      }
+    }
+  } catch(e) { /* proceed */ }
+
   const btn = document.getElementById('confirmDeleteHubBtn');
   if (btn) {
     btn.disabled = true;
@@ -6218,26 +6232,24 @@ function setText(id, val) {
 
 // ── Global Project Dropdowns ────────────────────────
 function populateProjectDropdowns() {
-  const options = '<option value="">-- Select Project --</option>' +
-    allProjects.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+  const projectOptions =
+    '<option value="">-- Select Project --</option>' +
+    (allProjects || [])
+      .sort((a,b) => a.name.localeCompare(b.name))
+      .map(p =>
+        `<option value="${p.name}">${p.name}</option>`
+      ).join('') +
+    '<option value="Other">📌 Other</option>';
 
-  const dropdownIds = [
+  [
     'hubProject',
     'vcProjectName',
     'ns_project',
-    'vcProjectFilter'
-  ];
-
-  dropdownIds.forEach(id => {
+    'aeProject',
+    'filterProject'
+  ].forEach(id => {
     const el = document.getElementById(id);
-    if (el) {
-      if (id === 'vcProjectFilter') {
-        el.innerHTML = '<option value="all">All Projects</option>' +
-          allProjects.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
-      } else {
-        el.innerHTML = options;
-      }
-    }
+    if (el) el.innerHTML = projectOptions;
   });
 }
 
@@ -6808,6 +6820,189 @@ window.removeStaffFromProject = removeStaffFromProject;
 window.addProjectLink = addProjectLink;
 window.deleteProjectLink = deleteProjectLink;
 window.setupProjects = setupProjects;
+
+// --- EDIT HUB FUNCTIONS ---
+async function openEditHubModal(docId) {
+  try {
+    const snap = await fsGetDoc(
+      fsDoc(db,'hub_entries',docId)
+    );
+    if (!snap.exists()) {
+      showToast('Entry not found.','error'); return;
+    }
+    const t = snap.data();
+    document.getElementById('editHubDocId').value = docId;
+
+    // Set badge
+    const badge =
+      document.getElementById('editHubRefBadge');
+    if (badge) badge.textContent =
+      t.refNo || 'TM-' + docId.slice(-6).toUpperCase();
+
+    // Fill fields
+    setVal('ehubType',     t.type || t.Type || '');
+    setVal('ehubSubject',  t.subject || t.Subject || '');
+    setVal('ehubPriority', t.priority || t.Priority || 'Medium');
+    setVal('ehubDueDate',  t.dueDate || t.Due_Date || '');
+    setVal('ehubDesc',     t.description || t.Description || '');
+    setVal('ehubRemarks',  t.remarks || t.Remarks || '');
+    setVal('ehubTaskLink', t.taskLink || t.TaskLink || '');
+    setVal('ehubCompletionDate', t.completionDate || t.CompletionDate || '');
+
+    // Repopulate dynamic dropdowns
+    populateEditHubDropdowns(t);
+
+    // Status
+    setVal('ehubStatus', t.status || t.Status || 'Pending');
+    checkCompletedNotice();
+
+    document.getElementById('editHubModal')
+      .style.display = 'block';
+  } catch(e) {
+    showToast('Load error: '+e.message,'error');
+  }
+}
+
+function populateEditHubDropdowns(t) {
+  // Project dropdown
+  const projOpts =
+    '<option value="">-- Select Project --</option>' +
+    (allProjects||[]).map(p =>
+      `<option value="${p.name}"
+        ${(t.project||t.Project)===p.name?'selected':''}>
+        ${p.name}</option>`
+    ).join('') +
+    `<option value="Other"
+      ${(t.project||t.Project)==='Other'?'selected':''}>
+      📌 Other</option>`;
+
+  setHtml('ehubProject', projOpts);
+
+  // Staff dropdowns
+  const staffOpts =
+    '<option value="">-- Select --</option>' +
+    (window.staffCache||[]).map(s => {
+      const name = s.Full_Name || '';
+      const it   = getITTitle(s.Rank||'',s.Phone||'');
+      return `<option value="${name}"
+        ${(t.assignedTo||t.Assigned_To)===name?'selected':''}>
+        ${it ? it+' — ' : ''}${name}</option>`;
+    }).join('');
+
+  const cwOpts =
+    '<option value="">-- Select --</option>' +
+    (window.staffCache||[]).map(s => {
+      const name = s.Full_Name || '';
+      const it   = getITTitle(s.Rank||'',s.Phone||'');
+      return `<option value="${name}"
+        ${(t.currentlyWith||t.Currently_With)===name?'selected':''}>
+        ${it ? it+' — ' : ''}${name}</option>`;
+    }).join('');
+
+  setHtml('ehubAssignedTo',   staffOpts);
+  setHtml('ehubCurrentlyWith',cwOpts);
+}
+
+function checkCompletedNotice() {
+  const statusSel =
+    document.getElementById('ehubStatus');
+  const notice =
+    document.getElementById('completedNotice');
+  const compDate =
+    document.getElementById('ehubCompletionDate');
+  if (!statusSel) return;
+  const isCompleted = statusSel.value === 'Completed';
+  if (notice) notice.style.display =
+    isCompleted ? 'block' : 'none';
+  if (compDate && isCompleted && !compDate.value) {
+    compDate.value =
+      new Date().toISOString().split('T')[0];
+  }
+}
+
+// Attach to status change
+document.getElementById('ehubStatus')
+  ?.addEventListener('change', checkCompletedNotice);
+
+function closeEditHubModal() {
+  document.getElementById('editHubModal')
+    .style.display = 'none';
+}
+
+async function saveEditHubEntry() {
+  const docId =
+    document.getElementById('editHubDocId').value;
+  if (!docId) return;
+
+  const status = document.getElementById('ehubStatus')
+                   ?.value || 'Pending';
+  const today  = new Date().toISOString().split('T')[0];
+
+  const data = {
+    type:          document.getElementById('ehubType')?.value         || '',
+    project:       document.getElementById('ehubProject')?.value      || '',
+    subject:       document.getElementById('ehubSubject')?.value?.trim()||'',
+    assignedTo:    document.getElementById('ehubAssignedTo')?.value   || '',
+    currentlyWith: document.getElementById('ehubCurrentlyWith')?.value|| '',
+    status:        status,
+    priority:      document.getElementById('ehubPriority')?.value     || 'Medium',
+    dueDate:       document.getElementById('ehubDueDate')?.value      || '',
+    description:   document.getElementById('ehubDesc')?.value?.trim() || '',
+    remarks:       document.getElementById('ehubRemarks')?.value?.trim()||'',
+    taskLink:      document.getElementById('ehubTaskLink')?.value     || '',
+    completionDate:status === 'Completed'
+      ? (document.getElementById('ehubCompletionDate')
+           ?.value || today)
+      : '',
+    updatedBy:     localStorage.getItem('userName') || '',
+    updatedAt:     fsTimestamp()
+  };
+
+  if (!data.subject) {
+    showToast('Subject/Title is required.','error');
+    return;
+  }
+
+  const saveBtn = document.querySelector(
+    '#editHubModal .btn-primary');
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.innerHTML =
+      '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+  }
+
+  try {
+    await fsUpdateDoc(
+      fsDoc(db,'hub_entries',docId), data
+    );
+    closeEditHubModal();
+    showToast('✅ Task updated successfully!','success');
+    await loadHubEntries();
+  } catch(e) {
+    showToast('❌ Save failed: '+e.message,'error');
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML =
+        '<i class="fa-solid fa-floppy-disk"></i> Save Changes';
+    }
+  }
+}
+
+// Helpers
+function setVal(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.value = val;
+}
+function setHtml(id, html) {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = html;
+}
+
+window.openEditHubModal = openEditHubModal;
+window.closeEditHubModal = closeEditHubModal;
+window.saveEditHubEntry = saveEditHubEntry;
+window.checkCompletedNotice = checkCompletedNotice;
 
 window.setupFirstAdmin = setupFirstAdmin;
 </script>
@@ -7493,6 +7688,138 @@ if ('serviceWorker' in navigator) {
         onclick="executeDeleteStaff()">
         <i class="fa-solid fa-trash"></i>
         Yes, Delete
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="editHubModal"
+     style="display:none;position:fixed;inset:0;
+            z-index:9000;background:rgba(0,0,0,0.55);
+            overflow-y:auto;padding:20px">
+  <div style="background:var(--bg);border-radius:16px;
+              max-width:640px;margin:0 auto;padding:28px;
+              border:1px solid var(--border)">
+
+    <div style="display:flex;justify-content:space-between;
+                align-items:center;margin-bottom:20px">
+      <div style="font-family:'Rajdhani',sans-serif;
+                  font-size:20px;font-weight:700;
+                  color:var(--text1)">
+        <i class="fa-solid fa-pen-to-square"
+           style="color:var(--navy)"></i>
+        Edit Task Entry
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="editHubRefBadge"
+              style="font-size:11px;color:var(--text3);
+                     background:var(--bg3);
+                     padding:3px 10px;border-radius:12px">
+          —
+        </span>
+        <button onclick="closeEditHubModal()"
+                style="background:none;border:none;
+                       font-size:20px;cursor:pointer;
+                       color:var(--text3)">✕</button>
+      </div>
+    </div>
+
+    <input type="hidden" id="editHubDocId">
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label>TYPE *</label>
+        <select id="ehubType" required>
+          <option value="Top Priority">🔴 Top Priority</option>
+          <option value="General Work">🔵 General Work</option>
+          <option value="Tapal / Letters">📄 Tapal / Letters</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>PROJECT</label>
+        <select id="ehubProject">
+          <option value="">-- Select Project --</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>SUBJECT / TITLE *</label>
+        <input type="text" id="ehubSubject">
+      </div>
+      <div class="form-group">
+        <label>ASSIGNED TO</label>
+        <select id="ehubAssignedTo">
+          <option value="">-- Select --</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>CURRENTLY WITH</label>
+        <select id="ehubCurrentlyWith">
+          <option value="">-- Select --</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>STATUS</label>
+        <select id="ehubStatus">
+          <option value="Pending">🕐 Pending</option>
+          <option value="In Progress">🔄 In Progress</option>
+          <option value="Completed">✅ Completed</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>PRIORITY</label>
+        <select id="ehubPriority">
+          <option value="Low">🟢 Low</option>
+          <option value="Medium">🟡 Medium</option>
+          <option value="High">🔴 High</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>DUE DATE</label>
+        <input type="date" id="ehubDueDate">
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>DESCRIPTION</label>
+        <textarea id="ehubDesc" rows="3"></textarea>
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>REMARKS / LATEST UPDATE</label>
+        <textarea id="ehubRemarks" rows="2"
+          placeholder="Add latest update or remarks...">
+        </textarea>
+      </div>
+      <div class="form-group">
+        <label>TASK LINK / URL</label>
+        <input type="url" id="ehubTaskLink"
+               placeholder="https://...">
+      </div>
+      <div class="form-group">
+        <label>COMPLETION DATE</label>
+        <input type="date" id="ehubCompletionDate">
+        <div style="font-size:10px;color:var(--text3);
+                    margin-top:3px">
+          Auto-set when status = Completed
+        </div>
+      </div>
+    </div>
+
+    <!-- Status changed to Completed notice -->
+    <div id="completedNotice"
+         style="display:none;margin:12px 0;padding:10px;
+                background:rgba(26,122,74,0.08);
+                border:1px solid rgba(26,122,74,0.3);
+                border-radius:8px;font-size:12px;
+                color:var(--success)">
+      ✅ This task will be marked as <strong>Completed</strong>.
+      Admin can delete it after saving.
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button class="btn-secondary"
+        onclick="closeEditHubModal()">Cancel</button>
+      <button class="btn-primary"
+        onclick="saveEditHubEntry()">
+        <i class="fa-solid fa-floppy-disk"></i>
+        Save Changes
       </button>
     </div>
   </div>
