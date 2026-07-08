@@ -1609,6 +1609,13 @@ select[multiple] option:selected {
               <i class="fa-solid fa-download"></i>
               Export
             </button>
+            <button onclick="downloadVCPemplate()" style="background:var(--navy);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;border:1px solid var(--navy);cursor:pointer;display:flex;align-items:center;gap:6px">
+              <i class="fa-solid fa-file-excel"></i> Proforma Download
+            </button>
+            <button onclick="document.getElementById('bulkVCImportFile').click()" style="background:var(--success);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;border:none;cursor:pointer;display:flex;align-items:center;gap:6px">
+              <i class="fa-solid fa-file-import"></i> Bulk Upload
+            </button>
+            <input type="file" id="bulkVCImportFile" accept=".xlsx, .xls" style="display:none" onchange="handleVCImport(event)">
           </div>
           <div class="tab-pills">
             <div class="tab-pill heart-pill active" onclick="filterVC('all',this)">All</div>
@@ -2381,7 +2388,12 @@ select[multiple] option:selected {
   <div class="modal">
     <div class="modal-header">
       <div class="modal-title">Schedule VC / Meeting</div>
-      <button class="modal-close" onclick="closeModal('addVCModal')"><i class="fa-solid fa-xmark"></i></button>
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="btn-mini btn-navy" onclick="downloadVCPemplate()" style="padding:6px 12px;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:4px;background:var(--navy);color:#fff;border:none;border-radius:4px;">
+          <i class="fa-solid fa-file-excel"></i> Proforma
+        </button>
+        <button class="modal-close" onclick="closeModal('addVCModal')" style="background:none;border:none;font-size:16px;cursor:pointer;color:var(--text3)"><i class="fa-solid fa-xmark"></i></button>
+      </div>
     </div>
     <div class="modal-body">
       <div class="form-grid">
@@ -6243,8 +6255,148 @@ async function handleTaskImport(event) {
   reader.readAsArrayBuffer(file);
 }
 
+// ── VC Meetings Bulk Import / Export Template ─────
+function downloadVCPemplate() {
+  const headers = [
+    'Date & Time',
+    'Subject',
+    'Platform',
+    'Project',
+    'Speaker',
+    'Organiser',
+    'Link',
+    'Remarks'
+  ];
+
+  const activeStaff = (allData.staff || [])
+    .filter(s => s.Status === 'Active')
+    .map(s => s.Full_Name);
+
+  const projectNames = (allProjects || []).map(p => p.name);
+
+  const sampleRows = [
+    {
+      'Date & Time': '2026-07-10 11:30',
+      'Subject': 'CCTNS Application Review Meeting',
+      'Platform': 'BharatVC',
+      'Project': projectNames[0] || 'CCTNS',
+      'Speaker': activeStaff[0] || 'Md. Anwar',
+      'Organiser': 'NCRB',
+      'Link': 'https://vc.nic.in/cctns-review',
+      'Remarks': 'Nodal officers must attend.'
+    },
+    {
+      'Date & Time': '2026-07-12 15:00',
+      'Subject': 'NATGRID VPN Access & Security Updates',
+      'Platform': 'Maha-Link',
+      'Project': projectNames[1] || 'NATGRID',
+      'Speaker': activeStaff[1] || 'L. Trinadha Rao',
+      'Organiser': 'Technical Services',
+      'Link': 'https://meet.google.com/abc-defg-hij',
+      'Remarks': 'General briefing for support staff.'
+    }
+  ];
+
+  const ws = XLSX.utils.json_to_sheet(sampleRows, { header: headers });
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "VC Template");
+
+  // Create Dropdown Options sheet
+  const maxLength = Math.max(
+    activeStaff.length,
+    projectNames.length,
+    6, // Platforms
+    5  // Organisers
+  );
+
+  const optionsRows = [];
+  const platforms = ['Maha-Link', 'BharatVC', 'NIC-VC', 'Webex', 'Zoom', 'Other'];
+  const organisers = ['NCRB', 'MHA', 'SCRB', 'CID', 'Technical Services'];
+
+  for (let i = 0; i < maxLength; i++) {
+    optionsRows.push({
+      'Valid Platforms': platforms[i] || '',
+      'Valid Organisers': organisers[i] || '',
+      'Active Staff List (Speaker)': activeStaff[i] || '',
+      'Available Projects': projectNames[i] || ''
+    });
+  }
+
+  const wsOptions = XLSX.utils.json_to_sheet(optionsRows);
+  XLSX.utils.book_append_sheet(wb, wsOptions, "Dropdown Options Reference");
+
+  XLSX.writeFile(wb, "VC_Meetings_Bulk_Import_Template.xlsx");
+  showToast("📥 VC Template downloaded successfully!", "success");
+}
+
+async function handleVCImport(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    const data = new Uint8Array(e.target.result);
+    try {
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(sheet);
+
+      if (!rows.length) {
+        showToast("⚠️ The selected file is empty.", "error");
+        return;
+      }
+
+      showToast(`Importing ${rows.length} VC meetings...`, "info");
+      
+      const addedBy = currentUser?.name || 'Admin';
+
+      let importedCount = 0;
+      for (const row of rows) {
+        const datetime = row['Date & Time'] || '';
+        const subject = row['Subject'] || '';
+        const platform = row['Platform'] || 'NIC-VC';
+        const project = row['Project'] || '';
+        const speaker = row['Speaker'] || '';
+        const organiser = row['Organiser'] || '';
+        const link = row['Link'] || '';
+        const remarks = row['Remarks'] || '';
+
+        if (!subject || !datetime) continue;
+
+        await fsAddDoc(fsCollection(db, 'vc_meetings'), {
+          dateTime: datetime,
+          subject,
+          platform,
+          project,
+          projectName: project,
+          speaker,
+          organiser,
+          link,
+          remarks,
+          status: 'Upcoming',
+          createdBy: addedBy,
+          createdAt: fsTimestamp(),
+          updatedAt: fsTimestamp()
+        });
+        importedCount++;
+      }
+
+      showToast(`✅ Successfully imported ${importedCount} VC meetings!`, "success");
+      event.target.value = '';
+      await loadVCMeetings(); // Refresh VC listing
+    } catch(err) {
+      console.error(err);
+      showToast("❌ Failed to parse or upload Excel file: " + err.message, "error");
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
 window.downloadBulkTemplate = downloadBulkTemplate;
 window.handleTaskImport = handleTaskImport;
+window.downloadVCPemplate = downloadVCPemplate;
+window.handleVCImport = handleVCImport;
 
 // --- ADMIN EDIT STAFF FUNCTIONS ---
 async function adminEditStaff(docId) {
