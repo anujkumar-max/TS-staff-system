@@ -1525,6 +1525,13 @@ select[multiple] option:selected {
             <button onclick="exportHubData()" style="background:var(--success);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;border:none;cursor:pointer;display:flex;align-items:center;gap:6px">
               <i class="fa-solid fa-download"></i> Export
             </button>
+            <button onclick="downloadBulkTemplate()" style="background:var(--navy);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;border:1px solid var(--navy);cursor:pointer;display:flex;align-items:center;gap:6px">
+              <i class="fa-solid fa-file-excel"></i> Proforma Download
+            </button>
+            <button onclick="document.getElementById('bulkTaskImportFile').click()" style="background:var(--success);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;border:none;cursor:pointer;display:flex;align-items:center;gap:6px">
+              <i class="fa-solid fa-file-import"></i> Bulk Upload
+            </button>
+            <input type="file" id="bulkTaskImportFile" accept=".xlsx, .xls" style="display:none" onchange="handleTaskImport(event)">
           </div>
 
           <!-- Filters -->
@@ -5853,6 +5860,125 @@ async function setupProjects() {
   }
   alert('Setup complete! ' + count + '/17 projects created.');
 }
+
+// ── Task Matrix Bulk Import / Export Template ─────
+function downloadBulkTemplate() {
+  const headers = [
+    'Type',
+    'Subject',
+    'Category',
+    'Assigned To',
+    'Priority',
+    'Due Date',
+    'Description',
+    'Project'
+  ];
+  
+  const sampleRows = [
+    {
+      'Type': 'Top Priority',
+      'Subject': 'Review CCTV surveillance network integrations',
+      'Category': 'IGP Works',
+      'Assigned To': 'Md. Anwar',
+      'Priority': 'High',
+      'Due Date': '2026-07-15',
+      'Description': 'Follow up on CCTV network installation status.',
+      'Project': 'CCTV'
+    },
+    {
+      'Type': 'General Work',
+      'Subject': 'Prepare e-Office integration notes',
+      'Category': 'Correspondence',
+      'Assigned To': 'L. Trinadha Rao',
+      'Priority': 'Medium',
+      'Due Date': '2026-07-20',
+      'Description': 'Draft the integration notes.',
+      'Project': 'e-Office'
+    },
+    {
+      'Type': 'Tapal / Letters',
+      'Subject': 'Nodal officer letter regarding CEIR device blocking',
+      'Category': '',
+      'Assigned To': 'D. Aashik',
+      'Priority': 'Low',
+      'Due Date': '2026-07-12',
+      'Description': 'Incoming letter regarding CEIR node access requests.',
+      'Project': 'CEIR'
+    }
+  ];
+
+  const ws = XLSX.utils.json_to_sheet(sampleRows, { header: headers });
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Tasks Template");
+  XLSX.writeFile(wb, "Task_Matrix_Bulk_Import_Template.xlsx");
+  showToast("📥 Template downloaded successfully!", "success");
+}
+
+async function handleTaskImport(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    const data = new Uint8Array(e.target.result);
+    try {
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(sheet);
+      
+      if (!rows.length) {
+        showToast("⚠️ The selected file is empty.", "error");
+        return;
+      }
+      
+      showToast(`Importing ${rows.length} tasks...`, "info");
+      
+      const today = new Date().toISOString().split('T')[0];
+      const addedBy = currentUser?.name || 'Admin';
+      
+      let importedCount = 0;
+      for (const row of rows) {
+        const type = row['Type'] || 'General Work';
+        const subject = row['Subject'] || '';
+        const category = row['Category'] || '';
+        const assignedTo = row['Assigned To'] || '';
+        const priority = row['Priority'] || 'Medium';
+        const dueDate = row['Due Date'] || today;
+        const description = row['Description'] || '';
+        const project = row['Project'] || '';
+        
+        if (!subject) continue;
+        
+        await fsAddDoc(fsCollection(db, 'hub_entries'), {
+          type,
+          subject,
+          assignedTo,
+          priority,
+          dueDate,
+          description,
+          status: 'Pending',
+          category,
+          project,
+          createdBy: addedBy,
+          createdAt: fsTimestamp(),
+          updatedAt: fsTimestamp()
+        });
+        importedCount++;
+      }
+      
+      showToast(`✅ Successfully imported ${importedCount} tasks!`, "success");
+      event.target.value = '';
+    } catch(err) {
+      console.error(err);
+      showToast("❌ Failed to parse or upload Excel file: " + err.message, "error");
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+window.downloadBulkTemplate = downloadBulkTemplate;
+window.handleTaskImport = handleTaskImport;
 
 window.loadProjects = loadProjects;
 window.filterProjects = filterProjects;
