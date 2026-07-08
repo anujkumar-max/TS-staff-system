@@ -4679,6 +4679,12 @@ function openAddHubEntryModal() {
       .map(s => `<option value="${s.Full_Name}">${s.Full_Name} (${s.Rank})</option>`).join('');
   }
 
+  const projectSelect = document.getElementById('hubProject');
+  if (projectSelect) {
+    projectSelect.innerHTML = '<option value="">-- Select Project --</option>' +
+      (allProjects || []).map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+  }
+
   const typeSelect = document.getElementById('hubType');
   if (typeSelect) {
     typeSelect.addEventListener('change', (e) => {
