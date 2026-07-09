@@ -1,7 +1,7 @@
 {
-  "name": "AP Police IT Services | Duty Management Portal",
-  "short_name": "AP Police IT",
-  "description": "AP Police IT Services Duty Management Portal. Discipline. Duty. Devotion. Mangalagiri, Andhra Pradesh.",
+  "name": "AP Police Digital Transformation Directorate | Duty Management Portal",
+  "short_name": "AP Police DTD",
+  "description": "AP Police Digital Transformation Directorate Duty Management Portal. Discipline. Duty. Devotion. Mangalagiri, Andhra Pradesh.",
   "start_url": "./",
   "display": "standalone",
   "orientation": "portrait-primary",

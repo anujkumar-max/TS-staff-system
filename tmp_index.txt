@@ -1,0 +1,3304 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0d3b7a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AP Police TS">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512.png">
+<title>AP Police TS ΓÇö Staff Monitoring System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+/* ============================================================
+   DESIGN TOKENS ΓÇö AP POLICE TS SYSTEM
+   ============================================================ */
+:root {
+  --navy:        #0d3b7a;
+  --navy-dark:   #082d5e;
+  --navy-light:  #1a5276;
+  --gold:        #c9a84c;
+  --gold-light:  #f0d080;
+  --heart:       #8b0000;
+  --heart-light: #c0392b;
+  --white:       #ffffff;
+  --success:     #1a7a4a;
+  --warning:     #b7770d;
+  --danger:      #a32d2d;
+  --info:        #1a6080;
+
+  /* Light theme */
+  --bg:          #f0f4f8;
+  --bg2:         #ffffff;
+  --bg3:         #e8eef5;
+  --text1:       #0d1b2a;
+  --text2:       #3a4a5c;
+  --text3:       #6b7c8f;
+  --border:      #d0dae6;
+  --sidebar-bg:  #0d3b7a;
+  --sidebar-text:#e8f0fb;
+  --card-shadow: 0 2px 12px rgba(13,59,122,0.10);
+  --topbar-bg:   #ffffff;
+}
+[data-theme="dark"] {
+  --bg:          #0a1628;
+  --bg2:         #112240;
+  --bg3:         #1a3055;
+  --text1:       #e8f0fb;
+  --text2:       #a8bcd4;
+  --text3:       #6b8aaa;
+  --border:      #1e3a5f;
+  --sidebar-bg:  #071020;
+  --sidebar-text:#a8c8f0;
+  --card-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  --topbar-bg:   #112240;
+}
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: 'Inter', sans-serif; font-size: 14px; background: var(--bg); color: var(--text1); transition: background 0.3s, color 0.3s; }
+button { cursor: pointer; border: none; font-family: inherit; }
+input, select, textarea { font-family: inherit; }
+a { text-decoration: none; color: inherit; }
+ul { list-style: none; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg3); }
+::-webkit-scrollbar-thumb { background: var(--navy-light); border-radius: 3px; }
+
+/* ============================================================
+   LOGIN SCREEN
+   ============================================================ */
+#loginScreen {
+  position: fixed; inset: 0; z-index: 9999;
+  background: linear-gradient(135deg, #071020 0%, #0d3b7a 50%, #1a5276 100%);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.login-bg-pattern {
+  position: absolute; inset: 0; opacity: 0.04;
+  background-image: repeating-linear-gradient(45deg, #fff 0, #fff 1px, transparent 0, transparent 50%);
+  background-size: 20px 20px;
+}
+.login-box {
+  position: relative; z-index: 2;
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px;
+  padding: 40px 36px;
+  width: 100%; max-width: 400px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+}
+.login-logo {
+  text-align: center; margin-bottom: 24px;
+}
+.login-logo img {
+  width: 80px; height: 80px; border-radius: 50%;
+  border: 3px solid rgba(201,168,76,0.5);
+  background: rgba(255,255,255,0.1);
+  padding: 4px;
+}
+.login-logo .logo-placeholder {
+  width: 80px; height: 80px; border-radius: 50%;
+  border: 3px solid rgba(201,168,76,0.5);
+  background: rgba(255,255,255,0.1);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto;
+  font-size: 32px; color: var(--gold);
+}
+.login-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 22px; font-weight: 700;
+  color: #ffffff; text-align: center;
+  margin-bottom: 4px; letter-spacing: 0.5px;
+}
+.login-sub {
+  font-size: 11px; color: rgba(255,255,255,0.5);
+  text-align: center; margin-bottom: 28px;
+  letter-spacing: 0.8px; text-transform: uppercase;
+}
+.login-field {
+  margin-bottom: 16px;
+}
+.login-field label {
+  display: block; font-size: 11px; font-weight: 600;
+  color: rgba(255,255,255,0.6); margin-bottom: 6px;
+  letter-spacing: 0.5px; text-transform: uppercase;
+}
+.login-field input {
+  width: 100%; padding: 12px 16px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 10px; color: #fff; font-size: 14px;
+  outline: none; transition: border 0.2s;
+}
+.login-field input:focus { border-color: var(--gold); }
+.login-field input::placeholder { color: rgba(255,255,255,0.3); }
+.login-btn {
+  width: 100%; padding: 14px;
+  background: linear-gradient(135deg, var(--gold) 0%, #a07828 100%);
+  color: #0d1b2a; font-size: 15px; font-weight: 700;
+  border-radius: 10px; letter-spacing: 0.5px;
+  transition: opacity 0.2s, transform 0.1s;
+  font-family: 'Rajdhani', sans-serif;
+  margin-top: 8px;
+}
+.login-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+.login-error {
+  background: rgba(163,45,45,0.3); border: 1px solid rgba(163,45,45,0.5);
+  border-radius: 8px; padding: 10px 14px;
+  color: #ff9090; font-size: 12px; text-align: center;
+  margin-top: 12px; display: none;
+}
+.login-footer {
+  text-align: center; margin-top: 20px;
+  font-size: 10px; color: rgba(255,255,255,0.25);
+  letter-spacing: 0.5px;
+}
+
+/* ============================================================
+   APP SHELL
+   ============================================================ */
+#appShell { display: none; height: 100vh; overflow: hidden; }
+.app-layout { display: flex; height: 100vh; }
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+.sidebar {
+  width: 240px; min-width: 240px;
+  background: var(--sidebar-bg);
+  display: flex; flex-direction: column;
+  transition: width 0.3s, transform 0.3s;
+  z-index: 100; overflow: hidden;
+  border-right: 1px solid rgba(255,255,255,0.06);
+}
+.sidebar.collapsed { width: 60px; min-width: 60px; }
+.sidebar-logo {
+  padding: 20px 16px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  display: flex; align-items: center; gap: 12px;
+}
+.sidebar-logo img {
+  width: 38px; height: 38px; border-radius: 50%;
+  border: 2px solid rgba(201,168,76,0.4);
+  flex-shrink: 0;
+}
+.sidebar-logo .logo-placeholder-sm {
+  width: 38px; height: 38px; border-radius: 50%;
+  border: 2px solid rgba(201,168,76,0.4);
+  background: rgba(255,255,255,0.1);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; color: var(--gold); flex-shrink: 0;
+}
+.sidebar-brand { overflow: hidden; white-space: nowrap; }
+.sidebar-brand h2 {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px; font-weight: 700;
+  color: #fff; line-height: 1.2; letter-spacing: 0.3px;
+}
+.sidebar-brand p {
+  font-size: 10px; color: rgba(255,255,255,0.4);
+  letter-spacing: 0.5px; margin-top: 1px;
+}
+.sidebar-nav { flex: 1; overflow-y: auto; padding: 12px 0; }
+.nav-section-label {
+  padding: 8px 16px 4px;
+  font-size: 9px; font-weight: 700; letter-spacing: 1.2px;
+  color: rgba(255,255,255,0.25); text-transform: uppercase;
+  white-space: nowrap; overflow: hidden;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 16px; margin: 1px 8px;
+  border-radius: 8px; cursor: pointer;
+  color: var(--sidebar-text); font-size: 13px;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap; overflow: hidden;
+  position: relative;
+}
+.nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.nav-item.active { background: rgba(201,168,76,0.15); color: var(--gold-light); }
+.nav-item.active::before {
+  content: ''; position: absolute; left: 0; top: 50%;
+  transform: translateY(-50%);
+  width: 3px; height: 20px;
+  background: var(--gold); border-radius: 0 3px 3px 0;
+}
+.nav-item.heart-item { color: #ff9090; }
+.nav-item.heart-item:hover { background: rgba(139,0,0,0.2); color: #ffb0b0; }
+.nav-item.heart-item.active { background: rgba(139,0,0,0.25); color: #ffb0b0; }
+.nav-item i { width: 18px; text-align: center; font-size: 14px; flex-shrink: 0; }
+.nav-item span { overflow: hidden; text-overflow: ellipsis; }
+.nav-badge {
+  margin-left: auto; background: var(--heart);
+  color: #fff; font-size: 9px; font-weight: 700;
+  padding: 2px 6px; border-radius: 10px; flex-shrink: 0;
+}
+.sidebar-footer {
+  padding: 12px 8px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+.user-card {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px; border-radius: 8px;
+  background: rgba(255,255,255,0.05);
+  overflow: hidden;
+}
+.user-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--navy-light), var(--gold));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; color: #fff;
+  flex-shrink: 0;
+}
+.user-info { overflow: hidden; white-space: nowrap; flex: 1; }
+.user-info strong { display: block; font-size: 12px; color: #fff; }
+.user-info span { font-size: 10px; color: rgba(255,255,255,0.4); }
+
+/* ============================================================
+   TOPBAR
+   ============================================================ */
+.main-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.topbar {
+  height: 56px; background: var(--topbar-bg);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 20px; flex-shrink: 0;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+}
+.topbar-toggle {
+  width: 36px; height: 36px; border-radius: 8px;
+  background: transparent; color: var(--text2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; transition: background 0.15s;
+}
+.topbar-toggle:hover { background: var(--bg3); }
+.topbar-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 18px; font-weight: 700;
+  color: var(--text1); flex: 1;
+}
+.topbar-actions { display: flex; align-items: center; gap: 8px; }
+.topbar-btn {
+  width: 36px; height: 36px; border-radius: 8px;
+  background: var(--bg3); color: var(--text2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; transition: background 0.15s, color 0.15s;
+  position: relative;
+}
+.topbar-btn:hover { background: var(--navy); color: #fff; }
+.notif-dot {
+  position: absolute; top: 6px; right: 6px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--heart); border: 2px solid var(--topbar-bg);
+}
+.theme-toggle {
+  width: 56px; height: 28px; border-radius: 14px;
+  background: var(--bg3); border: 1px solid var(--border);
+  position: relative; cursor: pointer; transition: background 0.3s;
+  flex-shrink: 0;
+}
+.theme-toggle.dark { background: var(--navy); }
+.theme-toggle-knob {
+  position: absolute; top: 3px; left: 3px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--navy); transition: transform 0.3s;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: #fff;
+}
+.theme-toggle.dark .theme-toggle-knob { transform: translateX(28px); background: var(--gold); }
+
+/* ============================================================
+   NOTICE BANNER
+   ============================================================ */
+.notice-banner {
+  background: linear-gradient(90deg, var(--heart) 0%, #c0392b 100%);
+  color: #fff; padding: 8px 20px;
+  display: flex; align-items: center; gap: 12px;
+  font-size: 12px; flex-shrink: 0;
+}
+.notice-banner i { font-size: 14px; flex-shrink: 0; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+.notice-scroll { flex: 1; overflow: hidden; white-space: nowrap; }
+.notice-scroll-inner { display: inline-block; animation: scroll-text 30s linear infinite; }
+@keyframes scroll-text { 0%{transform:translateX(100%)} 100%{transform:translateX(-100%)} }
+
+/* ============================================================
+   CONTENT AREA
+   ============================================================ */
+.content-area {
+  flex: 1; overflow-y: auto; padding: 20px;
+}
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* ============================================================
+   STAT CARDS
+   ============================================================ */
+.stats-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px; margin-bottom: 20px;
+}
+.stat-card {
+  background: var(--bg2); border-radius: 12px;
+  padding: 16px; box-shadow: var(--card-shadow);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; gap: 14px;
+  transition: transform 0.15s, box-shadow 0.15s;
+  cursor: pointer;
+}
+.stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(13,59,122,0.15); }
+.stat-icon {
+  width: 46px; height: 46px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0;
+}
+.stat-icon.blue { background: rgba(13,59,122,0.1); color: var(--navy); }
+.stat-icon.gold { background: rgba(201,168,76,0.15); color: var(--gold); }
+.stat-icon.heart { background: rgba(139,0,0,0.1); color: var(--heart); }
+.stat-icon.success { background: rgba(26,122,74,0.1); color: var(--success); }
+.stat-icon.warning { background: rgba(183,119,13,0.1); color: var(--warning); }
+.stat-icon.info { background: rgba(26,96,128,0.1); color: var(--info); }
+.stat-value { font-family: 'Rajdhani', sans-serif; font-size: 26px; font-weight: 700; color: var(--text1); line-height: 1; }
+.stat-label { font-size: 11px; color: var(--text3); margin-top: 3px; font-weight: 500; }
+
+/* ============================================================
+   SECTION HEADERS
+   ============================================================ */
+.section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.section-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 17px; font-weight: 700; color: var(--text1);
+  display: flex; align-items: center; gap: 8px;
+}
+.section-title .heart-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--heart); display: inline-block;
+}
+.section-badge {
+  font-size: 11px; font-weight: 600; padding: 3px 10px;
+  border-radius: 20px; background: var(--bg3); color: var(--text2);
+}
+.view-all-btn {
+  font-size: 12px; color: var(--navy); font-weight: 600;
+  background: none; padding: 4px 10px;
+  border-radius: 6px; border: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.view-all-btn:hover { background: var(--navy); color: #fff; }
+
+/* ============================================================
+   CARDS
+   ============================================================ */
+.card {
+  background: var(--bg2); border-radius: 12px;
+  padding: 16px; box-shadow: var(--card-shadow);
+  border: 1px solid var(--border); margin-bottom: 16px;
+}
+.card.heart-card { border-left: 4px solid var(--heart); }
+.card.navy-card { border-left: 4px solid var(--navy); }
+.card.gold-card { border-left: 4px solid var(--gold); }
+
+/* ============================================================
+   HEART MODULES ΓÇö COMMAND CENTRE
+   ============================================================ */
+.heart-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px; margin-bottom: 20px;
+}
+.heart-module-card {
+  background: var(--bg2); border-radius: 14px;
+  border: 1px solid var(--border);
+  box-shadow: var(--card-shadow);
+  overflow: hidden; cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.heart-module-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(139,0,0,0.15); }
+.heart-module-header {
+  background: linear-gradient(135deg, var(--heart) 0%, #c0392b 100%);
+  padding: 14px 16px;
+  display: flex; align-items: center; gap: 12px;
+}
+.heart-module-icon {
+  width: 38px; height: 38px; border-radius: 10px;
+  background: rgba(255,255,255,0.15);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; color: #fff; flex-shrink: 0;
+}
+.heart-module-title { color: #fff; font-family: 'Rajdhani', sans-serif; font-size: 15px; font-weight: 700; }
+.heart-module-sub { color: rgba(255,255,255,0.7); font-size: 11px; }
+.heart-module-body { padding: 14px 16px; }
+.heart-stat-row { display: flex; gap: 12px; }
+.heart-stat { flex: 1; text-align: center; }
+.heart-stat-val { font-family: 'Rajdhani', sans-serif; font-size: 22px; font-weight: 700; color: var(--heart); }
+.heart-stat-lbl { font-size: 10px; color: var(--text3); }
+.heart-module-footer {
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 11px; color: var(--text3);
+}
+.open-btn {
+  font-size: 11px; font-weight: 600; color: var(--heart);
+  background: rgba(139,0,0,0.08); border: 1px solid rgba(139,0,0,0.2);
+  padding: 4px 12px; border-radius: 6px;
+}
+
+/* ============================================================
+   TABLES
+   ============================================================ */
+.table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+thead tr { background: var(--navy); }
+thead th {
+  padding: 10px 12px; color: #fff; font-weight: 600;
+  text-align: left; white-space: nowrap; font-size: 11px;
+  letter-spacing: 0.3px;
+}
+tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+tbody tr:hover { background: var(--bg3); }
+tbody tr:last-child { border-bottom: none; }
+tbody td { padding: 10px 12px; color: var(--text2); white-space: nowrap; }
+.heart-thead tr { background: var(--heart); }
+
+/* ============================================================
+   BADGES / STATUS
+   ============================================================ */
+.badge {
+  display: inline-flex; align-items: center;
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.3px;
+}
+.badge-present { background: rgba(26,122,74,0.12); color: var(--success); }
+.badge-absent { background: rgba(163,45,45,0.12); color: var(--danger); }
+.badge-late { background: rgba(183,119,13,0.12); color: var(--warning); }
+.badge-leave { background: rgba(26,96,128,0.12); color: var(--info); }
+.badge-holiday { background: rgba(13,59,122,0.12); color: var(--navy); }
+.badge-pending { background: rgba(183,119,13,0.12); color: var(--warning); }
+.badge-progress { background: rgba(26,96,128,0.12); color: var(--info); }
+.badge-completed { background: rgba(26,122,74,0.12); color: var(--success); }
+.badge-urgent { background: rgba(163,45,45,0.12); color: var(--danger); }
+.badge-active { background: rgba(26,122,74,0.12); color: var(--success); }
+.badge-upcoming { background: rgba(13,59,122,0.12); color: var(--navy); }
+.badge-postponed { background: rgba(183,119,13,0.12); color: var(--warning); }
+.badge-high { background: rgba(163,45,45,0.12); color: var(--danger); }
+.badge-medium { background: rgba(183,119,13,0.12); color: var(--warning); }
+.badge-low { background: rgba(26,122,74,0.12); color: var(--success); }
+.badge-allocated { background: rgba(13,59,122,0.12); color: var(--navy); }
+.badge-drafting { background: rgba(26,96,128,0.12); color: var(--info); }
+.badge-approval { background: rgba(183,119,13,0.12); color: var(--warning); }
+.badge-dispatched { background: rgba(26,122,74,0.12); color: var(--success); }
+.badge-irregular { background: rgba(139,0,0,0.12); color: var(--heart); }
+
+
+/* ============================================================
+   FORMS
+   ============================================================ */
+.form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group label { font-size: 11px; font-weight: 600; color: var(--text2); letter-spacing: 0.3px; text-transform: uppercase; }
+.form-group input, .form-group select, .form-group textarea {
+  padding: 10px 12px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--bg);
+  color: var(--text1); font-size: 13px; outline: none;
+  transition: border 0.2s;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--navy); }
+.form-group textarea { resize: vertical; min-height: 80px; }
+.form-actions { display: flex; gap: 10px; margin-top: 16px; }
+.btn-primary {
+  padding: 10px 20px; background: var(--navy); color: #fff;
+  border-radius: 8px; font-size: 13px; font-weight: 600;
+  transition: background 0.15s; font-family: inherit;
+}
+.btn-primary:hover { background: var(--navy-dark); }
+.btn-secondary {
+  padding: 10px 20px; background: var(--bg3); color: var(--text2);
+  border-radius: 8px; font-size: 13px; font-weight: 600;
+  border: 1px solid var(--border); font-family: inherit;
+}
+.btn-heart {
+  padding: 10px 20px; background: var(--heart); color: #fff;
+  border-radius: 8px; font-size: 13px; font-weight: 600;
+  transition: background 0.15s; font-family: inherit;
+}
+.btn-heart:hover { background: var(--heart-light); }
+
+/* ============================================================
+   CORRESPONDENCE TIMELINE
+   ============================================================ */
+.timeline { position: relative; padding-left: 24px; }
+.timeline::before {
+  content: ''; position: absolute; left: 7px; top: 0; bottom: 0;
+  width: 2px; background: var(--border);
+}
+.timeline-item { position: relative; margin-bottom: 16px; }
+.timeline-dot {
+  position: absolute; left: -24px; top: 2px;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--navy); border: 2px solid var(--bg2);
+  z-index: 1;
+}
+.timeline-dot.completed { background: var(--success); }
+.timeline-dot.current { background: var(--gold); animation: pulse 1.5s infinite; }
+.timeline-content { background: var(--bg3); border-radius: 8px; padding: 10px 12px; }
+.timeline-stage { font-size: 12px; font-weight: 600; color: var(--text1); }
+.timeline-meta { font-size: 10px; color: var(--text3); margin-top: 3px; }
+
+/* ============================================================
+   PROFILE CARD
+   ============================================================ */
+.profile-header {
+  background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy-light) 100%);
+  border-radius: 14px; padding: 24px;
+  display: flex; align-items: center; gap: 20px;
+  margin-bottom: 20px; color: #fff;
+}
+.profile-avatar {
+  width: 72px; height: 72px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold), #a07828);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; font-weight: 700; color: #fff;
+  border: 3px solid rgba(255,255,255,0.3); flex-shrink: 0;
+}
+.profile-name { font-family: 'Rajdhani', sans-serif; font-size: 22px; font-weight: 700; }
+.profile-rank { font-size: 13px; opacity: 0.8; margin-top: 2px; }
+.profile-badge-row { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.profile-tag {
+  background: rgba(255,255,255,0.15); color: #fff;
+  font-size: 10px; padding: 3px 10px; border-radius: 20px;
+}
+
+/* ============================================================
+   LOADING SPINNER
+   ============================================================ */
+.loading { display: flex; align-items: center; justify-content: center; padding: 40px; }
+.spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--navy); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ============================================================
+   EMPTY STATE
+   ============================================================ */
+.empty-state { text-align: center; padding: 40px 20px; color: var(--text3); }
+.empty-state i { font-size: 48px; opacity: 0.3; margin-bottom: 12px; display: block; }
+.empty-state p { font-size: 13px; }
+
+/* ============================================================
+   MODAL
+   ============================================================ */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  z-index: 1000; display: flex; align-items: center; justify-content: center;
+  padding: 20px; display: none;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--bg2); border-radius: 16px; width: 100%;
+  max-width: 600px; max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.modal-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.modal-title { font-family: 'Rajdhani', sans-serif; font-size: 18px; font-weight: 700; color: var(--text1); }
+.modal-close { width: 32px; height: 32px; border-radius: 8px; background: var(--bg3); color: var(--text2); display: flex; align-items: center; justify-content: center; font-size: 16px; }
+.modal-body { padding: 20px 24px; }
+.modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+#toastContainer { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+.toast {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  display: flex; align-items: center; gap: 10px;
+  min-width: 280px; max-width: 360px;
+  animation: slideIn 0.3s ease;
+  font-size: 13px; color: var(--text1);
+}
+@keyframes slideIn { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+.toast-success { border-left: 4px solid var(--success); }
+.toast-error { border-left: 4px solid var(--danger); }
+.toast-info { border-left: 4px solid var(--navy); }
+
+/* ============================================================
+   MOBILE BOTTOM NAV
+   ============================================================ */
+.bottom-nav {
+  display: none; position: fixed; bottom: 0; left: 0; right: 0;
+  height: 58px; background: var(--bg2);
+  border-top: 1px solid var(--border);
+  z-index: 200; padding: 0 4px;
+}
+.bottom-nav-items { display: flex; height: 100%; align-items: stretch; }
+.bottom-nav-item {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 3px;
+  cursor: pointer; color: var(--text3); font-size: 10px;
+  border: none; background: none; transition: color 0.15s;
+}
+.bottom-nav-item i { font-size: 18px; }
+.bottom-nav-item.active { color: var(--navy); }
+.bottom-nav-item.active i { color: var(--navy); }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 768px) {
+  .sidebar { position: fixed; height: 100%; transform: translateX(-100%); transition: transform 0.3s; }
+  .sidebar.mobile-open { transform: translateX(0); }
+  .bottom-nav { display: block; }
+  .content-area { padding: 14px 14px 70px; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .heart-grid { grid-template-columns: 1fr; }
+.form-grid { grid-template-columns: 1fr; }
+  .topbar-title { font-size: 15px; }
+}
+@media (min-width: 769px) {
+  .bottom-nav { display: none; }
+}
+
+/* ============================================================
+   PAGE HEADER
+   ============================================================ */
+.page-header { margin-bottom: 20px; }
+.page-header h1 {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 24px; font-weight: 700; color: var(--text1);
+  display: flex; align-items: center; gap: 10px;
+}
+.page-header p { font-size: 13px; color: var(--text3); margin-top: 4px; }
+
+/* Sidebar overlay for mobile */
+.sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99; }
+.sidebar-overlay.active { display: block; }
+
+/* Tab Pills */
+.tab-pills { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+.tab-pill {
+  padding: 7px 16px; border-radius: 20px;
+  font-size: 12px; font-weight: 600;
+  background: var(--bg3); color: var(--text2);
+  border: 1px solid var(--border); cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.tab-pill.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+.tab-pill.heart-pill.active { background: var(--heart); color: #fff; border-color: var(--heart); }
+
+/* Row actions */
+.row-actions { display: flex; gap: 6px; }
+.action-btn {
+  width: 28px; height: 28px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; transition: background 0.15s;
+  background: var(--bg3); color: var(--text2);
+}
+.action-btn:hover { background: var(--navy); color: #fff; }
+.action-btn.danger:hover { background: var(--danger); color: #fff; }
+
+/* Search bar */
+.search-bar {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 0 12px;
+  margin-bottom: 14px;
+}
+.search-bar i { color: var(--text3); }
+.search-bar input { flex: 1; border: none; background: none; padding: 10px 0; color: var(--text1); font-size: 13px; outline: none; }
+
+/* App footer */
+.app-footer {
+  text-align: center; font-size: 11px; color: var(--text3);
+  padding: 14px 0 6px; border-top: 1px solid var(--border);
+  margin-top: 24px; letter-spacing: 0.4px;
+}
+
+/* Admin badge */
+.admin-badge {
+  display: none; background: var(--danger); color: #fff;
+  font-size: 10px; font-weight: 700; padding: 3px 9px;
+  border-radius: 6px; letter-spacing: 0.5px;
+}
+
+/* Date filter row */
+.date-filter-row {
+  display: flex; align-items: center; gap: 10px;
+  flex-wrap: wrap; margin-bottom: 12px;
+}
+.date-filter-row label { font-size: 11px; font-weight: 600; color: var(--text2); }
+.date-filter-row input[type="date"] {
+  padding: 7px 10px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--bg);
+  color: var(--text1); font-size: 12px; outline: none;
+}
+.date-filter-row input[type="date"]:focus { border-color: var(--navy); }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     LOGIN SCREEN
+     ============================================================ -->
+<div id="loginScreen">
+  <div class="login-bg-pattern"></div>
+  <div class="login-box">
+    <div class="login-logo">
+      <img src="logo.png" alt="AP Police" id="loginLogoImg"
+           style="width:80px;height:80px;border-radius:50%;border:3px solid rgba(201,168,76,0.5);background:rgba(255,255,255,0.1);padding:4px;object-fit:cover"
+           onerror="this.style.display='none';document.getElementById('loginLogoFallback').style.display='flex'">
+      <div class="logo-placeholder" id="loginLogoFallback" style="display:none">
+        <i class="fa-solid fa-shield-halved"></i>
+      </div>
+    </div>
+    <div class="login-title">AP POLICE ΓÇö TECHNICAL SERVICES</div>
+    <div class="login-sub">Staff Monitoring System &nbsp;|&nbsp; IGP Office, Mangalagiri</div>
+    <div class="login-field">
+      <label>Phone Number / Staff ID</label>
+      <input type="tel" id="loginEmail" placeholder="Enter your phone number" autocomplete="tel">
+    </div>
+    <div class="login-field">
+      <label>Password</label>
+      <input type="password" id="loginPass" placeholder="Enter your password" autocomplete="current-password">
+    </div>
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">
+      <i class="fa-solid fa-right-to-bracket"></i> &nbsp;SIGN IN
+    </button>
+    <div class="login-error" id="loginError">Invalid phone number or password. Default password: 1111</div>
+    <div class="login-footer">AP POLICE TECHNICAL SERVICES &nbsp;ΓÇó&nbsp; MANGALAGIRI, ANDHRA PRADESH</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     APP SHELL
+     ============================================================ -->
+<div id="appShell">
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+  <div class="app-layout">
+
+    <!-- SIDEBAR -->
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <img src="logo.png" alt="AP Police" id="sidebarLogoImg"
+             style="width:38px;height:38px;border-radius:50%;border:2px solid rgba(201,168,76,0.4);flex-shrink:0;object-fit:cover"
+             onerror="this.style.display='none';document.getElementById('sidebarLogoFallback').style.display='flex'">
+        <div class="logo-placeholder-sm" id="sidebarLogoFallback" style="display:none"><i class="fa-solid fa-shield-halved"></i></div>
+        <div class="sidebar-brand">
+          <h2>AP POLICE TS</h2>
+          <p>STAFF MONITOR</p>
+        </div>
+      </div>
+
+      <div class="sidebar-nav">
+        <div class="nav-section-label">Main</div>
+        <div class="nav-item active" onclick="showScreen('dashboard')">
+          <i class="fa-solid fa-gauge-high"></i><span>Dashboard</span>
+        </div>
+        <div class="nav-item" onclick="showScreen('staff')">
+          <i class="fa-solid fa-users"></i><span>Staff Directory</span>
+        </div>
+        <div class="nav-item" onclick="showScreen('profile')">
+          <i class="fa-solid fa-circle-user"></i><span>My Profile</span>
+        </div>
+
+        <div class="nav-section-label" style="margin-top:8px">Γ¥ñ Command Centre</div>
+        <div class="nav-item heart-item" onclick="showScreen('command')">
+          <i class="fa-solid fa-clipboard-list"></i><span>Command Register</span>
+          <span class="nav-badge" id="cmdBadge">0</span>
+        </div>
+        <div class="nav-item heart-item" onclick="showScreen('correspondence')">
+          <i class="fa-solid fa-envelope-open-text"></i><span>Correspondence</span>
+          <span class="nav-badge" id="corrBadge">0</span>
+        </div>
+        <div class="nav-item heart-item" onclick="showScreen('igpworks')">
+          <i class="fa-solid fa-star"></i><span>IGP Command Works</span>
+        </div>
+        <div class="nav-item heart-item" onclick="showScreen('vc')">
+          <i class="fa-solid fa-video"></i><span>Conf & Meetings</span>
+        </div>
+
+        <div class="nav-section-label" style="margin-top:8px">Admin</div>
+        <div class="nav-item" id="adminNavItem" onclick="showScreen('admin')" style="display:none">
+          <i class="fa-solid fa-gear"></i><span>Admin Panel</span>
+        </div>
+        <div class="nav-item" id="staffMgmtNavItem" onclick="showScreen('staff-management')" style="display:none">
+          <i class="fa-solid fa-users-gear"></i><span>Staff Management</span>
+        </div>
+        <div class="nav-item" onclick="doLogout()">
+          <i class="fa-solid fa-right-from-bracket"></i><span>Logout</span>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="user-card">
+          <div class="user-avatar" id="sidebarAvatar">A</div>
+          <div class="user-info">
+            <strong id="sidebarName">Loading...</strong>
+            <span id="sidebarRank">ΓÇö</span>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- MAIN AREA -->
+    <div class="main-area">
+      <!-- TOPBAR -->
+      <div class="topbar">
+        <button class="topbar-toggle" onclick="toggleSidebar()">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="topbar-title" id="topbarTitle">Dashboard</div>
+        <div class="topbar-actions">
+          <span class="admin-badge" id="adminBadge">ADMIN</span>
+          <button class="topbar-btn" onclick="refreshData()" title="Refresh">
+            <i class="fa-solid fa-rotate-right"></i>
+          </button>
+          <button class="topbar-btn" title="Notifications">
+            <i class="fa-solid fa-bell"></i>
+            <span class="notif-dot"></span>
+          </button>
+          <div class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle theme">
+            <div class="theme-toggle-knob" id="themeKnob">
+              <i class="fa-solid fa-moon" id="themeIcon"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NOTICE BANNER -->
+      <div class="notice-banner" id="noticeBanner">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <div class="notice-scroll">
+          <div class="notice-scroll-inner" id="noticeText">
+            Loading notices...
+          </div>
+        </div>
+      </div>
+
+      <!-- CONTENT -->
+      <div class="content-area">
+
+        <!-- ====== DASHBOARD SCREEN ====== -->
+        <div class="screen active" id="screen-dashboard">
+          <!-- Stats Grid -->
+          <div class="stats-grid" id="dashStats">
+            <div class="stat-card" onclick="showScreen('staff')">
+              <div class="stat-icon success"><i class="fa-solid fa-id-badge"></i></div>
+              <div><div class="stat-value" id="statStaff">ΓÇö</div><div class="stat-label">Total Staff</div></div>
+            </div>
+            <div class="stat-card" onclick="showScreen('command')">
+              <div class="stat-icon heart"><i class="fa-solid fa-clipboard-list"></i></div>
+              <div><div class="stat-value" id="statPending">ΓÇö</div><div class="stat-label">Active Tasks</div></div>
+            </div>
+            <div class="stat-card" onclick="showScreen('correspondence')">
+              <div class="stat-icon gold"><i class="fa-solid fa-envelope-open-text"></i></div>
+              <div><div class="stat-value" id="statCorr">ΓÇö</div><div class="stat-label">Active Correspondence</div></div>
+            </div>
+            <div class="stat-card" onclick="showScreen('vc')">
+              <div class="stat-icon info"><i class="fa-solid fa-video"></i></div>
+              <div><div class="stat-value" id="statVC">ΓÇö</div><div class="stat-label">Upcoming VCs</div></div>
+            </div>
+          </div>
+
+          <!-- Heart Modules -->
+          <div class="section-header">
+            <div class="section-title"><span class="heart-dot"></span> Command Centre ΓÇö Heart Modules</div>
+          </div>
+          <div class="heart-grid">
+            <div class="heart-module-card" onclick="showScreen('command')">
+              <div class="heart-module-header">
+                <div class="heart-module-icon"><i class="fa-solid fa-clipboard-list"></i></div>
+                <div><div class="heart-module-title">Command Register</div><div class="heart-module-sub">Work Assignments Hub</div></div>
+              </div>
+              <div class="heart-module-body">
+                <div class="heart-stat-row">
+                  <div class="heart-stat"><div class="heart-stat-val" id="hCmdTotal">ΓÇö</div><div class="heart-stat-lbl">Total</div></div>
+                  <div class="heart-stat"><div class="heart-stat-val" id="hCmdPending">ΓÇö</div><div class="heart-stat-lbl">Pending</div></div>
+                  <div class="heart-stat"><div class="heart-stat-val" id="hCmdDone">ΓÇö</div><div class="heart-stat-lbl">Completed</div></div>
+                </div>
+              </div>
+              <div class="heart-module-footer"><span>Track all work assignments</span><button class="open-btn">Open ΓåÆ</button></div>
+            </div>
+            <div class="heart-module-card" onclick="showScreen('correspondence')">
+              <div class="heart-module-header">
+                <div class="heart-module-icon"><i class="fa-solid fa-envelope-open-text"></i></div>
+                <div><div class="heart-module-title">Correspondence Tracker</div><div class="heart-module-sub">Drafts ┬╖ Letters ┬╖ Notes ┬╖ Radio</div></div>
+              </div>
+              <div class="heart-module-body">
+                <div class="heart-stat-row">
+                  <div class="heart-stat"><div class="heart-stat-val" id="hCorrTotal">ΓÇö</div><div class="heart-stat-lbl">Total</div></div>
+                  <div class="heart-stat"><div class="heart-stat-val" id="hCorrActive">ΓÇö</div><div class="heart-stat-lbl">Active</div></div>
+                  <div class="heart-stat"><div class="heart-stat-val" id="hCorrDone">ΓÇö</div><div class="heart-stat-lbl">Completed</div></div>
+                </div>
+              </div>
+              <div class="heart-module-footer"><span>Full file movement trail</span><button class="open-btn">Open ΓåÆ</button></div>
+            </div>
+            <div class="heart-module-card" onclick="showScreen('igpworks')">
+              <div class="heart-module-header">
+                <div class="heart-module-icon"><i class="fa-solid fa-star"></i></div>
+                <div><div class="heart-module-title">IGP Command Works</div><div class="heart-module-sub">IGP-Allotted Priority Works</div></div>
+              </div>
+              <div class="heart-module-body">
+                <div class="heart-stat-row">
+                  <div class="heart-stat"><div class="heart-stat-val" id="hIGPTotal">ΓÇö</div><div class="heart-stat-lbl">Total</div></div>
+                  <div class="heart-stat"><div class="heart-stat-val" id="hIGPPending">ΓÇö</div><div class="heart-stat-lbl">Pending</div></div>
+                  <div class="heart-stat"><div class="heart-stat-val" id="hIGPDone">ΓÇö</div><div class="heart-stat-lbl">Completed</div></div>
+                </div>
+              </div>
+              <div class="heart-module-footer"><span>Officers & Admin only</span><button class="open-btn">Open ΓåÆ</button></div>
+            </div>
+            <div class="heart-module-card" onclick="showScreen('vc')">
+              <div class="heart-module-header">
+                <div class="heart-module-icon"><i class="fa-solid fa-video"></i></div>
+                <div><div class="heart-module-title">Conference & Meetings Hub</div><div class="heart-module-sub">VC Schedule ┬╖ History ┬╖ Speakers</div></div>
+              </div>
+              <div class="heart-module-body">
+                <div class="heart-stat-row">
+                  <div class="heart-stat"><div class="heart-stat-val" id="hVCUpcoming">ΓÇö</div><div class="heart-stat-lbl">Upcoming</div></div>
+                  <div class="heart-stat"><div class="heart-stat-val" id="hVCDone">ΓÇö</div><div class="heart-stat-lbl">Completed</div></div>
+                  <div class="heart-stat"><div class="heart-stat-val" id="hVCPostponed">ΓÇö</div><div class="heart-stat-lbl">Postponed</div></div>
+                </div>
+              </div>
+              <div class="heart-module-footer"><span>All ranks can enter VCs</span><button class="open-btn">Open ΓåÆ</button></div>
+            </div>
+          </div>
+
+          <!-- Recent Activity -->
+          <div class="section-header">
+            <div class="section-title">Recent Tasks</div>
+            <button class="view-all-btn" onclick="showScreen('command')">View All</button>
+          </div>
+          <div class="card">
+            <div class="table-wrap">
+              <table>
+                <thead class="heart-thead"><tr>
+                  <th>Serial No</th><th>Task</th><th>Assigned To</th><th>Priority</th><th>Status</th><th>Date</th>
+                </tr></thead>
+                <tbody id="recentTasksBody">
+                  <tr><td colspan="6"><div class="loading"><div class="spinner"></div></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ====== COMMAND REGISTER ====== -->
+        <div class="screen" id="screen-command">
+          <div class="page-header">
+            <h1><i class="fa-solid fa-clipboard-list" style="color:var(--heart)"></i> Command Register</h1>
+            <p>Γ¥ñ Heart Module ΓÇö All work assignments tracked here</p>
+          </div>
+          <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+            <button class="btn-heart" onclick="openModal('addTaskModal')">
+              <i class="fa-solid fa-plus"></i> Add Task
+            </button>
+            <button onclick="refreshAll()" style="background:var(--navy);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;border:none;cursor:pointer">
+              <i class="fa-solid fa-rotate-right"></i> Refresh Data
+            </button>
+          </div>
+          <div class="tab-pills">
+            <div class="tab-pill heart-pill active" onclick="filterCommand('all',this)">All</div>
+            <div class="tab-pill heart-pill" onclick="filterCommand('Pending',this)">Pending</div>
+            <div class="tab-pill heart-pill" onclick="filterCommand('In Progress',this)">In Progress</div>
+            <div class="tab-pill heart-pill" onclick="filterCommand('Completed',this)">Completed</div>
+          </div>
+          <div class="date-filter-row">
+            <label>From:</label>
+            <input type="date" id="cmdFromDate">
+            <label>To:</label>
+            <input type="date" id="cmdToDate">
+            <button class="btn-primary" style="padding:7px 14px;font-size:12px" onclick="renderCommand()">
+              <i class="fa-solid fa-filter"></i> Filter
+            </button>
+            <button class="btn-secondary" style="padding:7px 14px;font-size:12px" onclick="document.getElementById('cmdFromDate').value='';document.getElementById('cmdToDate').value='';renderCommand()">
+              Clear
+            </button>
+          </div>
+          <div class="search-bar">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" placeholder="Search tasks, assigned to..." id="cmdSearch" oninput="searchCommand()">
+          </div>
+          <div class="card" style="padding:0;overflow:hidden">
+            <div class="table-wrap">
+              <table>
+                <thead class="heart-thead"><tr>
+                  <th>S.No</th><th>Date</th><th>Task Title</th><th>Category</th>
+                  <th>Assigned To</th><th>Assigned By</th><th>Priority</th>
+                  <th>Status</th><th>Due Date</th><th>Actions</th>
+                </tr></thead>
+                <tbody id="commandBody">
+                  <tr><td colspan="10"><div class="loading"><div class="spinner"></div></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ====== CORRESPONDENCE TRACKER ====== -->
+        <div class="screen" id="screen-correspondence">
+          <div class="page-header">
+            <h1><i class="fa-solid fa-envelope-open-text" style="color:var(--heart)"></i> Correspondence Tracker</h1>
+            <p>Γ¥ñ Heart Module ΓÇö Drafts ┬╖ Letters ┬╖ Notes ┬╖ Radio Messages ┬╖ eOffice</p>
+          </div>
+          <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+            <button class="btn-heart" onclick="openModal('addCorrModal')">
+              <i class="fa-solid fa-plus"></i> New Correspondence
+            </button>
+            <button onclick="refreshAll()" style="background:var(--navy);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;border:none;cursor:pointer">
+              <i class="fa-solid fa-rotate-right"></i> Refresh Data
+            </button>
+          </div>
+          <div class="tab-pills">
+            <div class="tab-pill heart-pill active" onclick="filterCorr('all',this)">All</div>
+            <div class="tab-pill heart-pill" onclick="filterCorr('Active',this)">Active</div>
+            <div class="tab-pill heart-pill" onclick="filterCorr('Completed',this)">Completed</div>
+            <div class="tab-pill heart-pill" onclick="filterCorr('Draft',this)">Drafts</div>
+            <div class="tab-pill heart-pill" onclick="filterCorr('Letter',this)">Letters</div>
+            <div class="tab-pill heart-pill" onclick="filterCorr('Note File',this)">Note Files</div>
+            <div class="tab-pill heart-pill" onclick="filterCorr('Radio Message',this)">Radio Messages</div>
+          </div>
+          <div class="search-bar">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" placeholder="Search by subject, serial no, allocated to..." id="corrSearch" oninput="searchCorr()">
+          </div>
+          <div class="card" style="padding:0;overflow:hidden">
+            <div class="table-wrap">
+              <table>
+                <thead class="heart-thead"><tr>
+                  <th>S.No</th><th>Date</th><th>Type</th><th>Subject</th>
+                  <th>Allocated To</th><th>Current Stage</th>
+                  <th>Mode</th><th>Status</th><th>Actions</th>
+                </tr></thead>
+                <tbody id="corrBody">
+                  <tr><td colspan="9"><div class="loading"><div class="spinner"></div></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ====== IGP COMMAND WORKS ====== -->
+        <div class="screen" id="screen-igpworks">
+          <div class="page-header">
+            <h1><i class="fa-solid fa-star" style="color:var(--gold)"></i> IGP Command Works</h1>
+            <p>Γ¥ñ Heart Module ΓÇö Works directly allotted by IGP Sir</p>
+          </div>
+          <div style="display:flex;gap:10px;margin-bottom:16px;">
+            <button class="btn-heart" id="addIGPBtn" onclick="openModal('addIGPModal')">
+              <i class="fa-solid fa-plus"></i> Add IGP Work
+            </button>
+            <button onclick="refreshAll()" style="background:var(--navy);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;border:none;cursor:pointer">
+              <i class="fa-solid fa-rotate-right"></i> Refresh Data
+            </button>
+          </div>
+          <div class="tab-pills">
+            <div class="tab-pill heart-pill active" onclick="filterIGP('all',this)">All</div>
+            <div class="tab-pill heart-pill" onclick="filterIGP('Pending',this)">Pending</div>
+            <div class="tab-pill heart-pill" onclick="filterIGP('In Progress',this)">In Progress</div>
+            <div class="tab-pill heart-pill" onclick="filterIGP('Completed',this)">Completed</div>
+            <div class="tab-pill heart-pill" onclick="filterIGP('Escalated',this)">Escalated</div>
+          </div>
+          <div class="card" style="padding:0;overflow:hidden">
+            <div class="table-wrap">
+              <table>
+                <thead style="background:linear-gradient(90deg,#7b0d0d,#c0392b)"><tr style="background:none">
+                  <th>S.No</th><th>Date</th><th>Work Title</th><th>Assigned To</th>
+                  <th>Priority</th><th>Status</th><th>Due Date</th><th>Remarks</th><th>Actions</th>
+                </tr></thead>
+                <tbody id="igpBody">
+                  <tr><td colspan="9"><div class="loading"><div class="spinner"></div></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ====== VC SCHEDULE ====== -->
+        <div class="screen" id="screen-vc">
+          <div class="page-header">
+            <h1><i class="fa-solid fa-video" style="color:var(--heart)"></i> Conference & Meetings Hub</h1>
+            <p>Γ¥ñ Heart Module ΓÇö VC Schedule, Speakers, History</p>
+          </div>
+          <div style="display:flex;gap:10px;margin-bottom:16px;">
+            <button class="btn-heart" onclick="openModal('addVCModal')">
+              <i class="fa-solid fa-plus"></i> Schedule VC/Meeting
+            </button>
+            <button onclick="refreshAll()" style="background:var(--navy);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;border:none;cursor:pointer">
+              <i class="fa-solid fa-rotate-right"></i> Refresh Data
+            </button>
+          </div>
+          <div class="tab-pills">
+            <div class="tab-pill heart-pill active" onclick="filterVC('all',this)">All</div>
+            <div class="tab-pill heart-pill" onclick="filterVC('Upcoming',this)">Upcoming</div>
+            <div class="tab-pill heart-pill" onclick="filterVC('Completed',this)">Completed</div>
+            <div class="tab-pill heart-pill" onclick="filterVC('Postponed',this)">Postponed</div>
+          </div>
+          <div class="card" style="padding:0;overflow:hidden">
+            <div class="table-wrap">
+              <table>
+                <thead class="heart-thead"><tr>
+                  <th>S.No</th><th>Subject</th><th>Date & Time</th><th>Platform</th>
+                  <th>Speaker</th><th>Organiser</th><th>Status</th><th>VC Link</th><th>Actions</th>
+                </tr></thead>
+                <tbody id="vcBody">
+                  <tr><td colspan="9"><div class="loading"><div class="spinner"></div></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ====== STAFF DIRECTORY ====== -->
+        <div class="screen" id="screen-staff">
+          <div class="page-header">
+            <h1><i class="fa-solid fa-users" style="color:var(--navy)"></i> Staff Directory</h1>
+            <p>All Technical Services personnel</p>
+          </div>
+          <div class="search-bar">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" placeholder="Search by name, rank, badge number..." id="staffSearch" oninput="searchStaff()">
+          </div>
+          <div id="staffGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px">
+            <div class="loading"><div class="spinner"></div></div>
+          </div>
+        </div>
+
+        <!-- ====== MY PROFILE ====== -->
+        <div class="screen" id="screen-profile">
+          <div class="page-header">
+            <h1><i class="fa-solid fa-circle-user" style="color:var(--navy)"></i> My Profile</h1>
+            <p>Your details, assigned tasks and correspondence</p>
+          </div>
+          <div id="profileContent">
+            <div class="loading"><div class="spinner"></div></div>
+          </div>
+        </div>
+
+        <!-- ====== ADMIN PANEL ====== -->
+        <div class="screen" id="screen-admin">
+          <div class="page-header">
+            <h1><i class="fa-solid fa-gear" style="color:var(--navy)"></i> Admin Panel</h1>
+            <p>System configuration and management</p>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px">
+            <div class="card navy-card" style="cursor:pointer" onclick="showScreen('staff')">
+              <div style="font-size:28px;margin-bottom:10px">≡ƒæÑ</div>
+              <div style="font-weight:700;font-size:15px;color:var(--text1)">Staff Enrollment</div>
+              <div style="font-size:12px;color:var(--text3);margin-top:4px">Add, edit, manage staff accounts</div>
+            </div>
+            <div class="card navy-card" style="cursor:pointer">
+              <div style="font-size:28px;margin-bottom:10px">Γ₧ò</div>
+              <div style="font-weight:700;font-size:15px;color:var(--text1)">Custom Stages</div>
+              <div style="font-size:12px;color:var(--text3);margin-top:4px">Add correspondence stages</div>
+            </div>
+          </div>
+          <div class="card navy-card" style="margin-top:12px">
+            <div style="font-weight:700;margin-bottom:8px"><i class="fa-solid fa-upload"></i> Bulk Import Staff</div>
+            <p style="font-size:12px;color:var(--text3);margin-bottom:12px">Import all 62 TS staff from the duty chart into Staff_Master sheet. Phone number = Login ID, Default password = 1111. Existing records will not be overwritten.</p>
+            <button onclick="bulkImportStaff()" style="background:var(--success);color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer"><i class="fa-solid fa-file-import"></i> Import All Staff from Template</button>
+          </div>
+          <div class="card navy-card" style="margin-top:12px">
+            <div style="font-weight:700;margin-bottom:8px"><i class="fa-solid fa-broom"></i> Sheet Cleanup</div>
+            <p style="font-size:12px;color:var(--text3);margin-bottom:12px">Clear data from unused sheets (Attendance, Leave, Rankings, Points_Log, Turn_Duties, Login_Log, Chat_Messages). Headers are kept.</p>
+            <button onclick="cleanUpUnusedSheets()" style="background:var(--danger);color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer"><i class="fa-solid fa-trash-can"></i> Clean Up Unused Sheets</button>
+          </div>
+          
+          <div class="card navy-card" style="margin-top:12px">
+            <div style="font-weight:700;margin-bottom:8px"><i class="fa-solid fa-key"></i> Staff Login Credentials</div>
+            <p style="font-size:12px;color:var(--text3);margin-bottom:12px;line-height:1.6">
+              Default password for all staff: <strong>1111</strong><br>
+              Admin login: <strong>9493946020 / 8421</strong><br>
+              Staff login: <strong>Phone Number / 1111</strong>
+            </p>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>S.No</th>
+                    <th>Name</th>
+                    <th>Rank</th>
+                    <th>Phone (Login ID)</th>
+                    <th>Password</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="credentialsTableBody">
+                  <tr><td colspan="6" style="text-align:center;color:var(--text3)">Loading credentials...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ====== STAFF MANAGEMENT SCREEN ====== -->
+        <div class="screen" id="screen-staff-management">
+          <div class="page-header">
+            <h1><i class="fa-solid fa-users-gear" style="color:var(--navy)"></i> Staff Management</h1>
+            <p>Add, edit and manage all TS staff accounts</p>
+          </div>
+
+          <!-- Add / Edit Form -->
+          <div class="card navy-card" id="staffFormCard">
+            <div class="section-title" style="margin-bottom:14px" id="staffFormTitle">
+              <i class="fa-solid fa-user-plus"></i> Add New Staff
+            </div>
+            <div class="form-grid">
+              <!-- Row 1: Name, Rank, Badge -->
+              <div class="form-group"><label>Full Name *</label><input type="text" id="sfName" placeholder="Full name"></div>
+              <div class="form-group"><label>Rank *</label>
+                <select id="sfRank">
+                  <option value="">ΓÇö Select Rank ΓÇö</option>
+                  <option>IGP</option><option>DIG</option><option>SP</option><option>AddSP</option>
+                  <option>DySP</option><option>CI</option><option>SI</option><option>ASI</option>
+                  <option>HC</option><option>PC</option><option>WPC</option><option>Inspector</option>
+                  <option>HC(C)</option><option>PC(C)</option><option>WPC(C)</option><option>RSI</option>
+                </select>
+              </div>
+              <div class="form-group"><label>Badge Number</label><input type="text" id="sfBadge" placeholder="Badge No."></div>
+              <!-- Row 2: Phone, Gender, Status -->
+              <div class="form-group">
+                <label>Phone Number (Login ID) *</label>
+                <input type="text" id="sfPhone" placeholder="Enter phone number">
+                <small style="color:var(--text3);font-size:10px;margin-top:3px;display:block">This will be staff login ID</small>
+              </div>
+              <div class="form-group"><label>Gender</label>
+                <select id="sfGender"><option>Male</option><option>Female</option></select>
+              </div>
+              <div class="form-group"><label>Status</label>
+                <select id="sfStatus"><option>Active</option><option>Inactive</option></select>
+              </div>
+              <!-- Row 3: Gmail, Projects, District -->
+              <div class="form-group"><label>Gmail</label><input type="email" id="sfGmail" placeholder="staff@gmail.com"></div>
+              <div class="form-group"><label>Assigned Projects</label><input type="text" id="sfProjects" placeholder="Project names"></div>
+              <div class="form-group"><label>District Assigned</label><input type="text" id="sfDistrict" placeholder="District name"></div>
+              <!-- Row 4: Reporting Officer full width -->
+              <div class="form-group" style="grid-column:1/-1"><label>Reporting Officer</label><input type="text" id="sfReporting" placeholder="Officer name"></div>
+            </div>
+            
+            <!-- Duty Details Section -->
+            <div class="section-title" style="margin-top:20px;margin-bottom:14px">
+              <i class="fa-solid fa-briefcase"></i> Duty Details
+            </div>
+            <div class="form-grid">
+              <div class="form-group" style="grid-column:1/-1"><label>Daily Duties</label><textarea id="sfDaily" placeholder="Enter daily duties..." style="min-height:80px"></textarea></div>
+              <div class="form-group" style="grid-column:1/-1"><label>Weekly Duties</label><textarea id="sfWeekly" placeholder="Enter weekly duties..." style="min-height:80px"></textarea></div>
+              <div class="form-group" style="grid-column:1/-1"><label>Monthly Duties</label><textarea id="sfMonthly" placeholder="Enter monthly duties..." style="min-height:80px"></textarea></div>
+              <div class="form-group" style="grid-column:1/-1"><label>Yearly Duties</label><textarea id="sfYearly" placeholder="Enter yearly duties..." style="min-height:80px"></textarea></div>
+            </div>
+
+            <div class="form-actions">
+              <button class="btn-primary" id="sfSaveBtn" onclick="submitStaff()"><i class="fa-solid fa-floppy-disk"></i> Save Staff</button>
+              <button class="btn-secondary" id="sfClearBtn" onclick="clearStaffForm()">Clear Form</button>
+            </div>
+          </div>
+
+          <!-- Staff List -->
+          <div class="section-header" style="margin-top:8px">
+            <div class="section-title">All Staff (loaded from sheet)</div>
+            <div style="display:flex;gap:8px">
+              <button class="view-all-btn" onclick="renderStaffMgmt()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+              <button onclick="clearAllStaff()" style="background:var(--danger);color:#fff;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;border:none;cursor:pointer">
+                <i class="fa-solid fa-trash"></i> Clear All Staff (Admin Only)
+              </button>
+            </div>
+          </div>
+          <div class="search-bar">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" placeholder="Search by name, rank, phone..." id="sfSearch" oninput="renderStaffMgmt()">
+          </div>
+          <div class="card" style="padding:0;overflow:hidden">
+            <div class="table-wrap">
+              <table>
+                <thead><tr>
+                  <th>S.No</th><th>Name</th><th>Rank</th><th>Phone</th><th>Gender</th>
+                  <th>Badge No</th><th>Status</th><th>Actions</th>
+                </tr></thead>
+                <tbody id="staffMgmtBody">
+                  <tr><td colspan="8"><div class="loading"><div class="spinner"></div></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="app-footer">
+          AP Police Technical Services &nbsp;|&nbsp; IGP Office, Mangalagiri &nbsp;|&nbsp; 2026
+        </div>
+
+      </div><!-- end content-area -->
+    </div><!-- end main-area -->
+  </div><!-- end app-layout -->
+
+  <!-- MOBILE BOTTOM NAV -->
+  <div class="bottom-nav">
+    <div class="bottom-nav-items">
+      <button class="bottom-nav-item active" onclick="showScreen('dashboard')"><i class="fa-solid fa-gauge-high"></i><span>Home</span></button>
+      <button class="bottom-nav-item" onclick="showScreen('command')"><i class="fa-solid fa-clipboard-list"></i><span>Commands</span></button>
+      <button class="bottom-nav-item" onclick="showScreen('correspondence')"><i class="fa-solid fa-envelope-open-text"></i><span>Corr</span></button>
+      <button class="bottom-nav-item" onclick="showScreen('vc')"><i class="fa-solid fa-video"></i><span>VC</span></button>
+      <button class="bottom-nav-item" onclick="showScreen('staff')"><i class="fa-solid fa-users"></i><span>Staff</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODALS
+     ============================================================ -->
+
+<!-- Add Task Modal -->
+<div class="modal-overlay" id="addTaskModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add Task to Command Register</div>
+      <button class="modal-close" onclick="closeModal('addTaskModal')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>Task Title *</label><input type="text" id="taskTitle" placeholder="Enter task title"></div>
+        <div class="form-group"><label>Entry Date</label><input type="date" id="taskEntryDate"></div>
+        <div class="form-group"><label>Category</label>
+          <select id="taskCategory">
+            <option value="C1">District Coordination</option>
+            <option value="C2">Letters</option>
+            <option value="C3">Miscellaneous</option>
+            <option value="C4">Note Files</option>
+            <option value="C5">Office Work</option>
+            <option value="C6">Project Related</option>
+            <option value="C7">Reports</option>
+            <option value="C8">Training</option>
+            <option value="C9">Video Conference</option>
+            <option value="C10">eOffice</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Assigned To *</label>
+          <select id="taskAssignedTo"><option value="">ΓÇö Select Staff ΓÇö</option></select>
+        </div>
+        <div class="form-group"><label>Priority</label>
+          <select id="taskPriority">
+            <option>Very High</option><option>High</option>
+            <option selected>Medium</option><option>Low</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Due Date</label><input type="date" id="taskDueDate"></div>
+        <div class="form-group"><label>Assigned By</label>
+          <select id="taskAssignedBy"><option value="">ΓÇö Select Staff ΓÇö</option></select>
+        </div>
+      </div>
+      <div class="form-group" style="margin-top:12px"><label>Description / Remarks</label><textarea id="taskDesc" placeholder="Task details..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('addTaskModal')">Cancel</button>
+      <button class="btn-heart" onclick="submitTask()">Save Task</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Correspondence Modal -->
+<div class="modal-overlay" id="addCorrModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">New Correspondence Entry</div>
+      <button class="modal-close" onclick="closeModal('addCorrModal')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>Entry Date</label><input type="date" id="corrEntryDate"></div>
+        <div class="form-group"><label>Type *</label>
+          <select id="corrType">
+            <option>Draft</option><option>Letter</option>
+            <option>Note File</option><option>Radio Message</option>
+            <option>eOffice</option><option>Other</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Allocated To *</label>
+          <select id="corrAllocTo"><option value="">ΓÇö Select Staff ΓÇö</option></select>
+        </div>
+        <div class="form-group"><label>Allocated By</label>
+          <select id="corrAllocBy"><option value="">ΓÇö Select Staff ΓÇö</option></select>
+        </div>
+        <div class="form-group"><label>Submission Mode</label>
+          <select id="corrMode">
+            <option>WhatsApp</option><option>Hardcopy</option>
+            <option>eOffice</option><option>Email</option><option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group" style="margin-top:12px"><label>Subject *</label><input type="text" id="corrSubject" placeholder="Full subject of the correspondence"></div>
+      <div class="form-group" style="margin-top:12px"><label>Remarks</label><textarea id="corrRemarks" placeholder="Additional remarks..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('addCorrModal')">Cancel</button>
+      <button class="btn-heart" onclick="submitCorr()">Save Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add IGP Work Modal -->
+<div class="modal-overlay" id="addIGPModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add IGP Command Work</div>
+      <button class="modal-close" onclick="closeModal('addIGPModal')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>Entry Date</label><input type="date" id="igpEntryDate"></div>
+        <div class="form-group"><label>Work Title *</label><input type="text" id="igpTitle" placeholder="Enter work title"></div>
+        <div class="form-group"><label>Assigned To *</label>
+          <select id="igpAssignedTo"><option value="">ΓÇö Select Staff ΓÇö</option></select>
+        </div>
+        <div class="form-group"><label>Priority</label>
+          <select id="igpPriority"><option>Very High</option><option>High</option><option selected>Medium</option><option>Low</option></select>
+        </div>
+        <div class="form-group"><label>Due Date</label><input type="date" id="igpDueDate"></div>
+      </div>
+      <div class="form-group" style="margin-top:12px"><label>Work Description</label><textarea id="igpDesc" placeholder="Describe the work..."></textarea></div>
+      <div class="form-group" style="margin-top:12px"><label>Remarks</label><textarea id="igpRemarks" placeholder="Additional remarks..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('addIGPModal')">Cancel</button>
+      <button class="btn-heart" onclick="submitIGP()">Save Work</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add VC Modal -->
+<div class="modal-overlay" id="addVCModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Schedule VC / Meeting</div>
+      <button class="modal-close" onclick="closeModal('addVCModal')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>Entry Date</label><input type="date" id="vcEntryDate"></div>
+        <div class="form-group"><label>Subject *</label><input type="text" id="vcSubject" placeholder="VC subject/topic"></div>
+        <div class="form-group"><label>VC Date *</label><input type="date" id="vcDate"></div>
+        <div class="form-group"><label>Time *</label><input type="time" id="vcTime"></div>
+        <div class="form-group"><label>Platform</label>
+          <select id="vcPlatform">
+            <option>BharatVC</option><option>Zoom</option><option>Teams</option>
+            <option>Google Meet</option><option>Cisco Webex</option><option>Other</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Speaker</label>
+          <select id="vcSpeaker"><option value="">ΓÇö Select Staff ΓÇö</option></select>
+        </div>
+        <div class="form-group"><label>Organiser</label><input type="text" id="vcOrganiser" placeholder="Organising office/officer"></div>
+        <div class="form-group" style="grid-column:1/-1"><label>VC Link</label><input type="text" id="vcLink" placeholder="Paste meeting link here"></div>
+        <div class="form-group" style="grid-column:1/-1"><label>Allotted Persons (comma separated)</label><input type="text" id="vcPersons" placeholder="Name1, Name2, Name3..."></div>
+      </div>
+      <div class="form-group" style="margin-top:12px"><label>Remarks</label><textarea id="vcRemarks" placeholder="Additional remarks..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('addVCModal')">Cancel</button>
+      <button class="btn-heart" onclick="submitVC()">Schedule</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toastContainer"></div>
+
+<!-- ============================================================
+     JAVASCRIPT
+     ============================================================ -->
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+const RELAY_URL = 'https://script.google.com/macros/s/AKfycbx_TbS9YF-XXnm1wOQVFH7_UveazRuzB-i2LKhNcA5Uvs2KTPiMjMTTGmng1axQuuXc1g/exec';
+const ADMIN_PHONE = '9493946020';
+const ADMIN_PASS  = '8421';
+const STAFF_PASS  = '1111';
+
+const OFFICER_RANKS = ['IGP','DIG','SP','AddSP','DySP','CI','SI','RSI','Inspector'];
+
+let currentUser = null;
+let allData = {};
+let staffListCache = null;
+let currentCmdFilter = 'all';
+let currentCorrFilter = 'all';
+let currentIGPFilter = 'all';
+let currentVCFilter  = 'all';
+let editContext = null;
+let stageContext = null;
+let postponeContext = null;
+
+const CORR_STAGES = [
+  'Draft Work Allocated',
+  'Draft in Progress',
+  'Draft Submitted to Officer',
+  'Returned for Correction',
+  'Corrected Draft Submitted',
+  'Approved by Officer',
+  'Submitted to IGP Office',
+  'Dispatched',
+  'Completed',
+  'Filed'
+];
+
+// Pre-load staff list on page load for fast login
+window.addEventListener('DOMContentLoaded', () => {
+  fetchSheet('Staff_Master').then(data => { staffListCache = data; });
+  // Set today's date as default in all date inputs
+  const today = new Date().toISOString().split('T')[0];
+  ['taskEntryDate','corrEntryDate','igpEntryDate','vcEntryDate'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = today;
+  });
+});
+
+// ============================================================
+// THEME
+// ============================================================
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  const toggle = document.getElementById('themeToggle');
+  const icon   = document.getElementById('themeIcon');
+  toggle.classList.toggle('dark', !isDark);
+  icon.className = isDark ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+  localStorage.setItem('theme', isDark ? 'light' : 'dark');
+}
+(function() {
+  const saved = localStorage.getItem('theme');
+  if (saved === 'dark') {
+    document.documentElement.setAttribute('data-theme','dark');
+    document.getElementById('themeToggle')?.classList.add('dark');
+  }
+})();
+
+// ============================================================
+// LOGIN ΓÇö PHONE BASED
+// ============================================================
+async function doLogin() {
+  const phone = document
+    .getElementById('loginEmail')
+    .value.trim();
+  const pass = document
+    .getElementById('loginPass').value;
+
+  if (!phone || !pass) {
+    showLoginError('Enter phone and password');
+    return;
+  }
+
+  if (phone === ADMIN_PHONE && pass === ADMIN_PASS) {
+    currentUser = {
+      phone,
+      name: 'Admin',
+      rank: 'RSI',
+      role: 'admin',
+      email: 'admin@appolice.gov.in'
+    };
+    startApp();
+    return;
+  }
+
+  if (allData.staff && allData.staff.length > 0) {
+    loginWithStaffData(phone, pass);
+    return;
+  }
+
+  showToast('Loading staff data...', 'info');
+  const staff = await fetchSheet('Staff_Master');
+  allData.staff = staff;
+  loginWithStaffData(phone, pass);
+}
+
+function loginWithStaffData(phone, pass) {
+  const staff = allData.staff || [];
+  const found = staff.find(s => 
+    String(s.Phone).trim() === String(phone).trim()
+    && s.Status === 'Active'
+  );
+
+  if (found && pass === STAFF_PASS) {
+    currentUser = {
+      phone,
+      name: found.Full_Name,
+      rank: found.Rank,
+      role: isOfficerRank(found.Rank) ? 'officer' : 'staff',
+      email: found.Gmail || '',
+      Daily_Duties: found.Daily_Duties || '',
+      Weekly_Duties: found.Weekly_Duties || '',
+      Monthly_Duties: found.Monthly_Duties || '',
+      Yearly_Duties: found.Yearly_Duties || '',
+      staffData: found
+    };
+    startApp();
+  } else {
+    showLoginError('Invalid phone number or password');
+  }
+}
+
+function isOfficerRank(rank) {
+  return OFFICER_RANKS.includes(rank);
+}
+
+function showLoginError(msg) {
+  const err = document.getElementById('loginError');
+  err.textContent = msg;
+  err.style.display = 'block';
+  setTimeout(() => {
+    err.style.display = 'none';
+  }, 3000);
+}
+
+function startApp() {
+  document.getElementById('loginScreen')
+    .style.display = 'none';
+  document.getElementById('appShell')
+    .style.display = 'block';
+  initApp();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('loginPass')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+});
+
+window.addEventListener('load', async () => {
+  try {
+    const staff = await fetchSheet('Staff_Master');
+    allData.staff = staff;
+  } catch(e) {
+    allData.staff = [];
+  }
+});
+
+function doLogout() {
+  currentUser = null;
+  allData = {};
+  document.getElementById('appShell').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginPass').value  = '';
+  document.getElementById('adminBadge').style.display = 'none';
+}
+
+// ============================================================
+// INIT APP
+// ============================================================
+function initApp() {
+  document.getElementById('sidebarName').textContent = currentUser.name;
+  document.getElementById('sidebarRank').textContent = currentUser.rank;
+  document.getElementById('sidebarAvatar').textContent = (currentUser.name || 'A')[0];
+
+  if (currentUser.role === 'admin') {
+    document.getElementById('adminNavItem').style.display = 'flex';
+    document.getElementById('staffMgmtNavItem').style.display = 'flex';
+    document.getElementById('adminBadge').style.display = 'inline-block';
+  }
+
+  // Set today as default in form date fields
+  const today = new Date().toISOString().split('T')[0];
+  ['taskEntryDate','corrEntryDate','igpEntryDate','vcEntryDate'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && !el.value) el.value = today;
+  });
+
+  startClock();
+  document.getElementById('punchUserName').textContent = currentUser.name;
+  loadAllData();
+  showScreen('dashboard');
+}
+
+// ============================================================
+// FETCH DATA FROM SHEET
+// ============================================================
+async function fetchSheet(sheetName) {
+  try {
+    const url = RELAY_URL
+      + '?sheet=' + encodeURIComponent(sheetName)
+      + '&t=' + Date.now();
+    const res = await fetch(url);
+    const json = await res.json();
+    return json.data || [];
+  } catch(err) {
+    console.error('fetchSheet error:', sheetName, err);
+    return [];
+  }
+}
+
+function mergeStaffData(sheetStaff) {
+  // Build combined list: DASHBOARD_STAFF (full data) + STAFF_TEMPLATE (duty chart)
+  // then overlay with anything from the sheet
+  const sheetPhones = new Set((sheetStaff || []).map(s => String(s.Phone || '').trim()).filter(Boolean));
+  const sheetNames  = new Set((sheetStaff || []).map(s => String(s.Full_Name || s.Name || '').trim().toLowerCase()).filter(Boolean));
+
+  // Convert embedded arrays to objects matching sheet column names
+  const toObj = (r) => ({
+    Staff_ID: r[0], Full_Name: r[1], Rank: r[2], Badge_No: r[3],
+    Gender: r[4], Gmail: r[5], Phone: r[6], Date_Joined: r[7],
+    Status: r[8], Profile_Photo_URL: r[9], Assigned_Projects: r[10],
+    District_Assigned: r[11], Reporting_Officer: r[12], Created_Date: r[13]
+  });
+
+  const dashPhones = new Set(DASHBOARD_STAFF.map(r => String(r[6]).trim()).filter(Boolean));
+
+  // DASHBOARD_STAFF records not already in sheet
+  const dashExtra = DASHBOARD_STAFF
+    .filter(r => !sheetPhones.has(String(r[6]).trim()) && !sheetNames.has(String(r[1]).trim().toLowerCase()))
+    .map(toObj);
+
+  // STAFF_TEMPLATE records not already in sheet and not in dashboard
+  const tmplExtra = STAFF_TEMPLATE
+    .filter(r => {
+      const ph = String(r[6]).trim();
+      const nm = String(r[1]).trim().toLowerCase();
+      return !sheetPhones.has(ph) && !dashPhones.has(ph) && !sheetNames.has(nm);
+    })
+    .map(toObj);
+
+  // Sheet records come first (authoritative), then fill gaps from embedded data
+  return [...(sheetStaff || []), ...dashExtra, ...tmplExtra];
+}
+
+async function loadAllData() {
+  try {
+    const [
+      staff, command, correspondence,
+      corrTimeline, igpworks, vcschedule, notices
+    ] = await Promise.all([
+      fetchSheet('Staff_Master'),
+      fetchSheet('Command_Register'),
+      fetchSheet('Correspondence_Tracker'),
+      fetchSheet('Correspondence_Timeline'),
+      fetchSheet('IGP_Command_Works'),
+      fetchSheet('VC_Schedule'),
+      fetchSheet('Notices')
+    ]);
+    // Merge sheet staff with embedded data so profiles always show
+    const mergedStaff = mergeStaffData(staff);
+    allData = { staff: mergedStaff, command, correspondence, corrTimeline, igpworks, vcschedule, notices };
+    staffListCache = mergedStaff;
+    renderDashboard();
+    renderNoticesBanner();
+    updateAllDropdowns();
+    renderAdminCredentials();
+    return true;
+  } catch(err) {
+    console.error('loadAllData error:', err);
+    showToast('Error loading data', 'error');
+    return false;
+  }
+}
+
+function updateAllDropdowns() {
+  const staff = (allData.staff || []).filter(s => (s.Status || 'Active') === 'Active');
+  const options = staff.map(s =>
+    `<option value="${s.Full_Name||s.Name||''}">${s.Full_Name||s.Name||'ΓÇö'} (${s.Rank||''})</option>`
+  ).join('');
+  const dropdownIds = [
+    'taskAssignedTo','taskAssignedBy',
+    'corrAllocTo','corrAllocBy',
+    'igpAssignedTo','vcSpeaker'
+  ];
+  dropdownIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.tagName === 'SELECT') {
+      el.innerHTML = '<option value="">-- Select --</option>' + options;
+    }
+  });
+}
+
+function refreshData() { loadAllData(); }
+
+async function refreshAll() {
+  showToast('Refreshing...', 'info');
+  await loadAllData();
+  renderCommand();
+  renderCorrespondence();
+  renderIGPWorks();
+  renderVC();
+  showToast('Data refreshed!', 'success');
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.bottom-nav-item').forEach(n => n.classList.remove('active'));
+
+  const screen = document.getElementById('screen-' + name);
+  if (screen) screen.classList.add('active');
+
+  const titles = {
+    dashboard:'Dashboard', profile:'My Profile',
+    command:'Command Register', correspondence:'Correspondence Tracker',
+    igpworks:'IGP Command Works', vc:'Conference & Meetings Hub',
+    staff:'Staff Directory', admin:'Admin Panel',
+    staffmgmt:'Staff Management',
+    'staff-management':'Staff Management'
+  };
+  document.getElementById('topbarTitle').textContent = titles[name] || name;
+
+  // Highlight nav
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick')?.includes(`'${name}'`)) n.classList.add('active');
+  });
+  document.querySelectorAll('.bottom-nav-item').forEach(n => {
+    if (n.getAttribute('onclick')?.includes(`'${name}'`)) n.classList.add('active');
+  });
+
+  closeSidebar();
+
+  // Lazy-load screens
+  if (name === 'command') renderCommand();
+  if (name === 'correspondence') renderCorrespondence();
+  if (name === 'igpworks') renderIGPWorks();
+  if (name === 'vc') renderVC();
+  if (name === 'staff') renderStaff();
+  if (name === 'profile') renderProfile();
+  if (name === 'staffmgmt' || name === 'staff-management') renderStaffMgmt();
+  if (name === 'admin') renderAdminCredentials();
+}
+
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('Copied: ' + text, 'success');
+  }).catch(() => {
+    showToast('Copy failed', 'error');
+  });
+}
+
+function renderAdminCredentials() {
+  const tbody = document.getElementById('credentialsTableBody');
+  if (!tbody) return;
+  
+  const staff = allData.staff || [];
+  
+  let html = `
+    <tr>
+      <td>1</td>
+      <td><strong>Admin</strong></td>
+      <td>RSI</td>
+      <td>
+        9493946020 
+        <button class="action-btn" onclick="copyToClipboard('9493946020')" style="padding:2px 6px;margin-left:6px;font-size:10px;display:inline-flex;align-items:center;gap:3px"><i class="fa-solid fa-copy"></i> Copy</button>
+      </td>
+      <td>***</td>
+      <td>${statusBadge('Active')}</td>
+    </tr>
+  `;
+  
+  staff.forEach((s, idx) => {
+    html += `
+      <tr>
+        <td>${idx + 2}</td>
+        <td><strong>${s.Full_Name || 'ΓÇö'}</strong></td>
+        <td>${s.Rank || 'ΓÇö'}</td>
+        <td>
+          ${s.Phone || 'ΓÇö'} 
+          ${s.Phone ? `<button class="action-btn" onclick="copyToClipboard('${s.Phone}')" style="padding:2px 6px;margin-left:6px;font-size:10px;display:inline-flex;align-items:center;gap:3px"><i class="fa-solid fa-copy"></i> Copy</button>` : ''}
+        </td>
+        <td>1111</td>
+        <td>${statusBadge(s.Status || 'Active')}</td>
+      </tr>
+    `;
+  });
+  
+  tbody.innerHTML = html;
+}
+
+// ============================================================
+// SIDEBAR TOGGLE
+// ============================================================
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  const ov = document.getElementById('sidebarOverlay');
+  if (window.innerWidth <= 768) {
+    sb.classList.toggle('mobile-open');
+    ov.classList.toggle('active');
+  } else {
+    sb.classList.toggle('collapsed');
+  }
+}
+function closeSidebar() {
+  if (window.innerWidth <= 768) {
+    document.getElementById('sidebar').classList.remove('mobile-open');
+    document.getElementById('sidebarOverlay').classList.remove('active');
+  }
+}
+
+// ============================================================
+// CLOCK
+// ============================================================
+function startClock() {
+  function update() {
+    const now = new Date();
+    const timeEl = document.getElementById('liveTime');
+    const dateEl = document.getElementById('liveDate');
+    if (timeEl) timeEl.textContent = now.toLocaleTimeString('en-IN');
+    if (dateEl) dateEl.textContent = now.toLocaleDateString('en-IN', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  }
+  update();
+  setInterval(update, 1000);
+}
+
+// ============================================================
+// NOTICES BANNER
+// ============================================================
+function renderNoticesBanner() {
+  const notices = (allData.notices || []).filter(n => n.Status === 'Active');
+  if (notices.length === 0) {
+    document.getElementById('noticeBanner').style.display = 'none';
+    return;
+  }
+  const text = notices.map(n => `≡ƒôó ${n.Title}`).join('  ΓÇóΓÇóΓÇó  ');
+  document.getElementById('noticeText').textContent = text + '  ΓÇóΓÇóΓÇó  ' + text;
+}
+
+// ============================================================
+// DASHBOARD RENDER
+// ============================================================
+function renderDashboard() {
+  const pendingTasks = (allData.command || []).filter(t => ['Pending','In Progress'].includes(t.Status)).length;
+  const activeCorr = (allData.correspondence || []).filter(c => c.Status === 'Active').length;
+  const upcomingVC = (allData.vcschedule || []).filter(v => v.Status === 'Upcoming').length;
+  const totalStaff = (allData.staff || []).filter(s => s.Status === 'Active').length;
+
+  document.getElementById('statStaff').textContent    = totalStaff;
+  document.getElementById('statPending').textContent  = pendingTasks;
+  document.getElementById('statCorr').textContent     = activeCorr;
+  document.getElementById('statVC').textContent       = upcomingVC;
+
+  // Heart module stats
+  const cmd = allData.command || [];
+  document.getElementById('hCmdTotal').textContent   = cmd.length;
+  document.getElementById('hCmdPending').textContent = cmd.filter(t=>t.Status==='Pending').length;
+  document.getElementById('hCmdDone').textContent    = cmd.filter(t=>t.Status==='Completed').length;
+
+  const corr = allData.correspondence || [];
+  document.getElementById('hCorrTotal').textContent  = corr.length;
+  document.getElementById('hCorrActive').textContent = corr.filter(c=>c.Status==='Active').length;
+  document.getElementById('hCorrDone').textContent   = corr.filter(c=>c.Status==='Completed').length;
+
+  const igp = allData.igpworks || [];
+  document.getElementById('hIGPTotal').textContent   = igp.length;
+  document.getElementById('hIGPPending').textContent = igp.filter(i=>i.Status==='Pending').length;
+  document.getElementById('hIGPDone').textContent    = igp.filter(i=>i.Status==='Completed').length;
+
+  const vc = allData.vcschedule || [];
+  document.getElementById('hVCUpcoming').textContent  = vc.filter(v=>v.Status==='Upcoming').length;
+  document.getElementById('hVCDone').textContent      = vc.filter(v=>v.Status==='Completed').length;
+  document.getElementById('hVCPostponed').textContent = vc.filter(v=>v.Status==='Postponed').length;
+
+  // Nav badges
+  document.getElementById('cmdBadge').textContent  = pendingTasks;
+  document.getElementById('corrBadge').textContent = activeCorr;
+
+  // Recent tasks
+  const recent = cmd.slice(0, 8);
+  const tbody = document.getElementById('recentTasksBody');
+  if (recent.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><i class="fa-solid fa-clipboard"></i><p>No tasks yet</p></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = recent.map(t => `
+    <tr>
+      <td><strong>${t.Serial_No||'ΓÇö'}</strong></td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis">${t.Task_Title||'ΓÇö'}</td>
+      <td>${t.Assigned_To||'ΓÇö'}</td>
+      <td>${priorityBadge(t.Priority)}</td>
+      <td>${statusBadge(t.Status)}</td>
+      <td>${formatDate(t.Created_Date)}</td>
+    </tr>`).join('');
+
+}
+
+// ============================================================
+// COMMAND REGISTER
+// ============================================================
+function renderCommand() {
+  let data = allData.command || [];
+  if (currentCmdFilter !== 'all') data = data.filter(t => t.Status === currentCmdFilter);
+
+  const fromDate = document.getElementById('cmdFromDate')?.value;
+  const toDate   = document.getElementById('cmdToDate')?.value;
+  if (fromDate) data = data.filter(t => {
+    const d = (t.Created_Date || t.Date || '').split('T')[0];
+    return d >= fromDate;
+  });
+  if (toDate) data = data.filter(t => {
+    const d = (t.Created_Date || t.Date || '').split('T')[0];
+    return d <= toDate;
+  });
+
+  const search = document.getElementById('cmdSearch')?.value?.toLowerCase() || '';
+  if (search) data = data.filter(t => (t.Task_Title||'').toLowerCase().includes(search) || (t.Assigned_To||'').toLowerCase().includes(search));
+  const tbody = document.getElementById('commandBody');
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><i class="fa-solid fa-clipboard"></i><p>No command tasks yet. Click Add Task to add.</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.map((t, i) => `
+    <tr>
+      <td><strong>${t.Serial_No||'ΓÇö'}</strong></td>
+      <td>${formatDate(t.Created_Date)}</td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${t.Task_Title||''}">${t.Task_Title||'ΓÇö'}</td>
+      <td>${t.Category||'ΓÇö'}</td>
+      <td>${t.Assigned_To||'ΓÇö'}</td>
+      <td>${t.Assigned_By||'ΓÇö'}</td>
+      <td>${priorityBadge(t.Priority)}</td>
+      <td>${statusBadge(t.Status)}</td>
+      <td>${formatDate(t.Due_Date)}</td>
+      <td>${renderCommandActions(i)}</td>
+    </tr>`).join('');
+}
+function filterCommand(f, el) {
+  currentCmdFilter = f;
+  document.querySelectorAll('#screen-command .tab-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  renderCommand();
+}
+function searchCommand() { renderCommand(); }
+
+// ============================================================
+// CORRESPONDENCE TRACKER
+// ============================================================
+function renderCorrespondence() {
+  let data = allData.correspondence || [];
+  if (currentCorrFilter === 'Active' || currentCorrFilter === 'Completed') {
+    data = data.filter(c => c.Status === currentCorrFilter);
+  } else if (currentCorrFilter !== 'all') {
+    data = data.filter(c => c.Type === currentCorrFilter);
+  }
+  const search = document.getElementById('corrSearch')?.value?.toLowerCase() || '';
+  if (search) data = data.filter(c =>
+    (c.Subject||'').toLowerCase().includes(search) ||
+    (c.Serial_No||'').toLowerCase().includes(search) ||
+    (c.Allocated_To||'').toLowerCase().includes(search)
+  );
+  const tbody = document.getElementById('corrBody');
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><i class="fa-solid fa-envelope"></i><p>No correspondence entries yet. Click New Correspondence to add.</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.map((c, i) => `
+    <tr>
+      <td><strong>${c.Serial_No||'ΓÇö'}</strong></td>
+      <td>${formatDate(c.Date)}</td>
+      <td>${corrTypeBadge(c.Type)}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${c.Subject||''}">${c.Subject||'ΓÇö'}</td>
+      <td>${c.Allocated_To||'ΓÇö'}</td>
+      <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${c.Current_Stage||''}">${stageBadge(c.Current_Stage)}</td>
+      <td>${c.Submission_Mode||'ΓÇö'}</td>
+      <td>${statusBadge(c.Status)}</td>
+      <td>${renderCorrActions(i)}</td>
+    </tr>`).join('');
+}
+function filterCorr(f, el) {
+  currentCorrFilter = f;
+  document.querySelectorAll('#screen-correspondence .tab-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  renderCorrespondence();
+}
+function searchCorr() { renderCorrespondence(); }
+
+// ============================================================
+// IGP COMMAND WORKS
+// ============================================================
+function renderIGPWorks() {
+  let data = allData.igpworks || [];
+  if (currentIGPFilter !== 'all') data = data.filter(w => w.Status === currentIGPFilter);
+  const tbody = document.getElementById('igpBody');
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><i class="fa-solid fa-star"></i><p>No IGP command works yet. Click Add IGP Work to add.</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.map((w, i) => `
+    <tr>
+      <td><strong>${w.Serial_No||'ΓÇö'}</strong></td>
+      <td>${formatDate(w.Date)}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${w.Work_Title||''}">${w.Work_Title||'ΓÇö'}</td>
+      <td>${w.Assigned_To||'ΓÇö'}</td>
+      <td>${priorityBadge(w.Priority)}</td>
+      <td>${statusBadge(w.Status)}</td>
+      <td>${formatDate(w.Due_Date)}</td>
+      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${w.Remarks||'ΓÇö'}</td>
+      <td>${renderIGPActions(i)}</td>
+    </tr>`).join('');
+}
+function filterIGP(f, el) {
+  currentIGPFilter = f;
+  document.querySelectorAll('#screen-igpworks .tab-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  renderIGPWorks();
+}
+
+// ============================================================
+// VC SCHEDULE
+// ============================================================
+function renderVC() {
+  let data = allData.vcschedule || [];
+  if (currentVCFilter !== 'all') data = data.filter(v => v.Status === currentVCFilter);
+  const tbody = document.getElementById('vcBody');
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><i class="fa-solid fa-video"></i><p>No VC schedules yet. Click Schedule VC to add.</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.map((v, i) => `
+    <tr>
+      <td><strong>${v.Serial_No||'ΓÇö'}</strong></td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${v.Subject||''}">${v.Subject||'ΓÇö'}</td>
+      <td>${formatDate(v.Date)} ${v.Time||''}</td>
+      <td><span class="badge badge-info">${v.Platform||'ΓÇö'}</span></td>
+      <td>${v.Speaker||'ΓÇö'}</td>
+      <td>${v.Organiser||'ΓÇö'}</td>
+      <td>${vcStatusBadge(v.Status)}</td>
+      <td>${v.VC_Link ? `<a href="${v.VC_Link}" target="_blank" style="color:var(--navy);font-weight:600;font-size:11px"><i class="fa-solid fa-link"></i> Join</a>` : 'ΓÇö'}</td>
+      <td>${renderVCActions(i)}</td>
+    </tr>`).join('');
+}
+function filterVC(f, el) {
+  currentVCFilter = f;
+  document.querySelectorAll('#screen-vc .tab-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  renderVC();
+}
+
+// ============================================================
+// STAFF DIRECTORY
+// ============================================================
+function renderStaff() {
+  const staff = allData.staff || [];
+  const search = document.getElementById('staffSearch')?.value?.toLowerCase() || '';
+  const filtered = search ? staff.filter(s =>
+    (s.Full_Name||'').toLowerCase().includes(search) ||
+    (s.Rank||'').toLowerCase().includes(search) ||
+    (s.Badge_No||'').toString().includes(search)
+  ) : staff;
+
+  const grid = document.getElementById('staffGrid');
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div class="empty-state"><i class="fa-solid fa-users"></i><p>No staff found</p></div>`;
+    return;
+  }
+  grid.innerHTML = filtered.map(s => `
+    <div class="card" style="cursor:pointer;transition:transform 0.15s" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+        <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--navy),var(--navy-light));display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;flex-shrink:0">
+          ${(s.Full_Name||'?')[0]}
+        </div>
+        <div>
+          <div style="font-weight:700;color:var(--text1);font-size:14px">${s.Full_Name||'ΓÇö'}</div>
+          <div style="font-size:11px;color:var(--text3)">${s.Rank||'ΓÇö'} ΓÇó Badge: ${s.Badge_No||'ΓÇö'}</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:4px"><i class="fa-solid fa-envelope" style="width:14px"></i> ${s.Gmail||'ΓÇö'}</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:8px"><i class="fa-solid fa-diagram-project" style="width:14px"></i> ${s.Assigned_Projects||'ΓÇö'}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span class="badge ${s.Status==='Active'?'badge-present':'badge-absent'}">${s.Status||'ΓÇö'}</span>
+        ${s.Gender==='Female' ? '<span class="badge badge-info">Female</span>' : ''}
+      </div>
+    </div>`).join('');
+}
+function searchStaff() { renderStaff(); }
+
+// ============================================================
+// MY PROFILE
+// ============================================================
+
+// ============================================================
+// HEART MODULE ACTIONS
+// ============================================================
+function isAdmin() { return currentUser?.role === 'admin'; }
+function isOfficer() { return isAdmin() || OFFICER_RANKS.includes(currentUser?.rank || ''); }
+function rowNumber(row, index) { return Number(row?._rowNumber || row?.rowNumber || row?.Row_Number || row?.RowNo || row?.row || index + 2); }
+function field(row, keys, fallback='') {
+  for (const key of keys) if (row && row[key] !== undefined && row[key] !== null && row[key] !== '') return row[key];
+  return fallback;
+}
+function renderActionBtn(title, icon, fn, danger=false) {
+  return `<button class="action-btn" title="${title}" onclick="${fn}" style="${danger?'color:var(--danger)':''}"><i class="fa-solid ${icon}"></i></button>`;
+}
+function renderCommandActions(i) {
+  let html = renderActionBtn('View', 'fa-eye', `viewCommand(${i})`);
+  if (isAdmin()) html += renderActionBtn('Edit', 'fa-pen', `editCommand(${i})`) + renderActionBtn('Mark Complete', 'fa-check', `markCommandComplete(${i})`) + renderActionBtn('Delete', 'fa-trash', `deleteCommand(${i})`, true);
+  return `<div class="row-actions">${html}</div>`;
+}
+function renderCorrActions(i) {
+  let html = renderActionBtn('View Timeline', 'fa-timeline', `viewCorrTimeline(${i})`);
+  if (isOfficer()) html += renderActionBtn('Update Stage', 'fa-forward-step', `openStageModal(${i})`);
+  if (isAdmin()) html += renderActionBtn('Edit', 'fa-pen', `editCorr(${i})`) + renderActionBtn('Delete', 'fa-trash', `deleteCorr(${i})`, true);
+  return `<div class="row-actions">${html}</div>`;
+}
+function renderIGPActions(i) {
+  let html = renderActionBtn('View', 'fa-eye', `viewIGP(${i})`);
+  if (isAdmin()) html += renderActionBtn('Edit', 'fa-pen', `editIGP(${i})`) + renderActionBtn('Mark Complete', 'fa-check', `updateIGPStatus(${i}, 'Completed')`) + renderActionBtn('Escalate', 'fa-flag', `updateIGPStatus(${i}, 'Escalated')`) + renderActionBtn('Delete', 'fa-trash', `deleteIGP(${i})`, true);
+  return `<div class="row-actions">${html}</div>`;
+}
+function renderVCActions(i) {
+  let html = renderActionBtn('View', 'fa-eye', `viewVC(${i})`);
+  if (isAdmin()) html += renderActionBtn('Mark Completed', 'fa-check', `updateVCStatus(${i}, 'Completed')`) + renderActionBtn('Postpone', 'fa-clock', `openPostponeModal(${i})`) + renderActionBtn('Edit', 'fa-pen', `editVC(${i})`) + renderActionBtn('Delete', 'fa-trash', `deleteVC(${i})`, true);
+  return `<div class="row-actions">${html}</div>`;
+}
+async function postAction(sheetName, action, data={}, row=null) {
+  try {
+    await fetch(RELAY_URL, { method:'POST', mode:'no-cors', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ sheet:sheetName, action, row, rowNumber:row, data }) });
+    await new Promise(r => setTimeout(r, 1800));
+    return true;
+  } catch(err) {
+    console.error('sheet action error:', err);
+    showToast('Sheet operation failed', 'error');
+    return false;
+  }
+}
+async function refreshHeartScreen(renderFn, msg) { await loadAllData(); renderFn(); showToast(msg, 'success'); }
+function ensureDynamicModal(id, title) {
+  let modal = document.getElementById(id);
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.id = id;
+    modal.innerHTML = `<div class="modal"><div class="modal-header"><div class="modal-title"></div><button class="modal-close" onclick="closeModal('${id}')"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"></div><div class="modal-footer"></div></div>`;
+    document.body.appendChild(modal);
+  }
+  modal.querySelector('.modal-title').textContent = title;
+  return modal;
+}
+function detailRows(rows) {
+  return `<div style="display:grid;gap:10px">${rows.map(([l,v]) => `<div style="display:grid;grid-template-columns:150px 1fr;gap:10px;border-bottom:1px solid var(--border);padding-bottom:8px"><strong style="color:var(--text2)">${l}</strong><span>${v || 'ΓÇö'}</span></div>`).join('')}</div>`;
+}
+function showDetails(title, html) {
+  const modal = ensureDynamicModal('detailsModal', title);
+  modal.querySelector('.modal-body').innerHTML = html;
+  modal.querySelector('.modal-footer').innerHTML = `<button class="btn-secondary" onclick="closeModal('detailsModal')">Close</button>`;
+  openModal('detailsModal');
+}
+function commandRow(t) { return [field(t,['Task_ID','ID'],`T${Date.now()}`),field(t,['Serial_No']),field(t,['Created_Date','Date']),field(t,['Task_Title']),field(t,['Description','Task_Description','Remarks']),field(t,['Category']),field(t,['Category_Code']),field(t,['Priority']),field(t,['Assigned_To']),field(t,['Assigned_By']),field(t,['Due_Date']),field(t,['Status'],'Pending'),field(t,['Officer_Remarks']),field(t,['Staff_Remarks']),field(t,['Points_Awarded'],0),field(t,['Approved_By']),field(t,['Risk_Status'],'No Risk'),field(t,['Timestamp'],new Date().toISOString())]; }
+function corrRow(c) { return [field(c,['Corr_ID','ID'],`C${Date.now()}`),field(c,['Serial_No']),field(c,['Date','Created_Date']),field(c,['Type']),field(c,['Subject']),field(c,['Allocated_To']),field(c,['Allocated_By']),field(c,['Current_Stage'],'Draft Work Allocated'),field(c,['Submission_Mode']),field(c,['Reference_No']),field(c,['Status'],'Active'),field(c,['Remarks']),field(c,['Timestamp'],new Date().toISOString())]; }
+function igpRow(w) { return [field(w,['Work_ID','ID'],`I${Date.now()}`),field(w,['Serial_No']),field(w,['Date','Created_Date']),field(w,['Work_Title']),field(w,['Description','Work_Description']),field(w,['Assigned_To']),field(w,['Priority']),field(w,['Status'],'Pending'),field(w,['Due_Date']),field(w,['Completed_Date']),field(w,['Remarks']),field(w,['Approved_By']),field(w,['Timestamp'],new Date().toISOString())]; }
+function vcRow(v) { return [field(v,['VC_ID','ID'],`V${Date.now()}`),field(v,['Serial_No']),field(v,['Subject']),field(v,['Date']),field(v,['Time']),field(v,['Platform']),field(v,['VC_Link']),field(v,['Organiser']),field(v,['Speaker']),field(v,['Allotted_Persons']),field(v,['Status'],'Upcoming'),field(v,['Linked_Postponed_ID']),field(v,['Postpone_Reason']),field(v,['Created_By'],currentUser?.name),field(v,['Remarks']),field(v,['Entry_Date','Timestamp'],new Date().toISOString())]; }
+function viewCommand(i) { const t=(allData.command||[])[i]; if(!t)return; showDetails('Command Register Details', detailRows([['Serial No',t.Serial_No],['Date',formatDate(t.Created_Date||t.Date)],['Title',t.Task_Title],['Description',t.Description||t.Task_Description||t.Remarks],['Category',t.Category],['Priority',t.Priority],['Assigned To',t.Assigned_To],['Assigned By',t.Assigned_By],['Due Date',formatDate(t.Due_Date)],['Status',statusBadge(t.Status)],['Officer Remarks',t.Officer_Remarks],['Staff Remarks',t.Staff_Remarks],['Points Awarded',t.Points_Awarded],['Approved By',t.Approved_By]])); }
+function editCommand(i) { const t=(allData.command||[])[i]; if(!t)return; editContext={module:'command',index:i,row:rowNumber(t,i),id:field(t,['Task_ID','ID'])}; document.querySelector('#addTaskModal .modal-title').textContent='Edit Command Task'; document.getElementById('taskTitle').value=t.Task_Title||''; document.getElementById('taskEntryDate').value=String(t.Created_Date||t.Date||'').split('T')[0]; document.getElementById('taskDesc').value=t.Description||t.Task_Description||t.Remarks||''; document.getElementById('taskPriority').value=t.Priority||'Medium'; document.getElementById('taskAssignedTo').value=t.Assigned_To||''; document.getElementById('taskAssignedBy').value=t.Assigned_By||''; document.getElementById('taskDueDate').value=String(t.Due_Date||'').split('T')[0]; openModal('addTaskModal'); }
+async function markCommandComplete(i) { const t=(allData.command||[])[i]; if(!t)return; t.Status='Completed'; showToast('Updating task...','info'); await postAction('Command_Register','update',commandRow(t),rowNumber(t,i)); await refreshHeartScreen(renderCommand,'Task marked as completed'); }
+async function deleteCommand(i) { const t=(allData.command||[])[i]; if(!t || !confirm('Delete this task?'))return; showToast('Deleting task...','info'); await postAction('Command_Register','delete',{},rowNumber(t,i)); await refreshHeartScreen(renderCommand,'Task deleted'); }
+function viewCorrTimeline(i) { const c=(allData.correspondence||[])[i]; if(!c)return; const id=field(c,['Corr_ID','ID']); const stages=(allData.corrTimeline||[]).filter(t=>field(t,['Corr_ID','ID'])===id || t.Serial_No===c.Serial_No); const timeline=stages.length?stages.map(s=>`<div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-content"><div class="timeline-stage">${s.Stage||s.Current_Stage||'Stage Update'}</div><div class="timeline-meta">${formatDate(s.Date||s.Timestamp)} ┬╖ ${s.Updated_By||s.By||'ΓÇö'} ┬╖ ${s.Submission_Mode||''}</div><div class="timeline-remarks">${s.Remarks||'ΓÇö'}</div></div></div>`).join(''):'<div class="empty-state"><i class="fa-solid fa-timeline"></i><p>No timeline updates yet.</p></div>'; showDetails('Correspondence Timeline', detailRows([['Serial No',c.Serial_No],['Date',formatDate(c.Date)],['Type',c.Type],['Subject',c.Subject],['Allocated To',c.Allocated_To],['Allocated By',c.Allocated_By],['Current Stage',stageBadge(c.Current_Stage)],['Submission Mode',c.Submission_Mode],['Status',statusBadge(c.Status)],['Remarks',c.Remarks]]) + `<div class="section-title" style="margin:16px 0 10px">Stage History</div><div class="timeline">${timeline}</div>`); }
+function openStageModal(i) { const c=(allData.correspondence||[])[i]; if(!c)return; stageContext={index:i,row:rowNumber(c,i)}; const modal=ensureDynamicModal('stageModal','Update Correspondence Stage'); modal.querySelector('.modal-body').innerHTML=`<div class="form-group"><label>Current Stage</label><input type="text" value="${c.Current_Stage||'ΓÇö'}" readonly></div><div class="form-group" style="margin-top:12px"><label>Next Stage</label><select id="stageNext">${CORR_STAGES.map(s=>`<option ${s===c.Current_Stage?'selected':''}>${s}</option>`).join('')}</select></div><div class="form-group" style="margin-top:12px"><label>Submission Mode</label><select id="stageMode"><option>WhatsApp</option><option>Hardcopy</option><option>eOffice</option><option>Email</option><option>Other</option></select></div><div class="form-group" style="margin-top:12px"><label>Remarks</label><textarea id="stageRemarks"></textarea></div>`; modal.querySelector('.modal-footer').innerHTML=`<button class="btn-secondary" onclick="closeModal('stageModal')">Cancel</button><button class="btn-heart" onclick="saveStageUpdate()">Save</button>`; openModal('stageModal'); }
+async function saveStageUpdate() { const c=(allData.correspondence||[])[stageContext?.index]; if(!c)return; const next=document.getElementById('stageNext').value; const mode=document.getElementById('stageMode').value; const remarks=document.getElementById('stageRemarks').value; showToast('Updating stage...','info'); await postAction('Correspondence_Timeline','append',[field(c,['Corr_ID','ID']),c.Serial_No,new Date().toISOString().split('T')[0],next,currentUser.name,remarks,mode,new Date().toISOString()]); c.Current_Stage=next; c.Submission_Mode=mode; c.Status=next==='Completed'?'Completed':'Active'; await postAction('Correspondence_Tracker','update',corrRow(c),stageContext.row); closeModal('stageModal'); await refreshHeartScreen(renderCorrespondence,'Stage updated successfully'); }
+function editCorr(i) { const c=(allData.correspondence||[])[i]; if(!c)return; editContext={module:'corr',index:i,row:rowNumber(c,i),id:field(c,['Corr_ID','ID'])}; document.querySelector('#addCorrModal .modal-title').textContent='Edit Correspondence Entry'; document.getElementById('corrEntryDate').value=String(c.Date||c.Created_Date||'').split('T')[0]; document.getElementById('corrType').value=c.Type||'Draft'; document.getElementById('corrAllocTo').value=c.Allocated_To||''; document.getElementById('corrAllocBy').value=c.Allocated_By||''; document.getElementById('corrMode').value=c.Submission_Mode||'WhatsApp'; document.getElementById('corrSubject').value=c.Subject||''; document.getElementById('corrRemarks').value=c.Remarks||''; openModal('addCorrModal'); }
+async function deleteCorr(i) { const c=(allData.correspondence||[])[i]; if(!c || !confirm('Delete this correspondence entry?'))return; showToast('Deleting correspondence...','info'); await postAction('Correspondence_Tracker','delete',{},rowNumber(c,i)); await refreshHeartScreen(renderCorrespondence,'Correspondence deleted'); }
+function viewIGP(i) { const w=(allData.igpworks||[])[i]; if(!w)return; showDetails('IGP Command Work Details', detailRows([['Serial No',w.Serial_No],['Date',formatDate(w.Date)],['Title',w.Work_Title],['Description',w.Description||w.Work_Description],['Assigned To',w.Assigned_To],['Priority',w.Priority],['Status',statusBadge(w.Status)],['Due Date',formatDate(w.Due_Date)],['Completed Date',formatDate(w.Completed_Date)],['Remarks',w.Remarks],['Approved By',w.Approved_By]])); }
+function editIGP(i) { const w=(allData.igpworks||[])[i]; if(!w)return; editContext={module:'igp',index:i,row:rowNumber(w,i),id:field(w,['Work_ID','ID'])}; document.querySelector('#addIGPModal .modal-title').textContent='Edit IGP Command Work'; document.getElementById('igpEntryDate').value=String(w.Date||w.Created_Date||'').split('T')[0]; document.getElementById('igpTitle').value=w.Work_Title||''; document.getElementById('igpAssignedTo').value=w.Assigned_To||''; document.getElementById('igpPriority').value=w.Priority||'Medium'; document.getElementById('igpDueDate').value=String(w.Due_Date||'').split('T')[0]; document.getElementById('igpDesc').value=w.Description||w.Work_Description||''; document.getElementById('igpRemarks').value=w.Remarks||''; openModal('addIGPModal'); }
+async function updateIGPStatus(i,status) { const w=(allData.igpworks||[])[i]; if(!w)return; w.Status=status; if(status==='Completed')w.Completed_Date=new Date().toISOString().split('T')[0]; showToast('Updating IGP work...','info'); await postAction('IGP_Command_Works','update',igpRow(w),rowNumber(w,i)); await refreshHeartScreen(renderIGPWorks,status==='Completed'?'IGP Work marked complete':'Work escalated'); }
+async function deleteIGP(i) { const w=(allData.igpworks||[])[i]; if(!w || !confirm('Delete this IGP work?'))return; showToast('Deleting IGP work...','info'); await postAction('IGP_Command_Works','delete',{},rowNumber(w,i)); await refreshHeartScreen(renderIGPWorks,'IGP work deleted'); }
+function viewVC(i) { const v=(allData.vcschedule||[])[i]; if(!v)return; const link=v.VC_Link?`<a href="${v.VC_Link}" target="_blank" style="color:var(--navy);font-weight:700">${v.VC_Link}</a>`:'ΓÇö'; showDetails('VC Schedule Details', detailRows([['Subject',v.Subject],['Date',formatDate(v.Date)],['Time',v.Time],['Platform',v.Platform],['VC Link',link],['Organiser',v.Organiser],['Speaker',v.Speaker],['Allotted Persons',v.Allotted_Persons],['Status',vcStatusBadge(v.Status)],['Remarks',v.Remarks]])); }
+function editVC(i) { const v=(allData.vcschedule||[])[i]; if(!v)return; editContext={module:'vc',index:i,row:rowNumber(v,i),id:field(v,['VC_ID','ID'])}; document.querySelector('#addVCModal .modal-title').textContent='Edit VC / Meeting'; document.getElementById('vcEntryDate').value=String(v.Entry_Date||'').split('T')[0]; document.getElementById('vcSubject').value=v.Subject||''; document.getElementById('vcDate').value=String(v.Date||'').split('T')[0]; document.getElementById('vcTime').value=v.Time||''; document.getElementById('vcPlatform').value=v.Platform||'BharatVC'; document.getElementById('vcLink').value=v.VC_Link||''; document.getElementById('vcOrganiser').value=v.Organiser||''; document.getElementById('vcSpeaker').value=v.Speaker||''; document.getElementById('vcPersons').value=v.Allotted_Persons||''; document.getElementById('vcRemarks').value=v.Remarks||''; openModal('addVCModal'); }
+async function updateVCStatus(i,status) { const v=(allData.vcschedule||[])[i]; if(!v)return; v.Status=status; showToast('Updating VC...','info'); await postAction('VC_Schedule','update',vcRow(v),rowNumber(v,i)); await refreshHeartScreen(renderVC,'VC marked completed'); }
+function openPostponeModal(i) { const v=(allData.vcschedule||[])[i]; if(!v)return; postponeContext={index:i,row:rowNumber(v,i)}; const modal=ensureDynamicModal('postponeModal','Postpone VC'); modal.querySelector('.modal-body').innerHTML=`<div class="form-grid"><div class="form-group"><label>New Date</label><input type="date" id="postponeDate"></div><div class="form-group"><label>New Time</label><input type="time" id="postponeTime"></div></div><div class="form-group" style="margin-top:12px"><label>Postpone Reason</label><textarea id="postponeReason"></textarea></div>`; modal.querySelector('.modal-footer').innerHTML=`<button class="btn-secondary" onclick="closeModal('postponeModal')">Cancel</button><button class="btn-heart" onclick="savePostponeVC()">Save</button>`; openModal('postponeModal'); }
+async function savePostponeVC() { const v=(allData.vcschedule||[])[postponeContext?.index]; if(!v)return; const newDate=document.getElementById('postponeDate').value; const newTime=document.getElementById('postponeTime').value; const reason=document.getElementById('postponeReason').value; if(!newDate||!newTime){showToast('Please select new date and time','error');return;} const linkedId=field(v,['VC_ID','ID']); const newEntry={...v,VC_ID:`V${Date.now()}`,Serial_No:`${(allData.vcschedule||[]).length+1}/2026`,Date:newDate,Time:newTime,Status:'Upcoming',Linked_Postponed_ID:linkedId,Postpone_Reason:reason}; v.Status='Postponed'; v.Postpone_Reason=reason; showToast('Postponing VC...','info'); await postAction('VC_Schedule','append',vcRow(newEntry)); await postAction('VC_Schedule','update',vcRow(v),postponeContext.row); closeModal('postponeModal'); await refreshHeartScreen(renderVC,'VC postponed'); }
+async function deleteVC(i) { const v=(allData.vcschedule||[])[i]; if(!v || !confirm('Delete this VC schedule?'))return; showToast('Deleting VC...','info'); await postAction('VC_Schedule','delete',{},rowNumber(v,i)); await refreshHeartScreen(renderVC,'VC deleted'); }
+
+// ============================================================
+// FORM SUBMISSIONS (write to sheet via relay POST)
+// ============================================================
+async function postToSheet(sheetName, rowData) {
+  try {
+    await fetch(RELAY_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sheet: sheetName, action: 'append', data: rowData })
+    });
+    return true;
+  } catch(err) {
+    console.error('postToSheet error:', err);
+    return false;
+  }
+}
+
+// Immediately add a record to local allData so it shows without waiting for sheet
+function optimisticAdd(sheetKey, obj, renderFn) {
+  if (!allData[sheetKey]) allData[sheetKey] = [];
+  allData[sheetKey].push(obj);
+  renderFn();
+  // Background server refresh after 8 seconds to sync real sheet data
+  setTimeout(async () => {
+    await loadAllData();
+    renderFn();
+  }, 8000);
+}
+
+async function submitTask() {
+  const title = document.getElementById('taskTitle').value.trim();
+  const to    = document.getElementById('taskAssignedTo').value.trim();
+  if (!title || !to) { showToast('Please fill all required fields', 'error'); return; }
+  const entryDate = document.getElementById('taskEntryDate').value || new Date().toISOString().split('T')[0];
+  const existing  = editContext?.module === 'command' ? (allData.command || [])[editContext.index] || {} : {};
+  const serial    = existing.Serial_No || `${(allData.command||[]).length+1}/2026`;
+  const catEl     = document.getElementById('taskCategory');
+  const id        = editContext?.id || existing.Task_ID || `T${Date.now()}`;
+  const row = [
+    id, serial, entryDate,
+    title, document.getElementById('taskDesc').value,
+    catEl.options[catEl.selectedIndex].text, catEl.value,
+    document.getElementById('taskPriority').value, to,
+    document.getElementById('taskAssignedBy').value || currentUser.name,
+    document.getElementById('taskDueDate').value, existing.Status || 'Pending',
+    existing.Officer_Remarks || '', existing.Staff_Remarks || '', existing.Points_Awarded || 0,
+    existing.Approved_By || '', existing.Risk_Status || 'No Risk', existing.Timestamp || new Date().toISOString()
+  ];
+  closeModal('addTaskModal');
+  document.getElementById('taskTitle').value = '';
+  document.querySelector('#addTaskModal .modal-title').textContent = 'Add Task to Command Register';
+
+  if (editContext && editContext.module === 'command') {
+    const idx = editContext.index;
+    if (allData.command && allData.command[idx]) {
+      allData.command[idx].Task_Title = title;
+      allData.command[idx].Created_Date = entryDate;
+      allData.command[idx].Description = document.getElementById('taskDesc').value;
+      allData.command[idx].Category = catEl.options[catEl.selectedIndex].text;
+      allData.command[idx].Priority = document.getElementById('taskPriority').value;
+      allData.command[idx].Assigned_To = to;
+      allData.command[idx].Assigned_By = document.getElementById('taskAssignedBy').value || currentUser.name;
+      allData.command[idx].Due_Date = document.getElementById('taskDueDate').value;
+    }
+  }
+
+  // Show immediately in UI
+  const localObj = {
+    Task_ID: id, Serial_No: serial, Created_Date: entryDate,
+    Task_Title: title, Description: document.getElementById('taskDesc')?.value || '',
+    Category: catEl.options[catEl.selectedIndex].text,
+    Priority: document.getElementById('taskPriority').value,
+    Assigned_To: to, Assigned_By: document.getElementById('taskAssignedBy').value || currentUser.name,
+    Due_Date: document.getElementById('taskDueDate').value, Status: existing.Status || 'Pending'
+  };
+  if (!editContext) optimisticAdd('command', localObj, renderCommand);
+  else renderCommand();
+
+  showToast('Saved successfully!', 'success');
+  const isEditing = !!editContext;
+  const currentEditContext = editContext;
+  editContext = null;
+
+  // Background sync to sheet
+  if (isEditing) {
+    postAction('Command_Register', 'update', row, currentEditContext.row);
+  } else {
+    postToSheet('Command_Register', row);
+  }
+}
+
+async function submitCorr() {
+  const subject = document.getElementById('corrSubject').value.trim();
+  const to      = document.getElementById('corrAllocTo').value.trim();
+  if (!subject || !to) { showToast('Please fill all required fields', 'error'); return; }
+  const entryDate = document.getElementById('corrEntryDate').value || new Date().toISOString().split('T')[0];
+  const existing  = editContext?.module === 'corr' ? (allData.correspondence || [])[editContext.index] || {} : {};
+  const serial    = existing.Serial_No || `${(allData.correspondence||[]).length+1}/2026`;
+  const id        = editContext?.id || existing.Corr_ID || `C${Date.now()}`;
+  const type      = document.getElementById('corrType').value;
+  const by        = document.getElementById('corrAllocBy').value || currentUser.name;
+  const mode      = document.getElementById('corrMode').value;
+  const remarks   = document.getElementById('corrRemarks').value;
+  const row = [
+    id, serial, entryDate, type, subject, to, by,
+    existing.Current_Stage || 'Draft Work Allocated',
+    mode, '', existing.Status || 'Active', remarks,
+    existing.Timestamp || new Date().toISOString()
+  ];
+  closeModal('addCorrModal');
+  document.getElementById('corrSubject').value = '';
+  document.querySelector('#addCorrModal .modal-title').textContent = 'New Correspondence Entry';
+
+  if (editContext && editContext.module === 'corr') {
+    const idx = editContext.index;
+    if (allData.correspondence && allData.correspondence[idx]) {
+      allData.correspondence[idx].Date = entryDate;
+      allData.correspondence[idx].Type = type;
+      allData.correspondence[idx].Subject = subject;
+      allData.correspondence[idx].Allocated_To = to;
+      allData.correspondence[idx].Allocated_By = by;
+      allData.correspondence[idx].Submission_Mode = mode;
+      allData.correspondence[idx].Remarks = remarks;
+    }
+  }
+
+  const localObj = {
+    Corr_ID: id, Serial_No: serial, Date: entryDate,
+    Type: type, Subject: subject, Allocated_To: to, Allocated_By: by,
+    Current_Stage: existing.Current_Stage || 'Draft Work Allocated',
+    Submission_Mode: mode, Status: existing.Status || 'Active'
+  };
+  if (!editContext) optimisticAdd('correspondence', localObj, renderCorrespondence);
+  else renderCorrespondence();
+
+  showToast('Saved successfully!', 'success');
+  const isEditing = !!editContext;
+  const currentEditContext = editContext;
+  editContext = null;
+
+  if (isEditing) {
+    postAction('Correspondence_Tracker', 'update', row, currentEditContext.row);
+  } else {
+    postToSheet('Correspondence_Tracker', row);
+  }
+}
+
+async function submitIGP() {
+  const title = document.getElementById('igpTitle').value.trim();
+  const to    = document.getElementById('igpAssignedTo').value.trim();
+  if (!title || !to) { showToast('Please fill required fields', 'error'); return; }
+  const entryDate  = document.getElementById('igpEntryDate').value || new Date().toISOString().split('T')[0];
+  const existing   = editContext?.module === 'igp' ? (allData.igpworks || [])[editContext.index] || {} : {};
+  const serial     = existing.Serial_No || `${(allData.igpworks||[]).length+1}/2026`;
+  const id         = editContext?.id || existing.Work_ID || `I${Date.now()}`;
+  const priority   = document.getElementById('igpPriority').value;
+  const dueDate    = document.getElementById('igpDueDate').value;
+  const remarks    = document.getElementById('igpRemarks').value;
+  const desc       = document.getElementById('igpDesc').value;
+  const row = [
+    id, serial, entryDate, title, desc, to,
+    priority, existing.Status || 'Pending', dueDate,
+    existing.Completed_Date || '', remarks,
+    existing.Approved_By || '', existing.Timestamp || new Date().toISOString()
+  ];
+  closeModal('addIGPModal');
+  document.getElementById('igpTitle').value = '';
+  document.querySelector('#addIGPModal .modal-title').textContent = 'Add IGP Command Work';
+
+  if (editContext && editContext.module === 'igp') {
+    const idx = editContext.index;
+    if (allData.igpworks && allData.igpworks[idx]) {
+      allData.igpworks[idx].Date = entryDate;
+      allData.igpworks[idx].Work_Title = title;
+      allData.igpworks[idx].Description = desc;
+      allData.igpworks[idx].Assigned_To = to;
+      allData.igpworks[idx].Priority = priority;
+      allData.igpworks[idx].Due_Date = dueDate;
+      allData.igpworks[idx].Remarks = remarks;
+    }
+  }
+
+  const localObj = {
+    Work_ID: id, Serial_No: serial, Date: entryDate,
+    Work_Title: title, Description: desc, Assigned_To: to,
+    Priority: priority, Status: existing.Status || 'Pending',
+    Due_Date: dueDate, Remarks: remarks
+  };
+  if (!editContext) optimisticAdd('igpworks', localObj, renderIGPWorks);
+  else renderIGPWorks();
+
+  showToast('Saved successfully!', 'success');
+  const isEditing = !!editContext;
+  const currentEditContext = editContext;
+  editContext = null;
+
+  if (isEditing) {
+    postAction('IGP_Command_Works', 'update', row, currentEditContext.row);
+  } else {
+    postToSheet('IGP_Command_Works', row);
+  }
+}
+
+async function submitVC() {
+  const subject = document.getElementById('vcSubject').value.trim();
+  if (!subject) { showToast('Please enter subject', 'error'); return; }
+  const entryDate  = document.getElementById('vcEntryDate').value || new Date().toISOString().split('T')[0];
+  const existing   = editContext?.module === 'vc' ? (allData.vcschedule || [])[editContext.index] || {} : {};
+  const serial     = existing.Serial_No || `${(allData.vcschedule||[]).length+1}/2026`;
+  const id         = editContext?.id || existing.VC_ID || `V${Date.now()}`;
+  const vcDate     = document.getElementById('vcDate').value;
+  const vcTime     = document.getElementById('vcTime').value;
+  const platform   = document.getElementById('vcPlatform').value;
+  const link       = document.getElementById('vcLink').value;
+  const organiser  = document.getElementById('vcOrganiser').value;
+  const speaker    = document.getElementById('vcSpeaker').value;
+  const persons    = document.getElementById('vcPersons').value;
+  const remarks    = document.getElementById('vcRemarks').value;
+  const row = [
+    id, serial, subject, vcDate, vcTime, platform, link, organiser, speaker, persons,
+    existing.Status || 'Upcoming', existing.Linked_Postponed_ID || '',
+    existing.Postpone_Reason || '', existing.Created_By || currentUser.name,
+    remarks, entryDate
+  ];
+  closeModal('addVCModal');
+  document.getElementById('vcSubject').value = '';
+  document.querySelector('#addVCModal .modal-title').textContent = 'Schedule VC / Meeting';
+
+  if (editContext && editContext.module === 'vc') {
+    const idx = editContext.index;
+    if (allData.vcschedule && allData.vcschedule[idx]) {
+      allData.vcschedule[idx].Subject = subject;
+      allData.vcschedule[idx].Date = vcDate;
+      allData.vcschedule[idx].Time = vcTime;
+      allData.vcschedule[idx].Platform = platform;
+      allData.vcschedule[idx].VC_Link = link;
+      allData.vcschedule[idx].Organiser = organiser;
+      allData.vcschedule[idx].Speaker = speaker;
+      allData.vcschedule[idx].Allotted_Persons = persons;
+      allData.vcschedule[idx].Remarks = remarks;
+      allData.vcschedule[idx].Entry_Date = entryDate;
+    }
+  }
+
+  const localObj = {
+    VC_ID: id, Serial_No: serial, Subject: subject,
+    Date: vcDate, Time: vcTime, Platform: platform,
+    VC_Link: link, Organiser: organiser, Speaker: speaker,
+    Allotted_Persons: persons, Status: existing.Status || 'Upcoming'
+  };
+  if (!editContext) optimisticAdd('vcschedule', localObj, renderVC);
+  else renderVC();
+
+  showToast('Saved successfully!', 'success');
+  const isEditing = !!editContext;
+  const currentEditContext = editContext;
+  editContext = null;
+
+  if (isEditing) {
+    postAction('VC_Schedule', 'update', row, currentEditContext.row);
+  } else {
+    postToSheet('VC_Schedule', row);
+  }
+}
+
+// ============================================================
+// MODAL HELPERS
+// ============================================================
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(msg, type='info') {
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  const icons = { success:'fa-check-circle', error:'fa-circle-exclamation', info:'fa-circle-info' };
+  el.innerHTML = `<i class="fa-solid ${icons[type]||'fa-circle-info'}" style="color:var(--${type==='success'?'success':type==='error'?'danger':'navy'})"></i> ${msg}`;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// ============================================================
+// HELPERS ΓÇö BADGES & FORMAT
+// ============================================================
+function statusBadge(s) {
+  const map = {
+    'Present':'badge-present','Absent':'badge-absent','Late':'badge-late',
+    'Leave':'badge-leave','Holiday':'badge-holiday','Tour':'badge-progress',
+    'Irregular':'badge-irregular','Pending':'badge-pending',
+    'In Progress':'badge-progress','Completed':'badge-completed',
+    'Active':'badge-active','Archived':'badge-absent',
+    'Upcoming':'badge-upcoming','Postponed':'badge-postponed','Cancelled':'badge-absent',
+    'Escalated':'badge-urgent', 'Other':'badge-pending'
+  };
+  return `<span class="badge ${map[s]||'badge-pending'}">${s||'ΓÇö'}</span>`;
+}
+function priorityBadge(p) {
+  const map = { 'Very High':'badge-urgent','High':'badge-high','Medium':'badge-medium','Low':'badge-low' };
+  return `<span class="badge ${map[p]||'badge-pending'}">${p||'ΓÇö'}</span>`;
+}
+function corrTypeBadge(t) {
+  const colors = { 'Draft':'badge-progress','Letter':'badge-active','Note File':'badge-pending','Radio Message':'badge-warning','eOffice':'badge-info','Other':'badge-absent' };
+  return `<span class="badge ${colors[t]||'badge-pending'}">${t||'ΓÇö'}</span>`;
+}
+function stageBadge(s) {
+  if (!s) return 'ΓÇö';
+  if (s.includes('Completed')) return `<span class="badge badge-completed">${s}</span>`;
+  if (s.includes('Approved')) return `<span class="badge badge-active">${s}</span>`;
+  if (s.includes('Allocated')) return `<span class="badge badge-allocated">${s}</span>`;
+  if (s.includes('Progress')) return `<span class="badge badge-drafting">${s}</span>`;
+  if (s.includes('Approval') || s.includes('officer')) return `<span class="badge badge-approval">${s}</span>`;
+  if (s.includes('Dispatched') || s.includes('Filing')) return `<span class="badge badge-dispatched">${s}</span>`;
+  return `<span class="badge badge-pending">${s}</span>`;
+}
+function vcStatusBadge(s) {
+  const map = { 'Upcoming':'badge-upcoming','Completed':'badge-completed','Postponed':'badge-postponed','Cancelled':'badge-absent' };
+  return `<span class="badge ${map[s]||'badge-pending'}">${s||'ΓÇö'}</span>`;
+}
+function formatDate(d) {
+  if (!d) return 'ΓÇö';
+  const str = typeof d === 'string' ? d : d instanceof Date ? d.toISOString() : String(d);
+  if (str.includes('T') || str.includes('-')) {
+    const dt = new Date(str);
+    if (isNaN(dt)) return str.split('T')[0] || str;
+    return dt.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+  }
+  return str.split(' ')[0] || str;
+}
+
+// Dummy loaders for refresh buttons
+function loadCommand() { renderCommand(); }
+function loadCorrespondence() { renderCorrespondence(); }
+function loadIGPWorks() { renderIGPWorks(); }
+function loadVC() { renderVC(); }
+
+// ============================================================
+// ============================================================
+// STAFF MANAGEMENT
+// ============================================================
+function renderStaffManagement() {
+  const staff = allData.staff || [];
+  const tbody = document
+    .getElementById('staffMgmtBody');
+  
+  if (staff.length === 0) {
+    tbody.innerHTML = 
+      '<tr><td colspan="8">' +
+      '<div class="empty-state">' +
+      '<i class="fa-solid fa-users"></i>' +
+      '<p>No staff added yet. ' +
+      'Use form above to add staff.</p>' +
+      '</div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = staff.map((s, i) =>
+    '<tr>' +
+    '<td>' + (i + 1) + '</td>' +
+    '<td><strong>' + (s.Full_Name || 'ΓÇö') + '</strong></td>' +
+    '<td>' + (s.Rank || 'ΓÇö') + '</td>' +
+    '<td>' + (s.Phone || 'ΓÇö') + '</td>' +
+    '<td>' + (s.Gender || 'ΓÇö') + '</td>' +
+    '<td>' + (s.Badge_No || 'ΓÇö') + '</td>' +
+    '<td>' + statusBadge(s.Status) + '</td>' +
+    '<td><div class="row-actions">' +
+    '<button class="action-btn" onclick="editStaff(' + i + ',' + JSON.stringify(s).replace(/"/g,'&quot;').replace(/'/g,"\\'") + ')" title="Edit"><i class="fa-solid fa-pen"></i></button>' +
+    '<button class="action-btn" onclick="deleteStaff(' + i + ',\'' + (s.Full_Name||'').replace(/'/g,"\\'") + '\')" title="Delete" style="color:var(--danger)"><i class="fa-solid fa-trash"></i></button>' +
+    '</div></td>' +
+    '</tr>'
+  ).join('');
+}
+
+function renderStaffMgmt() {
+  const search = (document.getElementById('sfSearch')?.value || '').toLowerCase();
+  if (!search) {
+    renderStaffManagement();
+    return;
+  }
+  let data = allData.staff || [];
+  data = data.filter(s =>
+    (s.Full_Name || s.Name || '').toLowerCase().includes(search) ||
+    (s.Rank || '').toLowerCase().includes(search) ||
+    String(s.Phone || '').includes(search)
+  );
+  const tbody = document.getElementById('staffMgmtBody');
+  if (!tbody) return;
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fa-solid fa-users"></i><p>No staff records found</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.map((s, i) => {
+    const realIndex = (allData.staff || []).indexOf(s);
+    return '<tr>' +
+      '<td>' + (i + 1) + '</td>' +
+      '<td><strong>' + 
+        (s.Full_Name || 'ΓÇö') + 
+      '</strong></td>' +
+      '<td>' + (s.Rank || 'ΓÇö') + '</td>' +
+      '<td>' + (s.Phone || 'ΓÇö') + '</td>' +
+      '<td>' + (s.Gender || 'ΓÇö') + '</td>' +
+      '<td>' + (s.Badge_No || 'ΓÇö') + '</td>' +
+      '<td>' + statusBadge(s.Status) + '</td>' +
+      '<td><div class="row-actions">' +
+      '<button class="action-btn" onclick="editStaff(' + (realIndex !== -1 ? realIndex : i) + ',' + JSON.stringify(s).replace(/"/g,'&quot;').replace(/'/g,"\\'") + ')" title="Edit"><i class="fa-solid fa-pen"></i></button>' +
+      '<button class="action-btn" onclick="deleteStaff(' + (realIndex !== -1 ? realIndex : i) + ',\'' + (s.Full_Name||'').replace(/'/g,"\\'") + '\')" title="Delete" style="color:var(--danger)"><i class="fa-solid fa-trash"></i></button>' +
+      '</div></td>' +
+      '</tr>';
+  }).join('');
+}
+
+function editStaff(rowIndex, staffObj) {
+  document.getElementById('sfName').value = staffObj.Full_Name || '';
+  document.getElementById('sfRank').value = staffObj.Rank || '';
+  document.getElementById('sfBadge').value = staffObj.Badge_No || '';
+  document.getElementById('sfPhone').value = staffObj.Phone || '';
+  document.getElementById('sfGender').value = staffObj.Gender || 'Male';
+  document.getElementById('sfStatus').value = staffObj.Status || 'Active';
+  document.getElementById('sfGmail').value = staffObj.Gmail || '';
+  document.getElementById('sfProjects').value = staffObj.Assigned_Projects || '';
+  document.getElementById('sfDistrict').value = staffObj.District_Assigned || '';
+  document.getElementById('sfReporting').value = staffObj.Reporting_Officer || '';
+  document.getElementById('sfDaily').value = staffObj.Daily_Duties || '';
+  document.getElementById('sfWeekly').value = staffObj.Weekly_Duties || '';
+  document.getElementById('sfMonthly').value = staffObj.Monthly_Duties || '';
+  document.getElementById('sfYearly').value = staffObj.Yearly_Duties || '';
+
+  const btn = document.getElementById('sfSaveBtn');
+  btn.dataset.editRow = rowIndex + 2;
+  btn.dataset.staffId = staffObj.Staff_ID || '';
+  btn.textContent = 'Update Staff';
+  
+  document.getElementById('staffFormTitle')
+    .textContent = 'Edit Staff';
+  
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  showToast('Staff loaded for editing', 'info');
+}
+
+function clearStaffForm() {
+  document.getElementById('sfName').value = '';
+  document.getElementById('sfRank').value = '';
+  document.getElementById('sfBadge').value = '';
+  document.getElementById('sfPhone').value = '';
+  document.getElementById('sfGender').value = 'Male';
+  document.getElementById('sfStatus').value = 'Active';
+  document.getElementById('sfGmail').value = '';
+  document.getElementById('sfProjects').value = '';
+  document.getElementById('sfDistrict').value = '';
+  document.getElementById('sfReporting').value = '';
+  document.getElementById('sfDaily').value = '';
+  document.getElementById('sfWeekly').value = '';
+  document.getElementById('sfMonthly').value = '';
+  document.getElementById('sfYearly').value = '';
+  
+  const btn = document.getElementById('sfSaveBtn');
+  btn.dataset.editRow = '';
+  btn.dataset.staffId = '';
+  btn.textContent = 'Save Staff';
+  
+  document.getElementById('staffFormTitle')
+    .textContent = 'Add New Staff';
+}
+
+async function submitStaff() {
+  const fullName = document.getElementById('sfName').value.trim();
+  const rank = document.getElementById('sfRank').value;
+  const phone = document.getElementById('sfPhone').value.trim();
+  
+  if (!fullName || !rank || !phone) {
+    showToast('Name, Rank and Phone are required', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('sfSaveBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  const isEditing = btn.dataset.editRow;
+  const staffId = isEditing ? btn.dataset.staffId : 'S' + Date.now();
+
+  const dailyDuties = document.getElementById('sfDaily').value.trim();
+  const weeklyDuties = document.getElementById('sfWeekly').value.trim();
+  const monthlyDuties = document.getElementById('sfMonthly').value.trim();
+  const yearlyDuties = document.getElementById('sfYearly').value.trim();
+
+  const rowData = [
+    staffId,
+    fullName,
+    rank,
+    document.getElementById('sfBadge').value.trim(),
+    document.getElementById('sfGender').value,
+    document.getElementById('sfGmail').value.trim(),
+    phone,
+    '',
+    document.getElementById('sfStatus').value,
+    '',
+    document.getElementById('sfProjects').value.trim(),
+    document.getElementById('sfDistrict').value.trim(),
+    document.getElementById('sfReporting').value.trim(),
+    new Date().toISOString().split('T')[0],
+    dailyDuties,
+    weeklyDuties,
+    monthlyDuties,
+    yearlyDuties
+  ];
+
+  if (isEditing) {
+    await fetch(RELAY_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sheet: 'Staff_Master',
+        action: 'update',
+        row: parseInt(btn.dataset.editRow),
+        col: 1,
+        data: rowData
+      })
+    });
+    showToast('Updating...', 'info');
+  } else {
+    await fetch(RELAY_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sheet: 'Staff_Master',
+        action: 'append',
+        data: rowData
+      })
+    });
+    showToast('Saving...', 'info');
+  }
+
+  await new Promise(r => setTimeout(r, 3000));
+  await loadAllData();
+  
+  renderStaffMgmt();
+  updateAllDropdowns();
+  
+  clearStaffForm();
+  
+  btn.disabled = false;
+  btn.textContent = 'Save Staff';
+  
+  showToast(
+    isEditing 
+      ? 'Staff updated successfully!' 
+      : 'Staff added successfully!',
+    'success'
+  );
+}
+
+async function cleanUpUnusedSheets() {
+  if (!confirm('This will clear all data rows from Attendance, Leave, Rankings, Points_Log, Turn_Duties, Login_Log, Chat_Messages sheets. Headers are kept. Continue?')) return;
+  showToast('Cleaning up unused sheets...', 'info');
+  const sheets = ['Attendance','Leave_Register','Rankings','Points_Log','Turn_Duties','Login_Log','Chat_Messages'];
+  for (const sheet of sheets) {
+    await fetch(RELAY_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sheet, action: 'clearRows' })
+    });
+  }
+  showToast('Unused sheets cleared!', 'success');
+}
+
+// ============================================================
+// MY PROFILE
+// ============================================================
+function switchDutyTab(tabName) {
+  document.querySelectorAll('.duty-tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.duty-tab-panel').forEach(panel => panel.style.display = 'none');
+  
+  const activeBtn = document.querySelector(`.duty-tab-btn[data-tab="${tabName}"]`);
+  const activePanel = document.getElementById(`duty-panel-${tabName}`);
+  if (activeBtn) activeBtn.classList.add('active');
+  if (activePanel) activePanel.style.display = 'block';
+}
+
+function formatDutyText(text) {
+  if (!text || !text.trim()) {
+    return `<div style="color:var(--text3);font-style:italic">No duties assigned yet. Contact admin to update.</div>`;
+  }
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  let finalLines = [];
+  if (lines.length <= 1) {
+    const splitBySentences = text.split(/(?<=\.)\s+/);
+    finalLines = splitBySentences.map(s => s.trim()).filter(Boolean);
+  } else {
+    finalLines = lines;
+  }
+  
+  finalLines = finalLines.map(line => {
+    return line.replace(/^\d+[\.\)]\s*/, '').trim();
+  }).filter(Boolean);
+
+  if (finalLines.length === 0) {
+    return `<div style="color:var(--text3);font-style:italic">No duties assigned yet. Contact admin to update.</div>`;
+  }
+
+  return `<ol style="margin:0;padding-left:20px;color:var(--text2);line-height:1.6">
+    ${finalLines.map(line => `<li style="margin-bottom:6px">${line}</li>`).join('')}
+  </ol>`;
+}
+
+function renderProfile() {
+  const phone = String(currentUser?.phone || '').trim();
+  const staff = allData.staff || [];
+  const me = staff.find(s => String(s.Phone || '').trim() === phone) || null;
+
+  const myTasks = (allData.command || []).filter(t =>
+    (t.Assigned_To || '').toLowerCase().includes((currentUser?.name || '').toLowerCase())
+  );
+  const myCorr = (allData.correspondence || []).filter(c =>
+    (c.Allocated_To || '').toLowerCase().includes((currentUser?.name || '').toLowerCase())
+  );
+  const myIGP = (allData.igpworks || []).filter(w =>
+    (w.Assigned_To || '').toLowerCase().includes((currentUser?.name || '').toLowerCase())
+  );
+
+  const pending    = myTasks.filter(t => t.Status === 'Pending').length;
+  const completed  = myTasks.filter(t => t.Status === 'Completed').length;
+  const activeCorr = myCorr.filter(c => c.Status === 'Active').length;
+  const avatar     = (currentUser?.name || 'A')[0].toUpperCase();
+
+  const profileCard = me ? `
+    <div class="profile-header" style="position:relative">
+      <div class="profile-avatar">${avatar}</div>
+      <div style="flex:1;min-width:0">
+        <div class="profile-name">${me.Full_Name || currentUser.name}</div>
+        <div class="profile-rank">${me.Rank || currentUser.rank || 'ΓÇö'}${me.Badge_No ? ' &nbsp;ΓÇó&nbsp; Badge: ' + me.Badge_No : ''}</div>
+        <div class="profile-badge-row" style="flex-wrap:wrap;gap:6px;margin-top:8px">
+          ${me.Phone ? `<span class="profile-tag">≡ƒô▒ ${me.Phone}</span>` : ''}
+          ${me.Gmail ? `<span class="profile-tag">Γ£ë∩╕Å ${me.Gmail}</span>` : ''}
+          ${me.Gender ? `<span class="profile-tag">≡ƒæñ ${me.Gender}</span>` : ''}
+          ${me.Status ? `<span class="profile-tag">${statusBadge(me.Status)}</span>` : ''}
+          ${me.Date_Joined ? `<span class="profile-tag">≡ƒôà Joined: ${me.Date_Joined}</span>` : ''}
+        </div>
+      </div>
+      <button onclick="openProfileEdit()" style="position:absolute;top:0;right:0;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer;white-space:nowrap">
+        <i class="fa-solid fa-pen"></i> Edit My Details
+      </button>
+    </div>` : `
+    <div class="profile-header">
+      <div class="profile-avatar">${avatar}</div>
+      <div>
+        <div class="profile-name">${currentUser?.name || 'Admin'}</div>
+        <div class="profile-rank">${currentUser?.rank || 'Administrator'}</div>
+        <div class="profile-badge-row" style="margin-top:8px">
+          <span class="profile-tag">≡ƒô▒ ${currentUser?.phone || 'ΓÇö'}</span>
+          ${currentUser?.email ? `<span class="profile-tag">Γ£ë∩╕Å ${currentUser.email}</span>` : ''}
+        </div>
+        <p style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:8px">Profile not found in Staff Master. Ask admin to add your details, or go to Staff Management to add yourself.</p>
+      </div>
+    </div>`;
+
+  const projectsHtml = (() => {
+    const projStr = me?.Assigned_Projects || '';
+    if (!projStr.trim()) return `<div style="color:var(--text3);font-size:12px">No projects assigned</div>`;
+    const projArr = projStr.split(';').map(p => p.trim()).filter(Boolean);
+    return `
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        ${projArr.map(p => `<span class="badge" style="background:var(--navy);color:#fff;font-weight:600;padding:6px 12px;border-radius:20px;font-size:11px;letter-spacing:0.3px"><i class="fa-solid fa-folder-open" style="margin-right:4px"></i> ${p}</span>`).join('')}
+      </div>`;
+  })();
+
+  document.getElementById('profileContent').innerHTML = `
+    ${profileCard}
+
+    <!-- Tabbed Duties Section -->
+    ${me ? `
+    <div class="card navy-card" style="margin:16px 0">
+      <div style="font-weight:700;font-size:16px;color:var(--text1);margin-bottom:12px;display:flex;align-items:center;gap:8px">
+        <i class="fa-solid fa-briefcase" style="color:var(--navy)"></i> My Duties & Responsibilities
+      </div>
+      <div class="tab-pills" style="margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:8px;display:flex;gap:6px">
+        <button class="tab-pill duty-tab-btn active" data-tab="daily" onclick="switchDutyTab('daily')">Daily Duties</button>
+        <button class="tab-pill duty-tab-btn" data-tab="weekly" onclick="switchDutyTab('weekly')">Weekly Duties</button>
+        <button class="tab-pill duty-tab-btn" data-tab="monthly" onclick="switchDutyTab('monthly')">Monthly Duties</button>
+        <button class="tab-pill duty-tab-btn" data-tab="yearly" onclick="switchDutyTab('yearly')">Yearly Duties</button>
+      </div>
+      <div id="duty-panel-daily" class="duty-tab-panel" style="display:block;border-left:4px solid var(--navy);padding:10px 14px;background:var(--bg2);border-radius:0 8px 8px 0;margin-top:8px">
+        ${formatDutyText(me.Daily_Duties)}
+      </div>
+      <div id="duty-panel-weekly" class="duty-tab-panel" style="display:none;border-left:4px solid var(--navy);padding:10px 14px;background:var(--bg2);border-radius:0 8px 8px 0;margin-top:8px">
+        ${formatDutyText(me.Weekly_Duties)}
+      </div>
+      <div id="duty-panel-monthly" class="duty-tab-panel" style="display:none;border-left:4px solid var(--navy);padding:10px 14px;background:var(--bg2);border-radius:0 8px 8px 0;margin-top:8px">
+        ${formatDutyText(me.Monthly_Duties)}
+      </div>
+      <div id="duty-panel-yearly" class="duty-tab-panel" style="display:none;border-left:4px solid var(--navy);padding:10px 14px;background:var(--bg2);border-radius:0 8px 8px 0;margin-top:8px">
+        ${formatDutyText(me.Yearly_Duties)}
+      </div>
+    </div>
+    ` : ''}
+
+    <!-- My Projects Section -->
+    <div class="card navy-card" style="margin-bottom:16px">
+      <div style="font-weight:700;font-size:16px;color:var(--text1);margin-bottom:12px;display:flex;align-items:center;gap:8px">
+        <i class="fa-solid fa-square-poll-horizontal" style="color:var(--navy)"></i> My Assigned Projects
+      </div>
+      ${projectsHtml}
+    </div>
+
+    <!-- District & Contact Info Grid -->
+    <div class="card navy-card" style="margin-bottom:16px">
+      <div style="font-weight:700;font-size:16px;color:var(--text1);margin-bottom:12px;display:flex;align-items:center;gap:8px">
+        <i class="fa-solid fa-address-card" style="color:var(--navy)"></i> District & Contact Info
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
+        <div style="background:var(--bg2);padding:10px 14px;border-radius:8px">
+          <div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">District Assigned</div>
+          <div style="font-size:14px;color:var(--text1);font-weight:600;margin-top:2px">${me?.District_Assigned || 'ΓÇö'}</div>
+        </div>
+        <div style="background:var(--bg2);padding:10px 14px;border-radius:8px">
+          <div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Reporting Officer</div>
+          <div style="font-size:14px;color:var(--text1);font-weight:600;margin-top:2px">${me?.Reporting_Officer || 'ΓÇö'}</div>
+        </div>
+        <div style="background:var(--bg2);padding:10px 14px;border-radius:8px">
+          <div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Personal Email (Gmail)</div>
+          <div style="font-size:14px;color:var(--text1);font-weight:600;margin-top:2px">${me?.Gmail || 'ΓÇö'}</div>
+        </div>
+        <div style="background:var(--bg2);padding:10px 14px;border-radius:8px">
+          <div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Phone Number</div>
+          <div style="font-size:14px;color:var(--text1);font-weight:600;margin-top:2px">${me?.Phone || 'ΓÇö'}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-grid" style="margin:16px 0">
+      <div class="stat-card">
+        <div class="stat-icon blue"><i class="fa-solid fa-list-check"></i></div>
+        <div><div class="stat-value">${myTasks.length}</div><div class="stat-label">Total Tasks</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon warning"><i class="fa-solid fa-clock"></i></div>
+        <div><div class="stat-value">${pending}</div><div class="stat-label">Pending</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon success"><i class="fa-solid fa-check-circle"></i></div>
+        <div><div class="stat-value">${completed}</div><div class="stat-label">Completed</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon gold"><i class="fa-solid fa-envelope"></i></div>
+        <div><div class="stat-value">${activeCorr}</div><div class="stat-label">Active Files</div></div>
+      </div>
+    </div>
+
+    <div class="section-header"><div class="section-title">My Assigned Tasks (${myTasks.length})</div></div>
+    <div class="card" style="padding:0;margin-bottom:16px">
+      <div class="table-wrap"><table>
+        <thead><tr><th>#</th><th>Task</th><th>Category</th><th>Priority</th><th>Status</th><th>Due Date</th><th>Assigned By</th></tr></thead>
+        <tbody>${myTasks.length === 0
+          ? '<tr><td colspan="7"><div class="empty-state"><i class="fa-solid fa-clipboard"></i><p>No tasks assigned yet</p></div></td></tr>'
+          : myTasks.map((t,i) => `<tr>
+              <td>${i+1}</td><td>${t.Task_Title||'ΓÇö'}</td><td>${t.Category||'ΓÇö'}</td>
+              <td>${priorityBadge(t.Priority)}</td><td>${statusBadge(t.Status)}</td>
+              <td>${formatDate(t.Due_Date)}</td><td>${t.Assigned_By||'ΓÇö'}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table></div>
+    </div>
+
+    <div class="section-header"><div class="section-title">My Correspondence (${myCorr.length})</div></div>
+    <div class="card" style="padding:0;margin-bottom:16px">
+      <div class="table-wrap"><table>
+        <thead><tr><th>#</th><th>Type</th><th>Subject</th><th>Stage</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody>${myCorr.length === 0
+          ? '<tr><td colspan="6"><div class="empty-state"><i class="fa-solid fa-envelope"></i><p>No correspondence allocated</p></div></td></tr>'
+          : myCorr.map((c,i) => `<tr>
+              <td>${i+1}</td><td>${c.Type||'ΓÇö'}</td>
+              <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.Subject||'ΓÇö'}</td>
+              <td>${c.Current_Stage||'ΓÇö'}</td><td>${statusBadge(c.Status)}</td>
+              <td>${formatDate(c.Date)}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table></div>
+    </div>
+
+    ${myIGP.length > 0 ? `
+    <div class="section-header"><div class="section-title">My IGP Works (${myIGP.length})</div></div>
+    <div class="card" style="padding:0;margin-bottom:16px">
+      <div class="table-wrap"><table>
+        <thead><tr><th>#</th><th>Work Title</th><th>Priority</th><th>Status</th><th>Due Date</th></tr></thead>
+        <tbody>${myIGP.map((w,i) => `<tr>
+          <td>${i+1}</td><td>${w.Work_Title||'ΓÇö'}</td>
+          <td>${priorityBadge(w.Priority)}</td><td>${statusBadge(w.Status)}</td>
+          <td>${formatDate(w.Due_Date)}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    </div>` : ''}
+
+    <!-- Profile Edit Modal -->
+    <div id="profileEditModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9000;align-items:center;justify-content:center;padding:16px">
+      <div class="card" style="width:100%;max-width:500px;max-height:85vh;overflow-y:auto">
+        <div class="section-header" style="margin-bottom:14px">
+          <div class="section-title"><i class="fa-solid fa-pen"></i> Edit My Details</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div><label style="font-size:12px;color:var(--text3);display:block;margin-bottom:4px">Phone (Login ID ΓÇö read only)</label>
+            <input id="pePhone" value="${me?.Phone||currentUser?.phone||''}" readonly style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text3)"></div>
+          <div><label style="font-size:12px;color:var(--text3);display:block;margin-bottom:4px">Gmail</label>
+            <input id="peGmail" value="${me?.Gmail||currentUser?.email||''}" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text1)"></div>
+          <div><label style="font-size:12px;color:var(--text3);display:block;margin-bottom:4px">District Assigned</label>
+            <input id="peDistrict" value="${me?.District_Assigned||''}" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text1)"></div>
+          <div><label style="font-size:12px;color:var(--text3);display:block;margin-bottom:4px">Daily Duties</label>
+            <textarea id="peDaily" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text1);min-height:70px">${me?.Daily_Duties||''}</textarea></div>
+          <div><label style="font-size:12px;color:var(--text3);display:block;margin-bottom:4px">Weekly Duties</label>
+            <textarea id="peWeekly" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text1);min-height:70px">${me?.Weekly_Duties||''}</textarea></div>
+          <div><label style="font-size:12px;color:var(--text3);display:block;margin-bottom:4px">Monthly Duties</label>
+            <textarea id="peMonthly" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text1);min-height:70px">${me?.Monthly_Duties||''}</textarea></div>
+          <div><label style="font-size:12px;color:var(--text3);display:block;margin-bottom:4px">Yearly Duties</label>
+            <textarea id="peYearly" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text1);min-height:70px">${me?.Yearly_Duties||''}</textarea></div>
+          <div style="display:flex;gap:10px;margin-top:10px">
+            <button onclick="saveProfileEdit()" class="btn-primary" style="flex:1"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
+            <button onclick="document.getElementById('profileEditModal').style.display='none'" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-size:13px">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function openProfileEdit() {
+  document.getElementById('profileEditModal').style.display = 'flex';
+}
+
+async function saveProfileEdit() {
+  const phone  = String(currentUser?.phone || '').trim();
+  const staff  = allData.staff || [];
+  const idx    = staff.findIndex(s => String(s.Phone || '').trim() === phone);
+  if (idx === -1) { showToast('Profile not found in Staff Master', 'error'); return; }
+  const me = staff[idx];
+  me.Gmail             = document.getElementById('peGmail').value.trim();
+  me.District_Assigned = document.getElementById('peDistrict').value.trim();
+  me.Daily_Duties      = document.getElementById('peDaily').value.trim();
+  me.Weekly_Duties     = document.getElementById('peWeekly').value.trim();
+  me.Monthly_Duties    = document.getElementById('peMonthly').value.trim();
+  me.Yearly_Duties     = document.getElementById('peYearly').value.trim();
+  const rowData = [
+    me.Staff_ID||'', me.Full_Name||'', me.Rank||'', me.Badge_No||'',
+    me.Gender||'', me.Gmail, me.Phone||'', me.Date_Joined||'',
+    me.Status||'Active', me.Profile_Photo_URL||'',
+    me.Assigned_Projects||'', me.District_Assigned, me.Reporting_Officer||'',
+    me.Created_Date||'',
+    me.Daily_Duties, me.Weekly_Duties, me.Monthly_Duties, me.Yearly_Duties
+  ];
+  await fetch(RELAY_URL, {
+    method:'POST', mode:'no-cors',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ sheet:'Staff_Master', action:'update', row: idx+2, col:1, data: rowData })
+  });
+  document.getElementById('profileEditModal').style.display = 'none';
+  showToast('Profile updated!', 'success');
+  currentUser.email = me.Gmail;
+  await loadAllData();
+  renderProfile();
+}
+
+// ============================================================
+// STAFF DATA ΓÇö AP POLICE TS DASHBOARD EXCEL + DUTY CHART
+// ============================================================
+const DASHBOARD_STAFF = [["S1101", "Md. Anwar", "PC", "1773", "Male", "anwar1773@gmail.com", "8639399057", "", "Active", "", "CCTNS Req/Modifications; CCTNS-NCRB/TCS; CCTNS Reports; AP Smart Cops; APCOPS; BSNL DLT; AP Website; Trainings", "Krishna District", "", "2024-01-01"], ["S1102", "L. Trinadha Rao", "PC", "1722", "Male", "trinadh_pcs@appolice.gov.in", "9652881207", "", "Active", "", "CCTNS BSNL Connectivity; iRAD Reports; XDR+SASE; GeM Bid Evaluations; Dispatch; District Coordination", "Tirupati District", "", "2024-01-01"], ["S1103", "A. Ganeswara Rao", "PC", "1705", "Male", "arnipalli17051@gmail.com", "9704347908", "", "Active", "", "CCTNS & Pragathi Reports; AP Website/Suraksha; XDR+SASE; GeM Bid Evaluations; Dispatch; District Coordination", "Tirupati District", "", "2024-01-01"], ["S1104", "B. Siva Srinivas Rao", "PC", "5122", "Male", "sssvas05@gmail.com", "7386104098", "", "Active", "", "CCTNS Application Statistics; AP Smart Cops; AI4AP; GeM Bid Evaluations; Dispatch; District Coordination", "Guntur", "", "2024-01-01"], ["S1105", "D. Aashik", "PC", "3582", "Male", "aashiqkhaleja1@gmail.com", "8639592237", "", "Active", "", "CEIR; GeM Bid Evaluations; District Coordination; Trainings", "NTR District", "", "2024-01-01"], ["S1106", "M. Suneetha", "WPC", "2546", "Female", "suneethacctns@gmail.com", "9948255139", "", "Active", "", "PM Gati Shakti Portal; BSNL DLT & eSMS; GeM Bid Evaluations; Drafting; Trainings; eOffice Follow-up", "Krishna District", "", "2024-01-01"], ["S1107", "PVK. Prasad", "HC(C)", "1649", "Male", "iampvkprasad@gmail.com", "9110300554", "", "Active", "", "NATGRID - Gandiva Portal; E-Forms Approvals; GeM Bid Evaluations; Drafting; Trainings; District Coordination", "Communication", "", "2024-01-01"], ["S1108", "N. Bhanu Hari", "PC(C)", "1871", "Male", "bhanuhari.123@gmail.com", "8309578086", "", "Active", "", "NATGRID - Sudarshan Portal; E-Forms Approvals; GeM Bid Evaluations; Drafting; Trainings; District Coordination", "Communication", "", "2024-01-01"], ["S1109", "Sk. Lal John Basha", "HC(C)", "1806", "Male", "laljanibasha99@gmail.com", "9573180827", "", "Active", "", "NATGRID Gandiva & Sudarshan; Case Approvals/MHA Coordination; GeM Bid Evaluations; Trainings", "Communication", "", "2024-01-01"], ["S1110", "E. Sai Sowmya", "WPC(C)", "1884", "Female", "sowmyacctns@gmail.com", "8317554950", "", "Active", "", "CEIR; GeM Bid Evaluations; Drafting; Office Inward/Outward; Meetings Coordination", "Communication", "", "2024-01-01"], ["S1111", "L. Naveen Babu", "PC", "2950", "Male", "naveenbabu.lingam@gmail.com", "8712345058", "", "Active", "", "CEIR; GeM Bid Evaluations; Drafting; VC/Training Video Uploads; District Coordination; Trainings", "Krishna District", "", "2024-01-01"], ["S1112", "S. Rajasekhar Rao", "PC(C)", "1817", "Male", "rajasekhararao27@gmail.com", "9849583594", "", "Active", "", "CCTNS Helpdesk 24/7; JTrac Bug Tracking; DG DSR; Deletions/Modifications via DSP Login", "Communication", "", "2024-01-01"], ["S1113", "K. Gopi", "PC", "4300", "Male", "gopikavuris43@gmail.com", "9553312439", "", "Active", "", "CCTNS Helpdesk 24/7 Monitoring", "Guntur District", "", "2024-01-01"], ["S1114", "L. Rahul", "PC", "2885", "Male", "rahullanka2@gmail.com", "7095233770", "", "Active", "", "CCTNS Helpdesk 24/7 Monitoring", "Krishna District", "", "2024-01-01"], ["S1115", "K. Sreenu", "PC", "1644", "Male", "sreenu.kellakarrothu@gmail.com", "6301615193", "", "Active", "", "CCTNS Helpdesk 24/7 Monitoring", "Tirupathi", "", "2024-01-01"], ["S1116", "N. Ramanjaneyulu", "PC", "2401", "Male", "nayuduramu332@gmail.com", "9603557975", "", "Active", "", "CriMAC; APCOPS 2.0; eSakshya & eSummons; GeM Bid Evaluations; NCRB Coordination", "Prakasam District", "", "2024-01-01"], ["S1117", "J. Mounika", "WPC", "3786", "Female", "mounikajonnalagadda@gmail.com", "6281029399", "", "Active", "", "eSakshya & eSummons; GeM Bid Evaluations; NCRB Coordination; District Coordination", "NTR District", "", "2024-01-01"], ["S1118", "E. Vasantha Kumari", "WPC", "3762", "Female", "vasu92028@gmail.com", "8730267046", "", "Active", "", "eSakshya & eSummons; GeM Bid Evaluations; NCRB Coordination; District Coordination", "NTR District", "", "2024-01-01"]]
+;
+const DUTIES_MAP = {"8639399057": {"d": "1. Handle CCTNS application requirements and bug reports. 2. Coordinate with NCRB & TCS team on CCTNS issues. 3. Prepare CCTNS reports and presentations as required. 4. Monitor BSNL DLT & eSMS service issues.", "w": "1. Weekly Teleconference Report submission. 2. Update CCTNS statistics. 3. GeM bid evaluation (Pre-Qualification/Technical).", "m": "1. Compile monthly CCTNS performance report. 2. Update project master sheet."}, "9652881207": {"d": "1. Check email dig_pcs@appolice.gov.in and disseminate important mails. 2. Monitor CCTNS BSNL connectivity status. 3. Handle dispatch works and outward correspondence.", "w": "1. Prepare and submit Weekly Teleconference Report. 2. GeM bid evaluation (Pre-Qualification/Technical). 3. Submit iRAD reports.", "m": "1. Update XDR+SASE project status. 2. Review GeM procurement progress."}, "9704347908": {"d": "1. Check email dsp_cctns@appolice.gov.in and cctns_ap@appolice.gov.in; disseminate important mails. 2. Prepare CCTNS & Pragathi daily/status reports. 3. Testing Citizen Portal. 4. Handle dispatch works.", "w": "1. Weekly Teleconference Report on CCTNS and Citizen Portal. 2. GeM bid evaluation (Pre-Qualification/Technical). 3. Update AP Police Website/Suraksha data.", "m": "1. Monthly Pragathi Reports preparation. 2. Update XDR+SASE project details."}, "7386104098": {"d": "1. Check email apsmartcops@appolice.gov.in and disseminate important mails. 2. Compile CCTNS application statistics. 3. Prepare data for News360AI clippings delay reasons. 4. Submit News360AI district-wise Relevant/Not-Relevant feedback DSR. 5. Co-ordinate with PROs and paper clipping persons.", "w": "1. Conduct CCTNS Training classes at APSP 6th BN (3-4 days). 2. Prepare Smart Policing report based on district-wise CCTNS performance evaluation. 3. GeM bid evaluation (Pre-Qualification/Technical).", "m": "1. Co-ordinate and collect data from districts. 2. Co-ordinate and submit data with Sparity Technical Team. 3. AI4AP Police File correspondence."}, "8639592237": {"d": "1. Transfer CEIR requests to other states via CEIR portal. 2. Access CEIR portal to review statistics and generate daily reports. 3. Monitor CEIR NIC email (ceir@appolice.gov.in). 4. Review CEIR Nodal Officers' WhatsApp group for field-level issues. 5. Update CEIR project Excel sheet with progress.", "w": "1. Prepare Smart Policing report based on district-wise CEIR performance. 2. Communicate reports to low-performing and top-performing units. 3. GeM bid evaluation (Pre-Qualification/Technical). 4. Submit Weekly Teleconference Report.", "m": "1. Conduct comparative assessment of state-level CEIR statistics with other states. 2. Update CEIR project master sheet."}, "9948255139": {"d": "1. Maintain and monitor eOffice system for smooth workflow. 2. Handle email cctns_ap@ncrb.gov.in - review, respond, follow up. 3. Monitor PM GatiShakti Portal: track District IT Core Members' user creation; coordinate with NCRB. 4. Check email pmgatishakti@appolice.gov.in and disseminate important mails. 5. Update PM GatiShakti project Excel sheet.", "w": "1. Monitor PM GatiShakti Portal for GIS layer deletions, integration failures, system discrepancies. 2. Monitor BSNL DLT Portal: verify/create templates in ESMS, track message delivery/rejection, resolve issues. 3. Weekly Teleconference Report. 4. GeM bid evaluation.", "m": "1. Update Google Sheets project tracker for PM GatiShakti, BSNL DLT and ESMS."}, "9110300554": {"d": "1. Approval of cases and sensitive searches in GANDIVA portal. 2. Examine and approve VPN service requests under e-forms. 3. Onboard new users: role assignment and MAC ID whitelisting. 4. Resolve user issues and technical problems. 5. Coordinate with NIC VPN team via Service Desk. 6. Prepare and submit daily NATGRID status report. 7. Check emails nodal_pcs@ and asstnodal_pcs@; disseminate important mails. 8. Update NATGRID Gandiva project Excel sheet.", "w": "1. Compile GANDIVA usage data and interact with low-performing units. 2. Monitor inactive/old cases and inform units. 3. Collect and forward system improvement suggestions to NATGRID New Delhi. 4. Weekly Teleconference Report. 5. GeM bid evaluation.", "m": "1. Update Gandiva project master sheet (first week of every month). 2. Collect and share success stories with NATGRID/MHA. 3. Conduct training and refresher sessions for Gandiva users."}, "8309578086": {"d": "1. Check email success_stories_pcs@appolice.gov.in and disseminate important mails. 2. Address NATGRID Sudarshan account and VPN-related issues. 3. Resolve Sudarshan application issues posted in NATGRID State WhatsApp group. 4. Update Sudarshan project Excel sheet.", "w": "1. Coordinate with least-performing units every Thursday to enhance Sudarshan usage. 2. Weekly Teleconference Report. 3. GeM bid evaluation.", "m": "1. Update Sudarshan project master sheet (first week of every month). 2. Prepare list of inactive users in Sudarshan application. 3. Check and action VPN renewals for Sudarshan users."}, "9573180827": {"d": "1. Approval of cases and sensitive searches in GANDIVA. 2. Onboard new users: role assignment and MAC ID whitelisting. 3. Resolve user issues in coordination with NATGRID Delhi. 4. Prepare and submit daily NATGRID status report. 5. Check email natgrid@appolice.gov.in and disseminate important mails. 6. Update NATGRID project Excel sheet.", "w": "1. Generate Gandiva usage report for Smart Policing Dashboard. 2. Review low-performing units; assess performance; ensure corrective measures. 3. Weekly Teleconference Report. 4. GeM bid evaluation.", "m": "1. Update Gandiva project master sheet (first week of every month). 2. Conduct training and refresher sessions for Gandiva users."}, "8317554950": {"d": "1. Check email cctns_ap@ncrb.gov.in and disseminate important mails. 2. Update Meetings Sheet and inform concerned officers about important meetings. 3. Process office inward and outward correspondence. 4. Update CEIR project Excel sheet.", "w": "1. Weekly Teleconference Report. 2. GeM bid evaluation (Pre-Qualification/Technical). 3. Review and clear pending correspondence.", "m": "1. Monthly CEIR project status update. 2. Compile inward/outward register summary."}, "8712345058": {"d": "1. Maintain and monitor eOffice systems for smooth workflow. 2. Handle emails cctns_ap@ncrb.gov.in and technical_services@appolice.gov.in. 3. Verify status of pending/old correspondence; update and dispose per office procedures. 4. Process and transfer CEIR requests to concerned states/UTs. 5. Upload VC/Training/Webinar videos to Google Drive daily. 6. Update CEIR project Excel sheet.", "w": "1. Weekly Teleconference Report. 2. GeM bid evaluation. 3. Dispatch works and drafting. 4. Conduct trainings to units as scheduled.", "m": "1. Monthly CEIR transfer status update in master sheet. 2. Review pending correspondence and close items."}, "9849583594": {"d": "1. Raise CCTNS bugs in JTrac based on user feedback; coordinate with TCS for resolution; inform users. 2. Carry out approved deletions/modifications via DSP login per SOP; log enhancement/change requests. 3. Inform higher officers about important application updates and issues. 4. Prepare and submit Helpdesk daily DSR. 5. Update DG DSR in Google Sheet (ITSSO, NATGRID, E-Summons, E-Sakshya). 6. Check email helpdesk_pcs@appolice.gov.in and disseminate important mails. 7. Update CCTNS Helpdesk project Excel sheet.", "w": "1. Generate weekly report of raised issues in JTrac. 2. Follow up on open/pending bugs with TCS team.", "m": "1. Generate monthly report of raised issues in JTrac. 2. Prepare monthly Helpdesk performance summary."}, "9553312439": {"d": "1. Monitor CCTNS application 24/7 during assigned shift. 2. Log and escalate incidents to Rajasekhar Rao/TCS team. 3. Verify CCTNS portal uptime and respond to user queries.", "w": "1. Handover shift briefing and update helpdesk register.", "m": "1. Submit shift-wise performance note."}, "7095233770": {"d": "1. Monitor CCTNS application 24/7 during assigned shift. 2. Log and escalate incidents to Rajasekhar Rao/TCS team. 3. Verify CCTNS portal uptime and respond to user queries.", "w": "1. Handover shift briefing and update helpdesk register.", "m": "1. Submit shift-wise performance note."}, "6301615193": {"d": "1. Monitor CCTNS application 24/7 during assigned shift. 2. Log and escalate incidents to Rajasekhar Rao/TCS team. 3. Verify CCTNS portal uptime and respond to user queries.", "w": "1. Handover shift briefing and update helpdesk register.", "m": "1. Submit shift-wise performance note."}, "9603557975": {"d": "1. Monitor Zero FIR Report in Cri-MAC; identify new Zero FIRs from other states; inform District IT Core Teams. 2. Provide tech support for daily Cri-MAC issues (login, alert count, email ID); coordinate with Cri-MAC Support and NCRB Delhi. 3. Support all districts in APCOPS 2.0: create admin users, update improperly registered users, resolve queries. 4. Check email apcops_pcs@appolice.gov.in; check Zero FIR alerts in DIG mail; inform concerned personnel. 5. Update ICJS/CriMAC/APCOPS project Excel sheets.", "w": "1. Coordinate with low-performing units every Thursday to improve Cri-MAC usage. 2. Prepare and submit weekly Cri-MAC performance report. 3. Weekly Teleconference Report. 4. GeM bid evaluation.", "m": "1. Prepare monthly list of transferred Zero FIRs; update project master sheet (first week). 2. Update APCOPS 2.0 project details in master sheet (first week)."}, "6281029399": {"d": "1. Coordinate with districts on eSakshya and eSummons issues. 2. Liaise with NCRB for eSakshya/eSummons queries and updates.", "w": "1. Weekly Teleconference Report. 2. GeM bid evaluation. 3. Review eSakshya/eSummons portal performance.", "m": "1. Update eSakshya project master sheet with monthly progress. 2. Compile NCRB coordination summary."}, "8730267046": {"d": "1. Coordinate with districts on eSakshya and eSummons issues. 2. Liaise with NCRB for eSakshya/eSummons queries and updates.", "w": "1. Weekly Teleconference Report. 2. GeM bid evaluation. 3. Review eSummons portal performance.", "m": "1. Update eSummons project master sheet with monthly progress. 2. Compile NCRB coordination summary."}}
+;
+const STAFF_TEMPLATE = [["S1001","K. Vijaya Kumar","SI","","Male","","9440470479","2018-11-23","Active","","APOLIS, Drones, Mee-seva","Guntur Range","","2024-01-01"],["S1002","V.Sheshanjali","PC","","Female","","","","Active","","APOLIS","Guntur Dist","","2024-01-01"],["S1003","CH.Srinivasa Rao","HC","316","Male","","6281861526","2020-01-15","Active","","Drones, APFRS-Biometric, Meeseva","Guntur Dist","","2024-01-01"],["S1004","M.Mohan","SI","","Male","","","","Active","","Data center","","","2024-01-01"],["S1005","K. Sreekanth","RI","","Male","","9491416025","2021-04-04","Active","","Cloud based CCTVs, CCTV in PS, E-Office","APSP","","2024-01-01"],["S1006","T.Koteswararao","PC","1815","Male","","9000640658","2019-01-23","Active","","CCTV in PS","Communication","","2024-01-01"],["S1007","O.Jyothi","WPC","2067","Female","","7674033487","2019-01-23","Active","","Cloud based CCTVs","Communication","","2024-01-01"],["S1008","CH.Venkatesh","PC","741","Male","","8886885859","2022-09-01","Active","","E-Office","Eluru Dist","","2024-01-01"],["S1009","S.Srinivasulu","HC","1610","Male","","7013677239","2024-09-05","Active","","E-Office","Vizianagaram Dist","","2024-01-01"],["S1010","G.Ravi kiran","SI","","Male","","","","Active","","E-challans, ITMS, ERSS-112, Tabs","","","2024-01-01"],["S1011","R.Ramarao","PC","1615","Male","","9441473964","2022-07-26","Active","","ERSS-112 AND TABS, 48 call takers","Tirupathi Dist","","2024-01-01"],["S1012","K.Kiran Vani","WHC","1982","Female","","8977959518","2019-01-23","Active","","E-challans, Brerath Analyzers, Speed Laser guns","Communication","","2024-01-01"],["S1013","P.Ashok Kumar","PC","444","Male","","9160998444","2022-03-26","Active","","E-challans","Palnadu Dist","","2024-01-01"],["S1014","T. Venkata Naidu","RSI","","Male","","6304218129","2022-10-12","Active","","BWC, Women safety (Disha), LHMS","Kadapa Dist","","2024-01-01"],["S1015","CH.Siva Balakrishna","HC","1639","Male","","9491800714","2023-12-17","Active","","BWC, LHMS","Communication","","2024-01-01"],["S1016","R.Kishore","PC","1435","Male","","9666881292","2023-10-01","Active","","Women Safety","6th Battalion","","2024-01-01"],["S1017","E Prasanna","WPC","6872","Female","","9505328763","2025-04-09","Active","","Women Safety","Guntur Dist","","2024-01-01"],["S1018","V.Sudharshana reddy","IC","","Male","","","","Active","","CCTNS","","","2024-01-01"],["S1019","T. Anoj Kumar","RSI","","Male","","9493946020","2024-01-11","Active","","CCTNS, NATGRID, CEIR, BISAG","DAR Srikakulam","","2024-01-01"],["S1020","Ram Koti Naik","ARSI","","Male","","9951929562","2018-03-15","Active","","MTO, 112 Control Room Shift","SCR CPL Amberpet","","2024-01-01"],["S1021","G. Govinda Rao","PC","1146","Male","","9391211030","2024-12-15","Active","","MTO Writer","Tirupati District","","2024-01-01"],["S1022","D. Raviner Babu","HC","917","Male","","8688887707","2022-06-14","Active","","Driver","PTO","","2024-01-01"],["S1023","SK. Silar Vali","HC","997","Male","","9908069956","2019-06-14","Active","","Driver","PTO","","2024-01-01"],["S1024","SK. Riyaz","PC","554","Male","","9493515387","","Active","","Driver","Nellore","","2024-01-01"],["S1025","S. Ravi Kumar","PC","387","Male","","6303289717","2019-01-14","Active","","Driver - Director FSL","16th Bn. APSP VSKP","","2024-01-01"],["S1026","G. Paramesh","PC","915","Male","","7013574236","2023-04-27","Active","","Driver","Palnadu District","","2024-01-01"],["S1027","A. Syambabu","HG","202","Male","","9010634392","2024-04-10","Active","","112 Control Room (Driver)","Krishna District","","2024-01-01"],["S1028","B. Rani","WASI","","Female","","9247836443","2022-10-07","Active","","112 Control Room Shift","West Godavari District","","2024-01-01"],["S1029","Pallapothu Suresh","PC","6075","Male","","","","Active","","SAKTHI Team","Palnadu","","2024-01-01"],["S1030","Ch.Durga Rao","PC","2669","Male","","","","Active","","SAKTHI Team","Eluru","","2024-01-01"],["S1031","P Harika","WPC","2058","Female","","","","Active","","SAKTHI Team","Communication","","2024-01-01"],["S1032","P.Komala","WPC","2051","Female","","","","Active","","SAKTHI Team","Communication","","2024-01-01"],["S1033","A.Prasanna Lakshmi","WPC","2075","Female","","","","Active","","SAKTHI Team","Communication","","2024-01-01"],["S1034","T.Keerthi","WPC","2057","Female","","","","Active","","SAKTHI Team","Communication","","2024-01-01"],["S1035","Sarojini","AAO","","Female","","","","Active","","AO Section and Staff","","","2024-01-01"],["S1036","L.Venkata Krishna","PC","4159","Male","","","","Active","","CCTNS Reports","Bapatla District","","2024-01-01"],["S1037","Md.Sadhik","RSI","","Male","","","","Active","","Data Center-2","NTR Dist","","2024-01-01"],["S1038","M. Gowri Shankara Rao","PC","198","Male","","","","Active","","Data center","Krishna Dist","","2024-01-01"],["S1039","A. Murali","PC","956","Male","","","","Active","","Data center","16th BN","","2024-01-01"],["S1040","S. Ramu","PC","1891","Male","","","","Active","","Data center","PCO","","2024-01-01"],["S1041","Y. Pardha Saradhi","PC","4344","Male","","","","Active","","Data center","NTR Dist","","2024-01-01"],["S1042","K. Ananth Kumar","PC","1305","Male","","","","Active","","Data center","6th BN","","2024-01-01"],["S1043","P. Sunil Kumar","HC","1826","Male","","","","Active","","DGP Office Team","PCO","","2024-01-01"],["S1044","K. Praveen","PC","8303","Male","","","","Active","","DGP Office Team","PCO","","2024-01-01"],["S1045","K.Sathish","IC","","Male","","9248092990","2021-06-20","Active","","ICJS - eSakshya, eSummons, NDSO, CRIMAC, ITSSO, RTGS","NTR District","","2024-01-01"]];
+
+async function bulkImportStaff() {
+  if (!confirm('Import all TS staff into Staff_Master sheet?\n\n18 complete records (email + duties) + 45 duty chart staff.\nPhone = Login ID | Password = 1111\nExisting records skipped.\n\nProceed?')) return;
+
+  const existing = new Set((allData.staff || []).map(s => String(s.Phone || '').trim()).filter(Boolean));
+  const dashPhones = new Set(DASHBOARD_STAFF.map(r => String(r[6]).trim()).filter(Boolean));
+
+  const dashNew = DASHBOARD_STAFF.filter(r => !existing.has(String(r[6]).trim()));
+  const tmplNew = STAFF_TEMPLATE.filter(r => {
+    const ph = String(r[6]).trim();
+    return !existing.has(ph) && !dashPhones.has(ph);
+  });
+
+  const all = [...dashNew, ...tmplNew];
+  showToast('Importing ' + all.length + ' staff records...', 'info');
+
+  let count = 0;
+  for (const row of all) {
+    await fetch(RELAY_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sheet: 'Staff_Master', action: 'append', data: row })
+    });
+    count++;
+    if (count % 5 === 0) showToast('Imported ' + count + '/' + all.length + '...', 'info');
+    await new Promise(r => setTimeout(r, 350));
+  }
+
+  showToast('Import complete! ' + count + ' staff added. Reloading...', 'success');
+  setTimeout(async () => {
+    await loadAllData();
+    renderStaffManagement();
+    updateAllDropdowns();
+  }, 4000);
+}
+
+async function clearAllStaff() {
+  if (!confirm('This will delete ALL staff records. Are you sure?')) return;
+  showToast('Clearing all staff...', 'info');
+  await fetch(RELAY_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sheet: 'Staff_Master', action: 'clearRows' })
+  });
+  allData.staff = [];
+  renderStaffManagement();
+  updateAllDropdowns();
+  showToast('All staff cleared. Please add staff again.', 'success');
+}
+
+async function deleteStaff(rowIndex, staffName) {
+  if (!confirm('Delete ' + staffName + '? This cannot be undone.')) return;
+  showToast('Deleting ' + staffName + '...', 'info');
+  // Remove from UI immediately
+  allData.staff = (allData.staff || []).filter((_, i) => i !== rowIndex);
+  renderStaffManagement();
+  updateAllDropdowns();
+  try {
+    await fetch(RELAY_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sheet: 'Staff_Master', action: 'delete', row: rowIndex + 2 })
+    });
+    await new Promise(r => setTimeout(r, 3000));
+    await loadAllData();
+    renderStaffManagement();
+    updateAllDropdowns();
+    showToast(staffName + ' deleted successfully!', 'success');
+  } catch(err) {
+    showToast('Delete failed. Try again.', 'error');
+  }
+}
+
+async function toggleStaffStatus(index) {
+  const s = (allData.staff || [])[index];
+  if (!s) return;
+  const next = (s.Status || 'Active') === 'Active' ? 'Inactive' : 'Active';
+  const rowData = [
+    s.Staff_ID || `S${Date.now()}`,
+    s.Full_Name || s.Name || '',
+    s.Rank || '',
+    s.Badge_No || '',
+    s.Gender || '',
+    s.Gmail || '',
+    s.Phone || '',
+    s.Date_Joined || '',
+    next,
+    s.Profile_Photo_URL || '',
+    s.Assigned_Projects || '',
+    s.District_Assigned || '',
+    s.Reporting_Officer || '',
+    s.Created_Date || new Date().toISOString().split('T')[0]
+  ];
+  showToast('Updating status...', 'info');
+  await postAction('Staff_Master', 'update', rowData, rowNumber(s, index));
+  await loadAllData();
+  renderStaffMgmt();
+  updateAllDropdowns();
+  showToast('Status updated', 'success');
+}
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(err => console.warn('SW registration failed:', err));
+  });
+}
+</script>
+</body>
+</html>
