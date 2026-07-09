@@ -1842,14 +1842,36 @@ select[multiple] option:selected {
                             <option value="ASI">ASI — Asst. IT Team Lead</option>
                           </optgroup>
                           <optgroup label="── Non-Gazetted Staff ──">
-                            <option value="HC">HC — Senior IT Officer</option>
-                            <option value="HCOI">HCOI — Senior IT Officer</option>
-                            <option value="HC(C)">HC(C) — Senior IT Officer</option>
-                            <option value="HCOI(C)">HCOI(C) — Senior IT Officer</option>
-                            <option value="PC">PC — Junior IT Officer</option>
-                            <option value="WPC">WPC — Junior IT Officer</option>
-                            <option value="PC(C)">PC(C) — Junior IT Officer</option>
-                            <option value="WPC(C)">WPC(C) — Junior IT Officer</option>
+                            <option value="HC">
+                              HC — Head Constable (Senior IT Officer)
+                            </option>
+                            <option value="WHC">
+                              WHC — Women Head Constable (Senior IT Officer)
+                            </option>
+                            <option value="HCOI">
+                              HCOI — Head Constable OI (Senior IT Officer)
+                            </option>
+                            <option value="HC(C)">
+                              HC(C) — Head Constable Communication (Senior IT Officer)
+                            </option>
+                            <option value="WHC(C)">
+                              WHC(C) — Women Head Constable Communication (Senior IT Officer)
+                            </option>
+                            <option value="HCOI(C)">
+                              HCOI(C) — Head Constable OI Communication (Senior IT Officer)
+                            </option>
+                            <option value="PC">
+                              PC — Police Constable (Junior IT Officer)
+                            </option>
+                            <option value="WPC">
+                              WPC — Women Police Constable (Junior IT Officer)
+                            </option>
+                            <option value="PC(C)">
+                              PC(C) — Police Constable Communication (Junior IT Officer)
+                            </option>
+                            <option value="WPC(C)">
+                              WPC(C) — Women Police Constable Communication (Junior IT Officer)
+                            </option>
                           </optgroup>
                         </select>
                       </div>
@@ -2181,14 +2203,36 @@ select[multiple] option:selected {
           </option>
         </optgroup>
         <optgroup label="── Non-Gazetted Staff ──">
-          <option value="HC">HC — Senior IT Officer</option>
-          <option value="HCOI">HCOI — Senior IT Officer</option>
-          <option value="HC(C)">HC(C) — Senior IT Officer</option>
-          <option value="HCOI(C)">HCOI(C) — Senior IT Officer</option>
-          <option value="PC">PC — Junior IT Officer</option>
-          <option value="WPC">WPC — Junior IT Officer</option>
-          <option value="PC(C)">PC(C) — Junior IT Officer</option>
-          <option value="WPC(C)">WPC(C) — Junior IT Officer</option>
+          <option value="HC">
+            HC — Head Constable (Senior IT Officer)
+          </option>
+          <option value="WHC">
+            WHC — Women Head Constable (Senior IT Officer)
+          </option>
+          <option value="HCOI">
+            HCOI — Head Constable OI (Senior IT Officer)
+          </option>
+          <option value="HC(C)">
+            HC(C) — Head Constable Communication (Senior IT Officer)
+          </option>
+          <option value="WHC(C)">
+            WHC(C) — Women Head Constable Communication (Senior IT Officer)
+          </option>
+          <option value="HCOI(C)">
+            HCOI(C) — Head Constable OI Communication (Senior IT Officer)
+          </option>
+          <option value="PC">
+            PC — Police Constable (Junior IT Officer)
+          </option>
+          <option value="WPC">
+            WPC — Women Police Constable (Junior IT Officer)
+          </option>
+          <option value="PC(C)">
+            PC(C) — Police Constable Communication (Junior IT Officer)
+          </option>
+          <option value="WPC(C)">
+            WPC(C) — Women Police Constable Communication (Junior IT Officer)
+          </option>
         </optgroup>
       </select>
     </div>
@@ -2634,6 +2678,12 @@ const RANK_IT_MAP = {
     it:    "Senior IT Officer",
     role:  "staff"
   },
+  "WHC": {
+    short: "WHC",
+    full:  "Women Head Constable",
+    it:    "Senior IT Officer",
+    role:  "staff"
+  },
   "HCOI": {
     short: "HCOI",
     full:  "Head Constable (OI)",
@@ -2643,6 +2693,12 @@ const RANK_IT_MAP = {
   "HC(C)": {
     short: "HC(C)",
     full:  "Head Constable (Communication)",
+    it:    "Senior IT Officer",
+    role:  "staff"
+  },
+  "WHC(C)": {
+    short: "WHC(C)",
+    full:  "Women Head Constable (Communication)",
     it:    "Senior IT Officer",
     role:  "staff"
   },
@@ -2660,7 +2716,7 @@ const RANK_IT_MAP = {
   },
   "WPC": {
     short: "WPC",
-    full:  "Woman Police Constable",
+    full:  "Women Police Constable",
     it:    "Junior IT Officer",
     role:  "staff"
   },
@@ -2672,7 +2728,7 @@ const RANK_IT_MAP = {
   },
   "WPC(C)": {
     short: "WPC(C)",
-    full:  "Woman Police Constable (Communication)",
+    full:  "Women Police Constable (Communication)",
     it:    "Junior IT Officer",
     role:  "staff"
   }
@@ -7719,14 +7775,36 @@ if ('serviceWorker' in navigator) {
             </option>
           </optgroup>
           <optgroup label="── Non-Gazetted Staff ──">
-            <option value="HC">HC — Senior IT Officer</option>
-            <option value="HCOI">HCOI — Senior IT Officer</option>
-            <option value="HC(C)">HC(C) — Senior IT Officer</option>
-            <option value="HCOI(C)">HCOI(C) — Senior IT Officer</option>
-            <option value="PC">PC — Junior IT Officer</option>
-            <option value="WPC">WPC — Junior IT Officer</option>
-            <option value="PC(C)">PC(C) — Junior IT Officer</option>
-            <option value="WPC(C)">WPC(C) — Junior IT Officer</option>
+            <option value="HC">
+              HC — Head Constable (Senior IT Officer)
+            </option>
+            <option value="WHC">
+              WHC — Women Head Constable (Senior IT Officer)
+            </option>
+            <option value="HCOI">
+              HCOI — Head Constable OI (Senior IT Officer)
+            </option>
+            <option value="HC(C)">
+              HC(C) — Head Constable Communication (Senior IT Officer)
+            </option>
+            <option value="WHC(C)">
+              WHC(C) — Women Head Constable Communication (Senior IT Officer)
+            </option>
+            <option value="HCOI(C)">
+              HCOI(C) — Head Constable OI Communication (Senior IT Officer)
+            </option>
+            <option value="PC">
+              PC — Police Constable (Junior IT Officer)
+            </option>
+            <option value="WPC">
+              WPC — Women Police Constable (Junior IT Officer)
+            </option>
+            <option value="PC(C)">
+              PC(C) — Police Constable Communication (Junior IT Officer)
+            </option>
+            <option value="WPC(C)">
+              WPC(C) — Women Police Constable Communication (Junior IT Officer)
+            </option>
           </optgroup>
         </select>
       </div>
