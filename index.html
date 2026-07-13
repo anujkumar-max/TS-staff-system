@@ -4259,7 +4259,14 @@ async function autoSeedFirstAdmin() {
       });
       console.log('✅ Seeding first admin successful!');
     } else {
-      console.log('Admin user 9493946020 already exists.');
+      console.log('Admin user 9493946020 already exists. Checking password...');
+      const adminDoc = snap.docs[0];
+      const adminData = adminDoc.data();
+      if (adminData.password !== ADMIN_PASS) {
+        console.log('Updating admin password in Firestore to match config...');
+        await fsUpdateDoc(fsDoc(db, 'staff', adminDoc.id), { password: ADMIN_PASS });
+        console.log('✅ Admin password updated in Firestore successfully!');
+      }
     }
   } catch(e) {
     console.error('autoSeedFirstAdmin error:', e);
