@@ -2126,7 +2126,7 @@ select[multiple] option:selected {
             <div style="font-weight:700;margin-bottom:8px"><i class="fa-solid fa-key"></i> Staff Login Credentials</div>
             <p style="font-size:12px;color:var(--text3);margin-bottom:12px;line-height:1.6">
               Default password for all staff: <strong>1111</strong><br>
-              Admin login: <strong>9493946020 / 8421</strong><br>
+              Admin login: <strong>9493946020 / 1248</strong><br>
               Staff login: <strong>Phone Number / 1111</strong>
             </p>
             <div class="table-wrap">
@@ -2647,7 +2647,7 @@ select[multiple] option:selected {
 // ============================================================
 let staffCache = []; // global cache
 const ADMIN_PHONE = '9493946020';
-const ADMIN_PASS  = '8421';
+const ADMIN_PASS  = '1248';
 const STAFF_PASS  = '1111';
 
 // ── Stable Unique ID Generators ───────────────────────
@@ -4107,7 +4107,7 @@ async function doLogin() {
     const staffDoc  = snap.docs[0];
     const staffData = staffDoc.data();
     
-    // Convert BOTH sides to String to avoid type mismatch (number 8421 vs string "8421")
+    // Convert BOTH sides to String to avoid type mismatch (number 1248 vs string "1248")
     const storedPass  = String(staffData.password  ?? '').trim();
     const enteredPass = password;
 
@@ -4255,7 +4255,7 @@ async function autoSeedFirstAdmin() {
         Monthly_Duties:     'Monthly Performance Review',
         Yearly_Duties:      'Annual System Audit, Staff Evaluation',
         role:               'admin',
-        password:           '8421'
+        password:           '1248'
       });
       console.log('✅ Seeding first admin successful!');
     } else {
@@ -6220,9 +6220,9 @@ async function setupFirstAdmin() {
       Monthly_Duties:     'Monthly Performance Review',
       Yearly_Duties:      'Annual System Audit, Staff Evaluation',
       role:               'admin',
-      password:           '8421'
+      password:           '1248'
     });
-    alert('SUCCESS! Admin created.\nLogin: 9493946020 / 8421');
+    alert('SUCCESS! Admin created.\nLogin: 9493946020 / 1248');
   } catch(err) {
     alert('ERROR: ' + err.message);
   }
