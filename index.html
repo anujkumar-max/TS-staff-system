@@ -1362,6 +1362,9 @@ select[multiple] option:selected {
         <div class="nav-item" id="staffMgmtNavItem" onclick="showScreen('staff-management'); closeSidebar()" style="display:none">
           <i class="fa-solid fa-users-gear"></i><span>Staff Management</span>
         </div>
+        <div class="nav-item" id="dataQualityNavItem" onclick="showScreen('data-quality'); closeSidebar()" style="display:none">
+          <i class="fa-solid fa-shield-halved"></i><span>Data Quality</span>
+        </div>
         <div class="nav-item" onclick="doLogout()">
           <i class="fa-solid fa-right-from-bracket"></i><span>Logout</span>
         </div>
@@ -2414,6 +2417,38 @@ select[multiple] option:selected {
           </div>
         </div>
 
+        <div class="screen" id="screen-data-quality">
+          <div class="page-header">
+            <h1>
+              <i class="fa-solid fa-shield-halved" style="color:var(--navy)"></i>
+              Data Quality Report
+            </h1>
+            <p>Identifies duplicate, missing, and inconsistent records. Read-only — no data is auto-deleted.</p>
+          </div>
+
+          <!-- Actions -->
+          <div style="display:flex;gap:10px; margin-bottom:20px;flex-wrap:wrap">
+            <button onclick="runDataQualityReport()"
+              style="background:var(--navy);color:#fff; padding:10px 20px;border-radius:8px; font-size:13px;font-weight:600; display:flex;align-items:center;gap:8px; border:none; cursor:pointer">
+              <i class="fa-solid fa-chart-simple"></i>
+              Run Quality Check
+            </button>
+            <button onclick="exportQualityReport()"
+              id="dqExportBtn"
+              style="background:var(--success);color:#fff; padding:10px 20px;border-radius:8px; font-size:13px;font-weight:600; display:flex;align-items:center;gap:8px; border:none; cursor:pointer; display:none">
+              <i class="fa-solid fa-download"></i>
+              Export Issues to Excel
+            </button>
+          </div>
+
+          <!-- Summary bar -->
+          <div id="dqSummary" style="display:none; background:var(--bg2);border:1px solid var(--border); border-radius:12px;padding:16px;margin-bottom:16px; display:flex;gap:16px;flex-wrap:wrap; align-items:center">
+          </div>
+
+          <!-- Issue sections -->
+          <div id="dqResults"></div>
+        </div>
+
         <!-- FOOTER -->
         <div class="app-footer">
           <strong>AP POLICE DIGITAL TRANSFORMATION DIRECTORATE</strong>
@@ -2614,6 +2649,597 @@ let staffCache = []; // global cache
 const ADMIN_PHONE = '9493946020';
 const ADMIN_PASS  = '8421';
 const STAFF_PASS  = '1111';
+
+// ── Stable Unique ID Generators ───────────────────────
+function _genId(prefix) {
+  const d    = new Date();
+  const date = d.toISOString().slice(0,10)
+                 .replace(/-/g,'');
+  const rand = Math.random().toString(36)
+                 .substr(2,5).toUpperCase();
+  return `${prefix}-${date}-${rand}`;
+}
+
+function generateStaffId()   { return _genId('STAFF'); }
+function generateTaskId()    { return _genId('TASK');  }
+function generateMeetingId() { return _genId('MTG');   }
+function generateProjectId() { return _genId('PROJ');  }
+
+// ── Validation Helpers ────────────────────────────────
+function isValidPhone(p) {
+  return /^\d{10}$/.test(String(p||'').trim());
+}
+function isValidEmail(e) {
+  if (!e || !e.trim()) return true; // optional
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
+}
+function sanitize(v) {
+  return String(v || '').trim();
+}
+
+// ── In-flight guard (prevents double-submit) ──────────
+const _saving = {};
+function guardSave(key) {
+  if (_saving[key]) return false;
+  _saving[key] = true;
+  return true;
+}
+function mergeStaffData(sheetStaff) {
+  return sheetStaff || [];
+}
+function releaseSave(key) {
+  delete _saving[key];
+}
+
+// ╔══════════════════════════════════════════════╗
+// ║  window.DataService                         ║
+// ║  Single source of truth for all DB access   ║
+// ║  Replace this object's internals to switch  ║
+// ║  from Firebase to SQL — screens unchanged.  ║
+// ╚══════════════════════════════════════════════╝
+window.DataService = {
+
+  // ── STAFF ─────────────────────────────────────────
+  staff: {
+
+    async getAll() {
+      const snap = await fsGetDocs(
+        fsCollection(db, 'staff')
+      );
+      return snap.docs.map(d =>
+        ({ _docId: d.id, ...d.data() })
+      );
+    },
+
+    async getById(docId) {
+      const snap = await fsGetDoc(
+        fsDoc(db, 'staff', docId)
+      );
+      return snap.exists()
+        ? { _docId: snap.id, ...snap.data() }
+        : null;
+    },
+
+    async getByPhone(phone) {
+      const q    = fsQuery(
+        fsCollection(db, 'staff'),
+        fsWhere('Phone', '==', sanitize(phone))
+      );
+      const snap = await fsGetDocs(q);
+      if (snap.empty) return null;
+      const d = snap.docs[0];
+      return { _docId: d.id, ...d.data() };
+    },
+
+    // ── CREATE with full validation & dedup ──────────
+    async create(data) {
+      const phone   = sanitize(data.Phone);
+      const staffId = sanitize(data.Staff_ID);
+      const email   = sanitize(data.Gmail);
+
+      // 1. Phone required & format
+      if (!phone) {
+        return { ok: false,
+          msg: '❌ Phone number is required.' };
+      }
+      if (!isValidPhone(phone)) {
+        return { ok: false,
+          msg: '❌ Phone must be exactly 10 digits.' };
+      }
+
+      // 2. Email format (if provided)
+      if (email && !isValidEmail(email)) {
+        return { ok: false,
+          msg: '❌ Invalid email format.' };
+      }
+
+      // 3. Duplicate phone check
+      const existPhone = await this.getByPhone(phone);
+      if (existPhone) {
+        return { ok: false,
+          msg: `❌ Phone ${phone} already registered`
+            + ` (${existPhone.Full_Name}).` };
+      }
+
+      // 4. Duplicate Staff_ID check
+      if (staffId) {
+        const q = fsQuery(
+          fsCollection(db, 'staff'),
+          fsWhere('Staff_ID', '==', staffId)
+        );
+        const s = await fsGetDocs(q);
+        if (!s.empty) {
+          return { ok: false,
+            msg: `❌ Staff ID "${staffId}" already exists.` };
+        }
+      }
+
+      // 5. Duplicate Gmail check
+      if (email) {
+        const q = fsQuery(
+          fsCollection(db, 'staff'),
+          fsWhere('Gmail', '==', email)
+        );
+        const s = await fsGetDocs(q);
+        if (!s.empty) {
+          return { ok: false,
+            msg: `❌ Email "${email}" already registered.` };
+        }
+      }
+
+      // 6. Attach stable staffId if not present
+      if (!data.staffId) {
+        data.staffId = generateStaffId();
+      }
+      data._createdAt = fsTimestamp();
+
+      const ref = await fsAddDoc(
+        fsCollection(db, 'staff'), data
+      );
+      return { ok: true, docId: ref.id,
+               staffId: data.staffId };
+    },
+
+    // ── UPDATE ────────────────────────────────────────
+    async update(docId, data) {
+      const phone = sanitize(data.Phone);
+      const email = sanitize(data.Gmail);
+
+      if (phone && !isValidPhone(phone)) {
+        return { ok: false,
+          msg: '❌ Phone must be exactly 10 digits.' };
+      }
+      if (email && !isValidEmail(email)) {
+        return { ok: false,
+          msg: '❌ Invalid email format.' };
+      }
+
+      // Duplicate phone check (exclude self)
+      if (phone) {
+        const existing = await this.getByPhone(phone);
+        if (existing && existing._docId !== docId) {
+          return { ok: false,
+            msg: `❌ Phone ${phone} already registered`
+              + ` (${existing.Full_Name}).` };
+        }
+      }
+
+      // Backfill staffId if missing
+      const current = await this.getById(docId);
+      if (current && !current.staffId) {
+        data.staffId = generateStaffId();
+      }
+
+      data._updatedAt = fsTimestamp();
+      await fsUpdateDoc(
+        fsDoc(db, 'staff', docId), data
+      );
+      return { ok: true };
+    },
+
+    async delete(docId) {
+      await fsDeleteDoc(fsDoc(db, 'staff', docId));
+      return { ok: true };
+    }
+  },
+
+  // ── TASKS (hub_entries) ────────────────────────────
+  tasks: {
+
+    async getAll() {
+      const snap = await fsGetDocs(
+        fsQuery(
+          fsCollection(db, 'hub_entries'),
+          fsOrderBy('createdAt', 'desc')
+        )
+      );
+      return snap.docs.map(d =>
+        ({ _docId: d.id, ...d.data() })
+      );
+    },
+
+    async getById(docId) {
+      const snap = await fsGetDoc(
+        fsDoc(db, 'hub_entries', docId)
+      );
+      return snap.exists()
+        ? { _docId: snap.id, ...snap.data() }
+        : null;
+    },
+
+    // ── CREATE with idempotency guard ─────────────────
+    async create(data) {
+      if (!guardSave('task_create')) {
+        return { ok: false,
+          msg: '⏳ Already saving, please wait...' };
+      }
+      try {
+        if (!sanitize(data.subject)) {
+          return { ok: false,
+            msg: '❌ Subject/Title is required.' };
+        }
+        if (!sanitize(data.type)) {
+          return { ok: false,
+            msg: '❌ Task type is required.' };
+        }
+
+        // Attach stable taskId & refNo
+        if (!data.taskId) {
+          data.taskId = generateTaskId();
+        }
+        if (!data.refNo) {
+          const today = new Date()
+            .toISOString().split('T')[0]
+            .replace(/-/g,'');
+          const rand  = Math.random().toString(36)
+            .substr(2,4).toUpperCase();
+          data.refNo = `TM-${today}-${rand}`;
+        }
+        data.createdAt = fsTimestamp();
+        data.updatedAt = fsTimestamp();
+
+        const ref = await fsAddDoc(
+          fsCollection(db, 'hub_entries'), data
+        );
+        return { ok: true, docId: ref.id,
+                 taskId: data.taskId,
+                 refNo: data.refNo };
+      } finally {
+        releaseSave('task_create');
+      }
+    },
+
+    async update(docId, data) {
+      // Backfill taskId if missing
+      const current = await this.getById(docId);
+      if (current && !current.taskId) {
+        data.taskId = generateTaskId();
+      }
+      data.updatedAt = fsTimestamp();
+      await fsUpdateDoc(
+        fsDoc(db, 'hub_entries', docId), data
+      );
+      return { ok: true };
+    },
+
+    async delete(docId) {
+      await fsDeleteDoc(
+        fsDoc(db, 'hub_entries', docId)
+      );
+      return { ok: true };
+    }
+  },
+
+  // ── MEETINGS (vc_meetings) ─────────────────────────
+  meetings: {
+
+    async getAll() {
+      const snap = await fsGetDocs(
+        fsQuery(
+          fsCollection(db, 'vc_meetings'),
+          fsOrderBy('createdAt', 'desc')
+        )
+      );
+      return snap.docs.map(d =>
+        ({ _docId: d.id, ...d.data() })
+      );
+    },
+
+    async create(data) {
+      if (!guardSave('mtg_create')) {
+        return { ok: false,
+          msg: '⏳ Already saving, please wait...' };
+      }
+      try {
+        if (!sanitize(data.subject)) {
+          return { ok: false,
+            msg: '❌ Meeting subject is required.' };
+        }
+        if (!data.meetingId) {
+          data.meetingId = generateMeetingId();
+        }
+        data.createdAt = fsTimestamp();
+        const ref = await fsAddDoc(
+          fsCollection(db, 'vc_meetings'), data
+        );
+        return { ok: true, docId: ref.id,
+                 meetingId: data.meetingId };
+      } finally {
+        releaseSave('mtg_create');
+      }
+    },
+
+    async update(docId, data) {
+      const current = await fsGetDoc(
+        fsDoc(db, 'vc_meetings', docId)
+      );
+      if (current.exists() && !current.data().meetingId) {
+        data.meetingId = generateMeetingId();
+      }
+      data.updatedAt = fsTimestamp();
+      await fsUpdateDoc(
+        fsDoc(db, 'vc_meetings', docId), data
+      );
+      return { ok: true };
+    },
+
+    async delete(docId) {
+      await fsDeleteDoc(
+        fsDoc(db, 'vc_meetings', docId)
+      );
+      return { ok: true };
+    }
+  },
+
+  // ── PROJECTS ──────────────────────────────────────
+  projects: {
+
+    async getAll() {
+      const snap = await fsGetDocs(
+        fsCollection(db, 'projects')
+      );
+      return snap.docs
+        .map(d => ({ _docId: d.id, ...d.data() }))
+        .sort((a,b) =>
+          (a.name||'').localeCompare(b.name||'')
+        );
+    },
+
+    async create(data) {
+      if (!sanitize(data.name)) {
+        return { ok: false,
+          msg: '❌ Project name is required.' };
+      }
+      // Duplicate name check
+      const q    = fsQuery(
+        fsCollection(db, 'projects'),
+        fsWhere('name', '==', sanitize(data.name))
+      );
+      const snap = await fsGetDocs(q);
+      if (!snap.empty) {
+        return { ok: false,
+          msg: `❌ Project "${data.name}" already exists.` };
+      }
+      if (!data.projectId) {
+        data.projectId = generateProjectId();
+      }
+      data.createdAt = fsTimestamp();
+      const ref = await fsAddDoc(
+        fsCollection(db, 'projects'), data
+      );
+      return { ok: true, docId: ref.id,
+               projectId: data.projectId };
+    },
+
+    async update(docId, data) {
+      const current = await fsGetDoc(
+        fsDoc(db, 'projects', docId)
+      );
+      if (current.exists() && !current.data().projectId) {
+        data.projectId = generateProjectId();
+      }
+      data.updatedAt = fsTimestamp();
+      await fsUpdateDoc(
+        fsDoc(db, 'projects', docId), data
+      );
+      return { ok: true };
+    },
+
+    // ── Dedup-safe project assignment ────────────────
+    async assignStaff(projectDocId, staffId) {
+      const snap = await fsGetDoc(
+        fsDoc(db, 'projects', projectDocId)
+      );
+      if (!snap.exists()) {
+        return { ok: false, msg: 'Project not found.' };
+      }
+      const current = snap.data().assignedStaff || [];
+      if (current.includes(staffId)) {
+        return { ok: true, skipped: true,
+          msg: 'Staff already assigned.' };
+      }
+      await fsUpdateDoc(
+        fsDoc(db, 'projects', projectDocId),
+        { assignedStaff: [...current, staffId] }
+      );
+      return { ok: true };
+    },
+
+    async unassignStaff(projectDocId, staffId) {
+      const snap = await fsGetDoc(
+        fsDoc(db, 'projects', projectDocId)
+      );
+      if (!snap.exists()) return { ok: false };
+      const current = snap.data().assignedStaff || [];
+      await fsUpdateDoc(
+        fsDoc(db, 'projects', projectDocId),
+        { assignedStaff:
+            current.filter(s => s !== staffId) }
+      );
+      return { ok: true };
+    },
+
+    async delete(docId) {
+      await fsDeleteDoc(
+        fsDoc(db, 'projects', docId)
+      );
+      return { ok: true };
+    }
+  },
+
+  // ── DATA QUALITY ENGINE ───────────────────────────
+  quality: {
+
+    async runReport() {
+      const issues = {
+        duplicatePhones:      [],
+        duplicateStaffIds:    [],
+        duplicateEmails:      [],
+        missingStaffId:       [],
+        missingTaskId:        [],
+        missingMeetingId:     [],
+        missingProjectId:     [],
+        invalidPhones:        [],
+        orphanedTaskAssign:   [],
+        orphanedProjAssign:   [],
+        staffWithoutPhone:    []
+      };
+
+      // Load all collections
+      const [staffDocs, taskDocs,
+             meetingDocs, projDocs] =
+        await Promise.all([
+          DataService.staff.getAll(),
+          DataService.tasks.getAll(),
+          DataService.meetings.getAll(),
+          DataService.projects.getAll()
+        ]);
+
+      const staffNames = new Set(
+        staffDocs.map(s => s.Full_Name)
+      );
+      const staffPhoneMap  = {};
+      const staffIDMap     = {};
+      const staffEmailMap  = {};
+
+      // ── STAFF checks ────────────────────────────
+      staffDocs.forEach(s => {
+        const phone   = sanitize(s.Phone);
+        const sid     = sanitize(s.Staff_ID);
+        const email   = sanitize(s.Gmail);
+        const name    = s.Full_Name || 'Unknown';
+
+        // Missing staffId
+        if (!s.staffId) {
+          issues.missingStaffId.push({
+            name, docId: s._docId,
+            msg: 'No staffId — edit and save to fix'
+          });
+        }
+
+        // No phone
+        if (!phone) {
+          issues.staffWithoutPhone.push({
+            name, docId: s._docId
+          });
+        } else {
+          // Invalid phone
+          if (!isValidPhone(phone)) {
+            issues.invalidPhones.push({
+              name, phone, docId: s._docId
+            });
+          }
+          // Duplicate phone
+          if (staffPhoneMap[phone]) {
+            issues.duplicatePhones.push({
+              phone,
+              records: [staffPhoneMap[phone], name]
+            });
+          } else {
+            staffPhoneMap[phone] = name;
+          }
+        }
+
+        // Duplicate Staff_ID
+        if (sid) {
+          if (staffIDMap[sid]) {
+            issues.duplicateStaffIds.push({
+              staffId: sid,
+              records: [staffIDMap[sid], name]
+            });
+          } else {
+            staffIDMap[sid] = name;
+          }
+        }
+
+        // Duplicate Gmail
+        if (email) {
+          if (staffEmailMap[email]) {
+            issues.duplicateEmails.push({
+              email,
+              records: [staffEmailMap[email], name]
+            });
+          } else {
+            staffEmailMap[email] = name;
+          }
+        }
+      });
+
+      // ── TASK checks ─────────────────────────────
+      taskDocs.forEach(t => {
+        if (!t.taskId) {
+          issues.missingTaskId.push({
+            subject: t.subject||'(no subject)',
+            docId: t._docId
+          });
+        }
+        if (t.assignedTo &&
+          !staffNames.has(t.assignedTo)) {
+          issues.orphanedTaskAssign.push({
+            subject: t.subject||'(no subject)',
+            assignedTo: t.assignedTo,
+            docId: t._docId,
+            msg: 'assignedTo name not found in staff'
+          });
+        }
+      });
+
+      // ── MEETING checks ──────────────────────────
+      meetingDocs.forEach(m => {
+        if (!m.meetingId) {
+          issues.missingMeetingId.push({
+            subject: m.subject||'(no subject)',
+            docId: m._docId
+          });
+        }
+      });
+
+      // ── PROJECT checks ──────────────────────────
+      projDocs.forEach(p => {
+        if (!p.projectId) {
+          issues.missingProjectId.push({
+            name: p.name||'(unnamed)',
+            docId: p._docId
+          });
+        }
+        // Check assignedStaff entries
+        (p.assignedStaff || []).forEach(entry => {
+          // If it's a name (not a staffId format)
+          if (!entry.startsWith('STAFF-') &&
+            !staffNames.has(entry)) {
+            issues.orphanedProjAssign.push({
+              project: p.name,
+              entry,
+              msg: 'Entry not found in staff records'
+            });
+          }
+        });
+      });
+
+      return issues;
+    }
+  }
+};
 
 const RANK_IT_MAP = {
   // ── GAZETTED OFFICERS ──────────────────────────
@@ -3044,11 +3670,16 @@ function showScreen(name) {
     staff: 'Staff Directory',
     admin: 'Admin Panel',
     staffmgmt: 'Staff Management',
-    'staff-management': 'Staff Management'
+    'staff-management': 'Staff Management',
+    'data-quality': 'Data Quality Report'
   };
   
   const titleEl = document.getElementById('topbarTitle');
-  if (titleEl) titleEl.textContent = titles[name] || name;
+  if (name === 'data-quality') {
+    if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-shield-halved"></i> Data Quality Report';
+  } else {
+    if (titleEl) titleEl.textContent = titles[name] || name;
+  }
 
   // Highlight nav
   document.querySelectorAll('.nav-item').forEach(n => {
@@ -3506,6 +4137,10 @@ async function doLogin() {
     if (staffMgmtNavItem) {
       staffMgmtNavItem.style.display = (staffData.role === 'admin' || staffData.role === 'officer') ? 'flex' : 'none';
     }
+    const dqNav = document.getElementById('dataQualityNavItem');
+    if (dqNav) {
+      dqNav.style.display = staffData.role === 'admin' ? 'flex' : 'none';
+    }
     const adminBadge = document.getElementById('adminBadge');
     if (adminBadge) {
       adminBadge.style.display = (staffData.role === 'admin' || staffData.role === 'officer') ? 'inline-flex' : 'none';
@@ -3567,7 +4202,11 @@ function startApp() {
   // Show / Hide Staff Management Sidebar option depending on Admin role
   const staffNavItem = document.getElementById('staffMgmtNavItem');
   if (staffNavItem) {
-    staffNavItem.style.display = currentUser?.role === 'admin' ? 'block' : 'none';
+    staffNavItem.style.display = (currentUser?.role === 'admin' || currentUser?.role === 'officer') ? 'flex' : 'none';
+  }
+  const dqNav = document.getElementById('dataQualityNavItem');
+  if (dqNav) {
+    dqNav.style.display = currentUser?.role === 'admin' ? 'flex' : 'none';
   }
 
   // Populate sidebar details
@@ -4201,48 +4840,42 @@ function loadMyAssignedWork(staffName) {
   });
 }
 
-function loadStaffFromFirestore() {
-  const q = fsQuery(
-    fsCollection(db, 'staff'),
-    fsOrderBy('name', 'asc')
-  );
-  fsOnSnapshot(q, (snapshot) => {
-    staffCache = snapshot.docs.map(d => {
-      const data = d.data();
+async function loadStaffFromFirestore() {
+  try {
+    const rawStaff = await DataService.staff.getAll();
+    staffCache = rawStaff.map(s => {
       return {
-        id: d.id,
-        ...data,
-        Full_Name: data.name || '',
-        Rank: data.rank || '',
-        Phone: data.phone || '',
-        Gender: data.gender || 'Male',
-        Badge_No: data.badgeNo || data.staffId || '',
-        Gmail: data.email || '',
-        Status: data.status || 'Active',
-        Assigned_Projects: data.assignedProjects || '',
-        District_Assigned: data.department || data.districtAssigned || '',
-        Reporting_Officer: data.reportingOfficer || '',
-        Daily_Duties: data.dailyDuties || '',
-        Weekly_Duties: data.weeklyDuties || '',
-        Monthly_Duties: data.monthlyDuties || '',
-        Yearly_Duties: data.yearlyDuties || '',
-        Date_Joined: data.dateOfJoin || ''
+        id: s._docId,
+        ...s,
+        Full_Name: s.Full_Name || s.name || '',
+        Rank: s.Rank || s.rank || '',
+        Phone: s.Phone || s.phone || '',
+        Gender: s.Gender || s.gender || 'Male',
+        Badge_No: s.Badge_No || s.badgeNo || s.staffId || '',
+        Gmail: s.Gmail || s.email || '',
+        Status: s.Status || s.status || 'Active',
+        Assigned_Projects: s.Assigned_Projects || s.assignedProjects || '',
+        Date_Joined: s.Date_Joined || s.dateOfJoin || ''
       };
     });
+    window.staffCache = staffCache;
     allData.staff = staffCache;
-    console.log('Staff loaded:', staffCache.length);
+    console.log('✅ Staff loaded:', staffCache.length);
     renderStaffMgmt();
     renderStaff();
-    populateAllStaffDropdowns(staffCache);
+    populateAllStaffDropdowns();
     const statStaff = document.getElementById('statStaff');
     if (statStaff) {
       statStaff.textContent = staffCache.filter(s => s.Status === 'Active').length;
       statStaff.classList.remove('skeleton');
     }
-  }, (err) => {
-    console.error('Staff load error:', err);
-    showToast('Failed to load staff list.', 'error');
-  });
+    return staffCache;
+  } catch(e) {
+    console.error('loadStaff error:', e);
+    staffCache = [];
+    window.staffCache = [];
+    return [];
+  }
 }
 
 // Alias for backwards compatibility
@@ -4370,70 +5003,73 @@ function getSelectedAllottedPersons() {
   ).map(cb => cb.value);
 }
 
-function loadHubEntries() {
-  const q = fsQuery(
-    fsCollection(db, 'hub_entries'),
-    fsOrderBy('createdAt', 'desc')
-  );
-  fsOnSnapshot(q, (snap) => {
-    const entries = snap.docs.map(d => {
-      const data = d.data();
+async function loadHubEntries() {
+  try {
+    const raw = await DataService.tasks.getAll();
+    const entries = raw.map(t => {
       return {
-        id: d.id,
-        Entry_ID: d.id,
-        Type: data.type || '',
-        Subject: data.subject || '',
-        Assigned_To: data.assignedTo || '',
-        Priority: data.priority || 'Medium',
-        Due_Date: data.dueDate || '',
-        Status: data.status || 'Pending',
-        Description: data.description || '',
-        Added_By: data.createdBy || '',
-        Added_On: data.createdAt ? (data.createdAt.seconds ? new Date(data.createdAt.seconds * 1000).toISOString() : String(data.createdAt)) : '',
-        Category: data.category || '',
-        project: data.project || data.Project || ''
+        id: t._docId,
+        Entry_ID: t._docId,
+        Type: t.type || t.Type || '',
+        Subject: t.subject || t.Subject || '',
+        Assigned_To: t.assignedTo || t.Assigned_To || '',
+        Priority: t.priority || t.Priority || 'Medium',
+        Due_Date: t.dueDate || t.Due_Date || '',
+        Status: t.status || t.Status || 'Pending',
+        Description: t.description || t.Description || '',
+        Added_By: t.createdBy || t.Added_By || '',
+        Added_On: t.createdAt ? (t.createdAt.seconds ? new Date(t.createdAt.seconds * 1000).toISOString() : String(t.createdAt)) : '',
+        project: t.project || t.Project || '',
+        remarks: t.remarks || '',
+        refNo: t.refNo || '',
+        taskId: t.taskId || ''
       };
     });
+    allHubEntries = raw;
     allData.hub_entries = entries;
     renderHub();
     renderDashboard();
     
-    // Update badge/statistics
     const active = entries.filter(e => e.Status !== 'Completed').length;
     const statHub = document.getElementById('statHub');
     if (statHub) { statHub.textContent = active; statHub.classList.remove('skeleton'); }
-
-  });
+    return raw;
+  } catch(e) {
+    console.error('loadHub error:', e);
+    return [];
+  }
 }
 
-function loadVCMeetings() {
-  const q = fsQuery(
-    fsCollection(db, 'vc_meetings'),
-    fsOrderBy('createdAt', 'desc')
-  );
-  fsOnSnapshot(q, (snap) => {
-    const data = snap.docs.map(d => {
-      const docData = d.data();
+async function loadVCMeetings() {
+  try {
+    const raw = await DataService.meetings.getAll();
+    const data = raw.map(m => {
       return {
-        id: d.id,
-        VC_ID: d.id,
-        Subject: docData.title || docData.subject || '',
-        Date: docData.date || '',
-        Time: docData.time || '',
-        Platform: docData.venue || docData.platform || '',
-        VC_Link: docData.link || docData.vcLink || '',
-        Remarks: docData.agenda || docData.remarks || '',
-        Project_Name: docData.projectName || docData.project || '',
-        Organiser: docData.chairperson || docData.organiser || '',
-        Speaker: docData.speaker || '',
-        Allotted_Persons: Array.isArray(docData.participants) ? docData.participants.join(', ') : (docData.allottedPersons || ''),
-        Status: docData.status || 'Upcoming'
+        id: m._docId,
+        VC_ID: m._docId,
+        Subject: m.title || m.subject || '',
+        Date: m.date || '',
+        Time: m.time || '',
+        Platform: m.venue || m.platform || '',
+        VC_Link: m.link || m.vcLink || '',
+        Remarks: m.agenda || m.remarks || '',
+        Project_Name: m.projectName || m.project || '',
+        Organiser: m.chairperson || m.organiser || '',
+        Speaker: m.speaker || '',
+        Allotted_Persons: Array.isArray(m.participants) ? m.participants.join(', ') : (m.allottedPersons || ''),
+        Status: m.status || 'Upcoming',
+        meetingId: m.meetingId || ''
       };
     });
+    allVCMeetings = raw;
     allData.vcschedule = data;
     renderVC();
     renderDashboard();
-  });
+    return raw;
+  } catch(e) {
+    console.error('loadVC error:', e);
+    return [];
+  }
 }
 
 function loadNotices() {
@@ -4526,71 +5162,60 @@ async function saveProfileEdit() {
 
 // --- STAFF MANAGEMENT ---
 async function addNewStaff() {
+  if (localStorage.getItem('userRole') !== 'admin') {
+    showToast('⛔ Admin only.', 'error'); return;
+  }
+
   const get = id => {
     const el = document.getElementById(id);
     return el ? el.value.trim() : '';
   };
 
-  const Staff_ID   = get('ns_Staff_ID');
-  const Full_Name  = get('ns_Full_Name');
-  const Rank       = get('ns_Rank');
-  const Phone      = get('ns_Phone');
+  const data = {
+    Staff_ID:          sanitize(get('ns_Staff_ID')),
+    Full_Name:         sanitize(get('ns_Full_Name')),
+    Rank:              get('ns_Rank') || '',
+    Badge_No:          sanitize(get('ns_Badge_No')),
+    Gender:            get('ns_Gender') || 'Male',
+    Phone:             sanitize(get('ns_Phone')),
+    Gmail:             sanitize(get('ns_Gmail')),
+    Date_Joined:       get('ns_Date_Joined') || '',
+    password:          get('ns_Password') || '1111',
+    Status:            'Active',
+    role:              (RANK_IT_MAP[get('ns_Rank')]?.role) || 'staff',
+    Assigned_Projects: '',
+    Daily_Duties:      '',
+    Weekly_Duties:     '',
+    Monthly_Duties:    '',
+    Yearly_Duties:     ''
+  };
 
-  if (!Full_Name || !Phone) {
-    showToast('Full Name and Phone are required.', 'error');
-    return;
-  }
-  if (Phone.length < 10) {
-    showToast('Enter a valid 10-digit phone number.', 'error');
-    return;
+  if (!data.Full_Name || !data.Phone) {
+    showToast('❌ Full Name and Phone are required.', 'error'); return;
   }
 
-  // Check duplicate phone
-  const existing = staffCache.find(
-    s => String(s.Phone).trim() === Phone
-  );
-  if (existing) {
-    showToast('A staff member with this phone already exists!','error');
-    return;
+  const saveBtn = document.querySelector('#staffForm button[onclick="addNewStaff()"]') || document.getElementById('addStaffBtn') || (event && event.target ? event.target.closest('button') : null);
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
   }
-
-  const btn = event.target.closest('button');
-  btn.disabled  = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
 
   try {
-    const now = new Date().toISOString().split('T')[0];
-    await fsAddDoc(fsCollection(db, 'staff'), {
-      Staff_ID,
-      Full_Name,
-      Rank,
-      Badge_No:           get('ns_Badge_No'),
-      Gender:             get('ns_Gender'),
-      Gmail:              get('ns_Gmail'),
-      Phone,
-      Date_Joined:        get('ns_Date_Joined'),
-      Status:             get('ns_Status') || 'Active',
-      Assigned_Projects:  document.getElementById('ns_project')?.value || '',
-      Created_Date:       now,
-      Daily_Duties:       get('ns_Daily_Duties'),
-      Weekly_Duties:      get('ns_Weekly_Duties'),
-      Monthly_Duties:     get('ns_Monthly_Duties'),
-      Yearly_Duties:      get('ns_Yearly_Duties'),
-      role:               get('ns_role') || 'staff',
-      password:           '1111'
-    });
-
-    // Show success notice with phone
-    document.getElementById('noticePhone').textContent = Phone;
-    document.getElementById('staffAddedNotice').style.display = 'block';
-    showToast(Full_Name + ' added! Login: ' + Phone + ' / 1111','success');
+    const result = await DataService.staff.create(data);
+    if (!result.ok) {
+      showToast(result.msg, 'error'); return;
+    }
+    showToast(`✅ Staff added! ID: ${result.staffId}`, 'success');
     clearNewStaffForm();
-
-  } catch(err) {
-    showToast('Error: ' + err.message, 'error');
+    await loadStaffFromFirestore();
+    renderStaffManagement();
+  } catch(e) {
+    showToast('❌ Failed: ' + e.message, 'error');
   } finally {
-    btn.disabled  = false;
-    btn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Add Staff Member';
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Add Staff Member';
+    }
   }
 }
 
@@ -4775,20 +5400,25 @@ async function bulkImportStaff() {
     });
 
     // Deduplicate and import
+    let skippedCount = 0;
+    const errors = [];
     for (const s of allStaffToImport) {
-      if (!s.phone) continue;
-      const q = fsQuery(staffRef, fsWhere('phone', '==', s.phone));
-      const snap = await fsGetDocs(q);
-      if (snap.empty) {
-        await fsAddDoc(staffRef, {
-          ...s,
-          createdAt: fsTimestamp()
-        });
+      if (!s.Phone) continue;
+      const result = await DataService.staff.create(s);
+      if (result.ok) {
         importedCount++;
+      } else {
+        skippedCount++;
+        errors.push(`${s.Full_Name}: ${result.msg}`);
       }
     }
 
-    showToast(`Successfully imported ${importedCount} new staff members!`, 'success');
+    showToast(`✅ Bulk upload: ${importedCount} added, ${skippedCount} skipped.`, 'success');
+    if (errors.length) {
+      console.warn('Bulk upload skips:', errors);
+    }
+    await loadStaffFromFirestore();
+    renderStaffManagement();
   } catch(err) {
     console.error("Bulk import error:", err);
     showToast('Bulk import failed: ' + err.message, 'error');
@@ -5190,41 +5820,19 @@ function openAddHubEntryModal() {
 }
 
 async function addHubEntry() {
-  const type    = document.getElementById('hubType')?.value;
-  const subject = (document.getElementById('hubSubject')?.value||'').trim();
-
-  if (!type) {
-    showToast('Please select a Type.','error'); return;
-  }
-  if (!subject) {
-    showToast('Please enter a Subject/Title.','error');
-    return;
-  }
-
-  const status = document.getElementById('hubStatus')?.value || 'Pending';
-  const today  = new Date().toISOString().split('T')[0];
-
-  // Auto-generate reference number
-  const refNo  = 'TM-' + today.replace(/-/g,'') +
-                 '-' + Math.random().toString(36)
-                   .substr(2,4).toUpperCase();
-
   const data = {
-    refNo:         refNo,
-    type:          type,
+    type:          document.getElementById('hubType')?.value,
     project:       document.getElementById('hubProject')?.value || '',
-    subject:       subject,
+    subject:       sanitize(document.getElementById('hubSubject')?.value),
     assignedTo:    document.getElementById('hubAssignedTo')?.value || '',
-    currentlyWith: document.getElementById('hubCurrentlyWith')?.value || '',
-    status:        status,
+    currentlyWith: sanitize(document.getElementById('hubCurrentlyWith')?.value),
+    status:        document.getElementById('hubStatus')?.value || 'Pending',
     priority:      document.getElementById('hubPriority')?.value || 'Medium',
     dueDate:       document.getElementById('hubDueDate')?.value || '',
-    description:   (document.getElementById('hubDesc')?.value||'').trim(),
-    remarks:       (document.getElementById('hubRemarks')?.value||'').trim(),
+    description:   sanitize(document.getElementById('hubDesc')?.value),
+    remarks:       sanitize(document.getElementById('hubRemarks')?.value),
     taskLink:      document.getElementById('hubTaskLink')?.value || '',
-    completionDate: status === 'Completed' ? today : '',
-    createdBy:     localStorage.getItem('userName') || '',
-    createdAt:     fsTimestamp()
+    createdBy:     localStorage.getItem('userName') || ''
   };
 
   const saveBtn = document.querySelector('#addHubEntryModal .btn-primary');
@@ -5234,12 +5842,15 @@ async function addHubEntry() {
   }
 
   try {
-    await fsAddDoc(fsCollection(db,'hub_entries'), data);
+    const result = await DataService.tasks.create(data);
+    if (!result.ok) {
+      showToast(result.msg, 'error'); return;
+    }
     closeModal('addHubEntryModal');
-    showToast('✅ Task entry added! Ref: '+refNo,'success');
+    showToast(`✅ Task added! Ref: ${result.refNo}`, 'success');
     await loadHubEntries();
   } catch(e) {
-    showToast('❌ Failed: '+e.message,'error');
+    showToast('❌ Failed: ' + e.message, 'error');
   } finally {
     if (saveBtn) {
       saveBtn.disabled = false;
@@ -5720,45 +6331,37 @@ function closeDeleteHubModal() {
 
 async function executeDeleteHub() {
   if (localStorage.getItem('userRole') !== 'admin') {
-    showToast('⛔ Admin access only.','error'); return;
+    showToast('⛔ Admin only.', 'error'); return;
   }
   if (!pendingDeleteHubId) return;
-
-  // Verify task is Completed before deleting
-  try {
-    const snap = await fsGetDoc(
-      fsDoc(db,'hub_entries',pendingDeleteHubId)
-    );
-    if (snap.exists()) {
-      const status = snap.data().status || snap.data().Status || '';
-      if (status !== 'Completed') {
-        closeDeleteHubModal();
-        showToast(
-          '⚠️ Only COMPLETED tasks can be deleted. '+
-          'Current status: ' + status,
-          'error'
-        );
-        return;
-      }
-    }
-  } catch(e) { /* proceed */ }
 
   const btn = document.getElementById('confirmDeleteHubBtn');
   if (btn) {
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Deleting...';
   }
+
   try {
-    await fsDeleteDoc(fsDoc(db, 'hub_entries', pendingDeleteHubId));
+    // Verify completed before delete
+    const task = await DataService.tasks.getById(pendingDeleteHubId);
+    if (task && (task.status || task.Status) !== 'Completed') {
+      closeDeleteHubModal();
+      showToast(`⚠️ Only Completed tasks can be deleted. Status: ${task.status || task.Status}`, 'error');
+      return;
+    }
+
+    await DataService.tasks.delete(pendingDeleteHubId);
     closeDeleteHubModal();
-    showToast('✅ Task deleted successfully.', 'success');
-    await loadHubEntries(); // refresh table
-  } catch(err) {
-    showToast('❌ Delete failed: ' + err.message, 'error');
+    showToast('🗑️ Task deleted.', 'success');
+    await loadHubEntries();
+  } catch(e) {
+    showToast('❌ Delete failed: ' + e.message, 'error');
+  } finally {
     if (btn) {
       btn.disabled = false;
       btn.innerHTML = '<i class="fa-solid fa-trash"></i> Yes, Delete';
     }
+    pendingDeleteHubId = null;
   }
 }
 
@@ -5853,14 +6456,14 @@ async function loadProjects() {
   ];
 
   try {
-    let snap = await fsGetDocs(fsCollection(db, 'projects'));
-    allProjects = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const raw = await DataService.projects.getAll();
+    allProjects = raw.map(p => ({ id: p._docId, ...p }));
     
     if (allProjects.length === 0) {
       console.log('No projects found. Auto-seeding default 17 projects...');
       await autoSeedProjects();
-      snap = await fsGetDocs(fsCollection(db, 'projects'));
-      allProjects = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const raw2 = await DataService.projects.getAll();
+      allProjects = raw2.map(p => ({ id: p._docId, ...p }));
     }
   } catch(e) {
     console.warn('loadProjects Firestore error (using local fallbacks):', e);
@@ -6871,42 +7474,38 @@ async function saveAdminEditStaff() {
   if (newPwd) data.password = newPwd;
 
   try {
-    await fsUpdateDoc(fsDoc(db,'staff',docId), data);
+    const result = await DataService.staff.update(docId, data);
+    if (!result.ok) {
+      showToast(result.msg, 'error'); return;
+    }
 
-    // Get all selected project IDs
+    // Multi-project assignment using DataService
     const selectedProjectIds = Array.from(
       document.querySelectorAll('.ae-proj-cb:checked')
     ).map(cb => cb.value);
 
-    const staffKey = data.Staff_ID || docId;
+    const staffKey = data.Staff_ID || data.staffId || docId;
 
-    // Update ALL projects — add or remove staff
     for (const proj of allProjects) {
-      const current = proj.assignedStaff || [];
       const shouldHave = selectedProjectIds.includes(proj.id);
+      const current = proj.assignedStaff || [];
       const hasStaff = current.includes(staffKey);
 
       if (shouldHave && !hasStaff) {
-        await fsUpdateDoc(
-          fsDoc(db,'projects',proj.id),
-          { assignedStaff: [...current, staffKey] }
-        );
+        await DataService.projects.assignStaff(proj.id, staffKey);
         proj.assignedStaff = [...current, staffKey];
       } else if (!shouldHave && hasStaff) {
-        await fsUpdateDoc(
-          fsDoc(db,'projects',proj.id),
-          { assignedStaff: current.filter(s => s !== staffKey) }
-        );
+        await DataService.projects.unassignStaff(proj.id, staffKey);
         proj.assignedStaff = current.filter(s => s !== staffKey);
       }
     }
 
     closeAdminEditStaff();
-    showToast('✅ Staff & projects updated!','success');
+    showToast('✅ Staff & projects updated!', 'success');
     await loadStaffFromFirestore();
     renderStaffManagement();
   } catch(e) {
-    showToast('❌ Save failed: '+e.message,'error');
+    showToast('❌ Save failed: ' + e.message, 'error');
   }
 }
 
@@ -7174,82 +7773,62 @@ function closeEditHubModal() {
 }
 
 async function saveEditHubEntry() {
-  const docId =
-    document.getElementById('editHubDocId').value;
+  const docId = document.getElementById('editHubDocId').value;
   if (!docId) return;
 
-  const isAdmin =
-    localStorage.getItem('userRole') === 'admin';
-  const today   =
-    new Date().toISOString().split('T')[0];
-  const status  =
-    document.getElementById('ehubStatus')?.value||'Pending';
+  const isAdmin = localStorage.getItem('userRole') === 'admin';
+  const today   = new Date().toISOString().split('T')[0];
+  const status  = document.getElementById('ehubStatus')?.value||'Pending';
 
   // Base data — editable by ALL
   let data = {
     status:        status,
-    remarks:       (document.getElementById('ehubRemarks')
-                     ?.value||'').trim(),
-    currentlyWith: (document.getElementById('ehubCurrentlyWith')
-                     ?.value||'').trim(),
-    updatedBy:     localStorage.getItem('userName') || '',
-    updatedAt:     fsTimestamp()
+    remarks:       sanitize(document.getElementById('ehubRemarks')?.value),
+    currentlyWith: sanitize(document.getElementById('ehubCurrentlyWith')?.value),
+    updatedBy:     localStorage.getItem('userName') || ''
   };
 
   // Auto-set completion date
   if (status === 'Completed') {
-    data.completionDate =
-      document.getElementById('ehubCompletionDate')
-        ?.value || today;
+    data.completionDate = document.getElementById('ehubCompletionDate')?.value || today;
   }
 
   // Admin gets to save ALL fields too
   if (isAdmin) {
-    data = {
-      ...data,
-      type:        document.getElementById('ehubType')
-                     ?.value || '',
-      project:     document.getElementById('ehubProject')
-                     ?.value || '',
-      subject:     (document.getElementById('ehubSubject')
-                     ?.value||'').trim(),
-      assignedTo:  document.getElementById('ehubAssignedTo')
-                     ?.value || '',
-      priority:    document.getElementById('ehubPriority')
-                     ?.value || 'Medium',
-      dueDate:     document.getElementById('ehubDueDate')
-                     ?.value || '',
-      description: (document.getElementById('ehubDesc')
-                     ?.value||'').trim(),
-      taskLink:    document.getElementById('ehubTaskLink')
-                     ?.value || ''
-    };
+    Object.assign(data, {
+      type:        document.getElementById('ehubType')?.value || '',
+      project:     document.getElementById('ehubProject')?.value || '',
+      subject:     sanitize(document.getElementById('ehubSubject')?.value),
+      assignedTo:  document.getElementById('ehubAssignedTo')?.value || '',
+      priority:    document.getElementById('ehubPriority')?.value || 'Medium',
+      dueDate:     document.getElementById('ehubDueDate')?.value || '',
+      description: sanitize(document.getElementById('ehubDesc')?.value),
+      taskLink:    document.getElementById('ehubTaskLink')?.value || ''
+    });
   }
 
-  const saveBtn = document.querySelector(
-    '#editHubModal .btn-primary');
+  const saveBtn = document.querySelector('#editHubModal .btn-primary');
   if (saveBtn) {
     saveBtn.disabled = true;
-    saveBtn.innerHTML =
-      '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+    saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
   }
 
   try {
-    await fsUpdateDoc(
-      fsDoc(db,'hub_entries',docId), data
-    );
+    const result = await DataService.tasks.update(docId, data);
+    if (!result.ok) {
+      showToast(result.msg || '❌ Save failed.', 'error');
+      return;
+    }
     closeEditHubModal();
-    const who = isAdmin ? 'All fields' :
-      'Status, Remarks & Currently With';
+    const who = isAdmin ? 'All fields' : 'Status, Remarks & Currently With';
     showToast('✅ Task updated! (' + who + ')', 'success');
     await loadHubEntries();
   } catch(e) {
-    showToast('❌ Save failed: '+e.message,'error');
+    showToast('❌ Save failed: ' + e.message, 'error');
   } finally {
     if (saveBtn) {
       saveBtn.disabled = false;
-      saveBtn.innerHTML =
-        '<i class="fa-solid fa-floppy-disk"></i> Save Changes';
+      saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Changes';
     }
   }
 }
@@ -7269,6 +7848,131 @@ window.closeEditHubModal = closeEditHubModal;
 window.saveEditHubEntry = saveEditHubEntry;
 window.checkCompletedNotice = checkCompletedNotice;
 
+let _lastQualityReport = null;
+
+async function runDataQualityReport() {
+  const btn = document.querySelector('#screen-data-quality button');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Running checks...';
+  }
+
+  const results = document.getElementById('dqResults');
+  const summary = document.getElementById('dqSummary');
+  if (results) results.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+  try {
+    const report = await DataService.quality.runReport();
+    _lastQualityReport = report;
+
+    // Count total issues
+    const totalIssues = Object.values(report).reduce((s, arr) => s + arr.length, 0);
+
+    // Show summary
+    if (summary) {
+      summary.style.display = 'flex';
+      summary.innerHTML = `
+        <div style="font-size:28px;font-weight:700; font-family:'Rajdhani',sans-serif; color:${totalIssues===0 ? 'var(--success)':'var(--danger)'}">
+          ${totalIssues}
+        </div>
+        <div>
+          <div style="font-size:14px;font-weight:700; color:var(--text1)">
+            ${totalIssues===0 ? '✅ No issues found!' : 'Issues Detected'}
+          </div>
+          <div style="font-size:11px;color:var(--text3)">
+            ${totalIssues===0 ? 'Your data is clean and migration-ready.' : 'Review each section below. No data is auto-deleted.'}
+          </div>
+        </div>
+        <div style="margin-left:auto;font-size:11px; color:var(--text3)">
+          Checked: ${new Date().toLocaleString('en-IN')}
+        </div>`;
+    }
+
+    // Render sections
+    if (results) {
+      results.innerHTML = [
+        renderDQSection('🔴 Duplicate Phone Numbers', report.duplicatePhones, r => `${r.phone} — shared by: ${r.records.join(', ')}`),
+        renderDQSection('🔴 Duplicate Staff IDs', report.duplicateStaffIds, r => `${r.staffId} — shared by: ${r.records.join(', ')}`),
+        renderDQSection('🟡 Duplicate Emails', report.duplicateEmails, r => `${r.email} — shared by: ${r.records.join(', ')}`),
+        renderDQSection('🟡 Invalid Phone Numbers', report.invalidPhones, r => `${r.name} — "${r.phone}" (not 10 digits)`),
+        renderDQSection('⚪ Staff Without Phone', report.staffWithoutPhone, r => `${r.name} (DocID: ${r.docId})`),
+        renderDQSection('⚪ Staff Missing Stable ID', report.missingStaffId, r => `${r.name} — ${r.msg}`),
+        renderDQSection('⚪ Tasks Missing Stable ID', report.missingTaskId, r => `"${r.subject}" (DocID: ${r.docId})`),
+        renderDQSection('⚪ Meetings Missing Stable ID', report.missingMeetingId, r => `"${r.subject}" (DocID: ${r.docId})`),
+        renderDQSection('⚪ Projects Missing Stable ID', report.missingProjectId, r => `"${r.name}" (DocID: ${r.docId})`),
+        renderDQSection('🟡 Orphaned Task Assignments', report.orphanedTaskAssign, r => `Task "${r.subject}" → assignedTo "${r.assignedTo}" not in staff`),
+        renderDQSection('🟡 Orphaned Project Assignments', report.orphanedProjAssign, r => `Project "${r.project}" → "${r.entry}" not found in staff`)
+      ].join('');
+    }
+
+    const exportBtn = document.getElementById('dqExportBtn');
+    if (exportBtn) {
+      exportBtn.style.display = totalIssues > 0 ? 'flex' : 'none';
+    }
+
+  } catch(e) {
+    if (results) results.innerHTML = `<div class="card" style="color:var(--danger)">❌ Error running report: ${e.message}</div>`;
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-chart-simple"></i> Run Quality Check';
+    }
+  }
+}
+
+function renderDQSection(title, items, formatter) {
+  const color = items.length === 0 ? 'var(--success)' : 'var(--danger)';
+  const icon  = items.length === 0 ? 'fa-circle-check' : 'fa-circle-exclamation';
+  return `
+  <div class="card" style="margin-bottom:12px">
+    <div style="display:flex;align-items:center; gap:10px;margin-bottom:${items.length ? '12px' : '0'}">
+      <i class="fa-solid ${icon}" style="color:${color};font-size:16px"></i>
+      <span style="font-weight:700;font-size:14px; color:var(--text1)">${title}</span>
+      <span style="margin-left:auto;font-size:12px; font-weight:700;color:${color}">
+        ${items.length === 0 ? '✓ Clean' : items.length + ' issue(s)'}
+      </span>
+    </div>
+    ${items.length === 0 ? '' : `
+    <div style="display:flex;flex-direction:column; gap:6px">
+      ${items.map(r => `
+        <div style="padding:8px 12px; background:rgba(163,45,45,0.06); border:1px solid rgba(163,45,45,0.15); border-radius:8px;font-size:12px; color:var(--text2)">
+          ⚠️ ${formatter(r)}
+        </div>`).join('')}
+    </div>`}
+  </div>`;
+}
+
+function exportQualityReport() {
+  if (!_lastQualityReport) return;
+  const rows = [['Issue Type', 'Detail']];
+
+  const push = (type, items, fmt) => items.forEach(r => rows.push([type, fmt(r)]));
+
+  push('Duplicate Phone', _lastQualityReport.duplicatePhones, r => `${r.phone} — ${r.records.join(', ')}`);
+  push('Duplicate Staff ID', _lastQualityReport.duplicateStaffIds, r => `${r.staffId} — ${r.records.join(', ')}`);
+  push('Duplicate Email', _lastQualityReport.duplicateEmails, r => `${r.email} — ${r.records.join(', ')}`);
+  push('Invalid Phone', _lastQualityReport.invalidPhones, r => `${r.name}: "${r.phone}"`);
+  push('No Phone', _lastQualityReport.staffWithoutPhone, r => r.name);
+  push('Missing staffId', _lastQualityReport.missingStaffId, r => r.name);
+  push('Missing taskId', _lastQualityReport.missingTaskId, r => r.subject);
+  push('Missing meetingId', _lastQualityReport.missingMeetingId, r => r.subject);
+  push('Missing projectId', _lastQualityReport.missingProjectId, r => r.name);
+  push('Orphaned Task Assign', _lastQualityReport.orphanedTaskAssign, r => `"${r.subject}" → ${r.assignedTo}`);
+  push('Orphaned Project Assign', _lastQualityReport.orphanedProjAssign, r => `${r.project} → ${r.entry}`);
+
+  if (typeof XLSX !== 'undefined') {
+    const ws  = XLSX.utils.aoa_to_sheet(rows);
+    const wb  = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Issues');
+    XLSX.writeFile(wb, 'DataQualityReport_' + new Date().toISOString().slice(0,10) + '.xlsx');
+    showToast('✅ Report exported!', 'success');
+  } else {
+    showToast('❌ XLSX library not loaded.', 'error');
+  }
+}
+
+window.runDataQualityReport = runDataQualityReport;
+window.exportQualityReport = exportQualityReport;
 window.setupFirstAdmin = setupFirstAdmin;
 </script>
 
