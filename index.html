@@ -1448,7 +1448,7 @@ select[multiple] option:selected {
         <div class="screen active" id="screen-dashboard">
           <!-- Stats Grid -->
           <div class="stats-grid" id="dashStats">
-            <div class="stat-card" onclick="showScreen('staff-management')" style="cursor:pointer">
+            <div class="stat-card" onclick="showScreen('staff')" style="cursor:pointer">
               <div class="stat-icon success"><i class="fa-solid fa-id-badge"></i></div>
               <div>
                 <div class="stat-value skeleton" id="statStaff">—</div>
@@ -1760,14 +1760,26 @@ select[multiple] option:selected {
         <!-- ====== STAFF DIRECTORY ====== -->
         <div class="screen" id="screen-staff">
           <div class="page-header">
-            <h1><i class="fa-solid fa-users" style="color:var(--navy)"></i> Staff Directory</h1>
-            <p>All Technical Services personnel</p>
+            <h1><i class="fa-solid fa-users" style="color:var(--navy)"></i> Staff Dashboard</h1>
+            <p>Technical Services Division Personnel & Live Workload</p>
           </div>
-          <div class="search-bar">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" placeholder="Search by name, rank, badge number..." id="staffSearch" oninput="searchStaff()">
+          <div class="search-bar" style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+            <div style="position:relative;flex:1;min-width:260px">
+              <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3)"></i>
+              <input type="text" placeholder="Search by name, rank, badge..." id="stSearch" oninput="renderStaff()" 
+                     style="width:100%;padding:10px 10px 10px 36px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text1)">
+            </div>
+            <select id="stDesigFilter" onchange="renderStaff()" 
+                    style="padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text1);font-weight:600;min-width:180px">
+              <option value="all">All Designations</option>
+              <option value="Director">Director / Addl / Joint / Deputy</option>
+              <option value="IT Manager">IT Manager</option>
+              <option value="IT Team Lead">IT Team Lead / Asst</option>
+              <option value="Senior IT Officer">Senior IT Officer</option>
+              <option value="Junior IT Officer">Junior IT Officer</option>
+            </select>
           </div>
-          <div id="staffGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px">
+          <div id="staffListContainer" style="display:flex;flex-direction:column;gap:24px;margin-bottom:40px">
             <div class="loading"><div class="spinner"></div></div>
           </div>
         </div>
@@ -6169,53 +6181,192 @@ function renderStaffTable(staffList) {
 function renderStaff() {
   const list = document.getElementById('staffListContainer');
   if (!list) return;
+
   const search = (document.getElementById('stSearch')?.value || '').toLowerCase();
-  let data = allData.staff || [];
-  
+  const filter = document.getElementById('stDesigFilter')?.value || 'all';
+
+  let staff = (allData.staff || []).filter(s => s.Status === 'Active');
+
   if (search) {
-    data = data.filter(s =>
+    staff = staff.filter(s =>
       (s.Full_Name || '').toLowerCase().includes(search) ||
       (s.Rank || '').toLowerCase().includes(search) ||
+      String(s.Badge_No || '').includes(search) ||
       String(s.Phone || '').includes(search)
     );
   }
 
-  if (data.length === 0) {
-    list.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><i class="fa-solid fa-users"></i><p>No staff records found.</p></div>';
+  const grouped = {};
+  const HIERARCHY = [
+    'Director', 'Additional Director', 'Joint Director', 'Deputy Director',
+    'IT Manager', 'IT Team Lead', 'Asst. IT Team Lead',
+    'Senior IT Officer', 'Junior IT Officer', 'Other'
+  ];
+
+  staff.forEach(s => {
+    let title = getITTitle(s.Rank, s.Phone) || 'Other';
+    if (s.role === 'admin' || s.Role === 'admin') title = 'Director'; // Force Admin to Director
+    if (!HIERARCHY.includes(title)) title = 'Other';
+
+    if (filter !== 'all') {
+      if (filter === 'Director' && !['Director', 'Additional Director', 'Joint Director', 'Deputy Director'].includes(title)) return;
+      if (filter === 'IT Team Lead' && !['IT Team Lead', 'Asst. IT Team Lead'].includes(title)) return;
+      if (filter !== 'Director' && filter !== 'IT Team Lead' && title !== filter) return;
+    }
+
+    const name = s.Full_Name || 'N/A';
+    
+    let tAssigned = 0;
+    let tInProgress = 0;
+    let tCompleted = 0;
+    (allData.hub_entries || []).forEach(h => {
+      const assigned = (h.Assigned_To || h.assignedTo || '');
+      if (assigned.includes(name)) {
+        tAssigned++;
+        const stat = h.Status || h.status || '';
+        if (stat === 'Pending' || stat === 'In Progress') tInProgress++;
+        if (stat === 'Completed') tCompleted++;
+      }
+    });
+
+    let vcCount = 0;
+    (allData.vcschedule || []).forEach(v => {
+      if (v.Status === 'Upcoming') {
+        const str = [v.Organiser, v.Speaker, ...(v.Participants||[])].join(' ');
+        if (str.includes(name)) vcCount++;
+      }
+    });
+
+    const exp = calculateExperience(s.Date_Joined);
+
+    if (!grouped[title]) grouped[title] = [];
+    grouped[title].push({ ...s, title, tAssigned, tInProgress, tCompleted, vcCount, exp });
+  });
+
+  if (Object.keys(grouped).length === 0) {
+    list.innerHTML = '<div class="empty-state"><i class="fa-solid fa-users"></i><p>No staff found matching criteria.</p></div>';
     return;
   }
 
-  list.innerHTML = data.map(s => {
-    const name = s.name || s.fullName || s.Full_Name || 'N/A';
-    const rank = s.rank || s.designation || s.Rank || 'N/A';
-    const phone = s.phone || s.mobile || s.phoneNumber || s.Phone || 'N/A';
-    const badge = s.badge || s.badgeNo || s.Badge_No || 'N/A';
-    const gmail = s.gmail || s.email || s.Gmail || 'N/A';
-    const district = s.district || s.District_Assigned || 'N/A';
-    const projects = s.projects || s.Assigned_Projects || '';
+  list.innerHTML = HIERARCHY.map(groupTitle => {
+    const groupStaff = grouped[groupTitle];
+    if (!groupStaff || groupStaff.length === 0) return '';
 
-    const avatar = (name || 'A')[0].toUpperCase();
-    return `
-      <div class="staff-card">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-          <div class="staff-avatar">${avatar}</div>
+    const cardsHtml = groupStaff.map(s => {
+      const docId = s.id || s.Entry_ID || '';
+      const name = s.Full_Name || 'N/A';
+      const rank = s.Rank || 'N/A';
+      const badge = s.Badge_No ? `• #${s.Badge_No}` : '';
+      const phone = s.Phone || 'N/A';
+      const projs = (s.Assigned_Projects || '').split(';').map(p=>p.trim()).filter(Boolean);
+      const projTags = projs.map(p => `<span style="background:rgba(13,59,122,0.1);color:var(--navy);font-size:10px;padding:2px 6px;border-radius:4px">${sanitize(p)}</span>`).join('') || '<span style="font-size:10px;color:var(--text3)">None</span>';
+
+      return `
+        <div class="card staff-card" onclick="viewUserProfile('${docId}')"
+             style="cursor:pointer;transition:transform 0.2s, box-shadow 0.2s;display:flex;flex-direction:column;justify-content:space-between;padding:16px"
+             onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 16px rgba(0,0,0,0.06)'"
+             onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 2px 6px rgba(0,0,0,0.04)'">
+          
           <div>
-            <div class="staff-name">${name}</div>
-            <div class="staff-rank">${rank} ${badge && badge !== 'N/A' ? '• #' + badge : ''}</div>
+            <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px">
+              <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--navy),#0d3b7a);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;flex-shrink:0">
+                ${name[0].toUpperCase()}
+              </div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:15px;font-weight:700;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${sanitize(name)}</div>
+                <div style="font-size:11px;font-weight:700;color:var(--navy);margin-top:2px">${s.title}</div>
+                <div style="font-size:11px;color:var(--text2);margin-top:2px">${sanitize(rank)} ${sanitize(badge)}</div>
+              </div>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-bottom:8px">
+              <div><i class="fa-solid fa-phone"></i> ${sanitize(phone)}</div>
+              <div><i class="fa-solid fa-clock-rotate-left"></i> ${sanitize(s.exp)}</div>
+            </div>
+
+            <div style="margin-bottom:12px">
+              <div style="font-size:10px;font-weight:700;color:var(--text3);margin-bottom:4px;text-transform:uppercase">Projects</div>
+              <div style="display:flex;flex-wrap:wrap;gap:4px">
+                ${projTags}
+              </div>
+            </div>
           </div>
-        </div>
-        <div style="font-size:12px;color:var(--text2);margin-bottom:6px">📱 <strong>Phone:</strong> ${phone}</div>
-        <div style="font-size:12px;color:var(--text2);margin-bottom:6px">✉️ <strong>Email:</strong> ${gmail}</div>
-        <div style="font-size:12px;color:var(--text2);margin-bottom:10px">📍 <strong>District:</strong> ${district}</div>
-        <div style="border-top:1px solid var(--border);padding-top:10px;margin-top:8px">
-          <span style="font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase">Projects:</span>
-          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">
-            ${projects.split(';').map(p => p.trim()).filter(Boolean).map(p => `<span class="badge" style="background:var(--bg3);color:var(--navy);font-size:10px;padding:3px 6px">${p}</span>`).join('') || '<span style="font-size:11px;color:var(--text3)">None</span>'}
+
+          <div style="border-top:1px solid var(--border);padding-top:10px;display:flex;justify-content:space-between;align-items:center">
+            <div style="text-align:center">
+              <div style="font-size:16px;font-weight:700;color:var(--heart);font-family:'Rajdhani',sans-serif">${s.tInProgress} <span style="font-size:11px;color:var(--text3)">/ ${s.tAssigned}</span></div>
+              <div style="font-size:9px;color:var(--text3);text-transform:uppercase;font-weight:700">WIP Tasks</div>
+            </div>
+            <div style="text-align:center;border-left:1px solid var(--border);border-right:1px solid var(--border);padding:0 12px">
+              <div style="font-size:16px;font-weight:700;color:var(--success);font-family:'Rajdhani',sans-serif">${s.tCompleted}</div>
+              <div style="font-size:9px;color:var(--text3);text-transform:uppercase;font-weight:700">Done</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:16px;font-weight:700;color:var(--gold);font-family:'Rajdhani',sans-serif">${s.vcCount}</div>
+              <div style="font-size:9px;color:var(--text3);text-transform:uppercase;font-weight:700">VCs</div>
+            </div>
           </div>
+
         </div>
-      </div>`;
+      `;
+    }).join('');
+
+    return `
+      <div style="margin-bottom:24px">
+        <h3 style="font-size:14px;color:var(--navy);margin-bottom:12px;display:flex;align-items:center;gap:8px">
+          <i class="fa-solid fa-sitemap" style="opacity:0.7"></i> ${groupTitle}
+        </h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px">
+          ${cardsHtml}
+        </div>
+      </div>
+    `;
   }).join('');
 }
+
+async function viewUserProfile(docId) {
+  if (!docId) return;
+  const currentUserId = localStorage.getItem('userDocId');
+  const isAdmin = localStorage.getItem('userRole') === 'admin';
+  const isOwner = docId === currentUserId;
+
+  showScreen('profile');
+
+  try {
+    const snap = await window.fsGetDoc(window.fsDoc(window.db, 'staff', docId));
+    if (!snap.exists()) {
+      showToast('❌ User profile not found.', 'error'); return;
+    }
+    const data = snap.data();
+    data.id = snap.id;
+    window.currentProfileRecord = data;
+    
+    renderProfileView(data);
+    loadMyAssignedWork(data.Full_Name || '');
+    showDutyTab('Daily', document.querySelector('#screen-profile .tab-pill'));
+    const staffId = data.Staff_ID || data.Full_Name || '';
+    loadMyAssignedProjects(staffId);
+
+    const profileScreen = document.getElementById('screen-profile');
+    const actions = profileScreen.querySelectorAll('.form-actions');
+    const inputs = profileScreen.querySelectorAll('input, textarea, select');
+    const changePwdCard = Array.from(profileScreen.querySelectorAll('.card')).find(c => c.innerHTML.includes('Change My Password'));
+
+    if (!isAdmin && !isOwner) {
+      actions.forEach(el => el.style.display = 'none');
+      inputs.forEach(el => el.disabled = true);
+      if (changePwdCard) changePwdCard.style.display = 'none';
+    } else {
+      actions.forEach(el => el.style.display = '');
+      inputs.forEach(el => el.disabled = false);
+      if (changePwdCard) changePwdCard.style.display = '';
+    }
+
+  } catch (e) {
+    showToast('❌ Error loading profile: ' + e.message, 'error');
+  }
+}
+window.viewUserProfile = viewUserProfile;
 
 function searchStaff() { 
   renderStaff(); 
