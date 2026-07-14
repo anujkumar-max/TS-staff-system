@@ -1589,6 +1589,17 @@ select[multiple] option:selected {
               <option value="In Progress">In Progress</option>
               <option value="Completed">Completed</option>
             </select>
+            <button id="myTasksFilterBtn"
+              onclick="toggleMyTasksFilter(this)"
+              style="padding:8px 14px;border-radius:8px;
+                     border:2px solid var(--navy);
+                     background:var(--bg);color:var(--navy);
+                     font-size:12px;font-weight:700;
+                     cursor:pointer;display:flex;
+                     align-items:center;gap:6px;
+                     transition:all 0.2s">
+              <i class="fa-solid fa-user-check"></i> My Tasks
+            </button>
           </div>
 
           <!-- Table Card -->
@@ -2020,75 +2031,7 @@ select[multiple] option:selected {
               </div>
             </div>
 
-            <!-- SECTION D (FIX 4): My Work — Assigned Tasks & VCs -->
-            <div class="card navy-card" style="margin-top:16px">
-              <div class="section-header">
-                <div class="section-title">
-                  <i class="fa-solid fa-briefcase"></i>
-                  My Work — Assigned Tasks &amp; Meetings
-                </div>
-              </div>
 
-              <!-- Sub tabs -->
-              <div class="tab-pills">
-                <button class="tab-pill heart-pill active"
-                  onclick="showMyWorkTab('tasks',this)">
-                  <i class="fa-solid fa-layer-group"></i>
-                  Assigned Tasks</button>
-                <button class="tab-pill heart-pill"
-                  onclick="showMyWorkTab('vc',this)">
-                  <i class="fa-solid fa-video"></i>
-                  My Meetings</button>
-              </div>
-
-              <!-- Tasks table -->
-              <div id="myTasksSection">
-                <div class="table-wrap">
-                  <table>
-                    <thead class="heart-thead"><tr>
-                      <th>#</th>
-                      <th>Type</th>
-                      <th>Subject</th>
-                      <th>Priority</th>
-                      <th>Due Date</th>
-                      <th>Status</th>
-                    </tr></thead>
-                    <tbody id="myTasksBody">
-                      <tr><td colspan="6">
-                        <div class="empty-state">
-                          <i class="fa-solid fa-inbox"></i>
-                          <p>No tasks assigned yet.</p>
-                        </div>
-                      </td></tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <!-- VCs table -->
-              <div id="myVCSection" style="display:none">
-                <div class="table-wrap">
-                  <table>
-                    <thead class="heart-thead"><tr>
-                      <th>#</th>
-                      <th>Subject</th>
-                      <th>Date</th>
-                      <th>Time</th>
-                      <th>Platform</th>
-                      <th>Status</th>
-                    </tr></thead>
-                    <tbody id="myVCBody">
-                      <tr><td colspan="6">
-                        <div class="empty-state">
-                          <i class="fa-solid fa-video-slash"></i>
-                          <p>No meetings assigned yet.</p>
-                        </div>
-                      </td></tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
 
           </div>
         </div>
@@ -5457,6 +5400,22 @@ function getHubTypeBadge(type) {
 }
 
 window.currentHubTypeFilter = 'all';
+window.myTasksFilterActive = false;
+
+function toggleMyTasksFilter(btn) {
+  window.myTasksFilterActive = !window.myTasksFilterActive;
+  if (window.myTasksFilterActive) {
+    btn.style.background = 'var(--navy)';
+    btn.style.color = '#fff';
+    btn.innerHTML = '<i class="fa-solid fa-user-check"></i> My Tasks ✓';
+  } else {
+    btn.style.background = 'var(--bg)';
+    btn.style.color = 'var(--navy)';
+    btn.innerHTML = '<i class="fa-solid fa-user-check"></i> My Tasks';
+  }
+  renderHub();
+}
+window.toggleMyTasksFilter = toggleMyTasksFilter;
 function filterHubByType(type, btn) {
   document.querySelectorAll('#screen-hub .tab-pill')
     .forEach(b => b.classList.remove('active'));
@@ -5572,6 +5531,16 @@ function renderHub() {
     // Filter by status
     if (statusFilter !== 'all') {
       data = data.filter(h => (h.Status || h.status) === statusFilter);
+    }
+
+    // My Tasks filter
+    if (window.myTasksFilterActive) {
+      const myName = localStorage.getItem('userName') || '';
+      if (myName) {
+        data = data.filter(h =>
+          (h.Assigned_To || h.assignedTo || '').toLowerCase() === myName.toLowerCase()
+        );
+      }
     }
 
     if (data.length === 0) {
