@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ap-dtd-portal-v1';
+const CACHE_NAME = 'ap-dtd-portal-v2';
 
 const ASSETS_TO_CACHE = [
   'index.html',
