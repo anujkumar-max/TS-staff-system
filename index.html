@@ -18,6 +18,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script type="module">
   import { initializeApp, getApps }
     from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -1739,7 +1740,237 @@ select[multiple] option:selected {
               <em>(In Part 2, the interactive Data Tables and Assigment UI will be constructed here)</em>
             </p>
           </div>
+
+          <!-- DATA IMPORT MODULE (ADMIN ONLY) -->
+          <div class="card" id="promap-import-card">
+            <h2 style="font-family:'Rajdhani',sans-serif; margin-bottom:10px;"><i class="fa-solid fa-file-import" style="color:var(--success)"></i> Master Data Import</h2>
+            <p style="font-size:12px; color:var(--text3); margin-bottom:16px;">
+              Upload the PRO-MAP Master Excel file to seed the database. The system will perform validation and normalisation before importing.
+            </p>
+            
+            <div style="display:flex; gap:10px; align-items:center; margin-bottom:16px;">
+              <input type="file" id="promapExcelInput" accept=".xlsx, .xls" style="font-size:12px; padding:6px;">
+              <button class="btn-primary" onclick="analyzePromapFile()" id="analyzeBtn" style="padding:8px 16px;">Analyze File</button>
+            </div>
+
+            <!-- Validation Report (Hidden initially) -->
+            <div id="promap-validation-report" style="display:none; background:var(--bg3); padding:16px; border-radius:8px; border:1px solid var(--border); font-size:12px;">
+              <h3 style="font-family:'Rajdhani',sans-serif; margin-bottom:12px; color:var(--navy);">Validation Report</h3>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;" id="promap-stats">
+                <!-- Injected via JS -->
+              </div>
+              <div id="promap-warnings" style="color:var(--danger); font-weight:600; margin-bottom:12px;"></div>
+              
+              <div style="display:flex; gap:10px;">
+                <button class="btn-heart" id="confirmImportBtn" onclick="executePromapImport()" style="padding:8px 16px;">Confirm & Import to Database</button>
+                <button class="btn-secondary" onclick="document.getElementById('promap-validation-report').style.display='none'" style="padding:8px 16px;">Cancel</button>
+              </div>
+            </div>
+            
+            <div id="promap-import-status" style="margin-top:16px; font-weight:600; font-size:12px;"></div>
+          </div>
         </div>
+
+        <script>
+          // PRO-MAP IMPORT LOGIC
+          let parsedPromapData = null;
+
+          function analyzePromapFile() {
+            const fileInput = document.getElementById('promapExcelInput');
+            if (!fileInput.files.length) return alert('Please select a file first.');
+            
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            
+            document.getElementById('analyzeBtn').innerText = "Analyzing...";
+            document.getElementById('analyzeBtn').disabled = true;
+
+            reader.onload = function(e) {
+              try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                // Assuming data is in sheet named PRO_MAP_MASTER or the first sheet
+                const sheetName = workbook.SheetNames.includes('PRO_MAP_MASTER') ? 'PRO_MAP_MASTER' : workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                
+                // Convert to JSON (Header is row 0)
+                const rawData = XLSX.utils.sheet_to_json(worksheet, {defval: ""});
+                processPromapData(rawData);
+              } catch(err) {
+                alert("Error reading file: " + err.message);
+                resetAnalyzeBtn();
+              }
+            };
+            reader.readAsArrayBuffer(file);
+          }
+
+          function resetAnalyzeBtn() {
+            document.getElementById('analyzeBtn').innerText = "Analyze File";
+            document.getElementById('analyzeBtn').disabled = false;
+          }
+
+          function processPromapData(rawData) {
+            // Drop empty rows
+            const rows = rawData.filter(r => r['Person Name'] && String(r['Person Name']).trim() !== '');
+            
+            let personnelMap = new Map();
+            let projectMap = new Map();
+            let assignments = [];
+            
+            const SPECIAL_CATEGORIES = [
+                "PCS&S – Personnel Awaiting Deployment",
+                "PCS&S – Officer Attachments",
+                "PCS&S – External Attachments"
+            ];
+
+            rows.forEach(r => {
+              const pName = String(r['Person Name']).trim();
+              const rank = String(r['Rank'] || '').trim();
+              const genNo = String(r['General No'] || '').trim();
+              let projName = String(r['Project'] || '').trim();
+              
+              // Project Normalisation Rules
+              if(projName === 'CrIMAC') projName = 'CRIMAC';
+              
+              const alloc = parseFloat(String(r['Allocation %']).replace('%','')) || 0;
+              
+              // Map Personnel
+              const pKey = pName.toLowerCase() + "_" + genNo;
+              if(!personnelMap.has(pKey)) {
+                personnelMap.set(pKey, {
+                  name: pName,
+                  rank: rank,
+                  generalNo: genNo,
+                  contactNumber: String(r['Contact Number'] || '').trim()
+                });
+              }
+
+              // Handle Composite Projects
+              let splitProjects = [projName];
+              if(projName === "eSakshya,eSummons") splitProjects = ["eSakshya", "eSummons"];
+              if(projName === "APOLIS, Drones & Meeseva") splitProjects = ["APOLIS", "Drones", "Meeseva"];
+              if(projName === "CCTV, eOffice") splitProjects = ["CCTV", "eOffice"];
+
+              splitProjects.forEach(proj => {
+                if(!proj) return;
+                
+                // Map Project
+                if(!projectMap.has(proj)) {
+                  projectMap.set(proj, {
+                    projectName: proj,
+                    category: SPECIAL_CATEGORIES.includes(proj) ? 'Deployment Category' : 'Technical Project'
+                  });
+                }
+
+                // Create Assignment
+                assignments.push({
+                  personnelKey: pKey,
+                  projectName: proj,
+                  allocationPercentage: alloc,
+                  role: String(r['Exact Role / Responsibilities'] || '').trim(),
+                  workstream: String(r['Workstream'] || '').trim(),
+                  primarySupport: String(r['Primary / Support'] || '').trim(),
+                  status: 'Active',
+                  verificationStatus: String(r['Verification Status'] || 'To Verify').trim()
+                });
+              });
+            });
+
+            parsedPromapData = {
+              personnel: Array.from(personnelMap.values()),
+              projects: Array.from(projectMap.values()),
+              assignments: assignments
+            };
+
+            // Show Report
+            document.getElementById('promap-validation-report').style.display = 'block';
+            document.getElementById('promap-stats').innerHTML = `
+              <div><strong>Total Source Rows:</strong> ${rows.length}</div>
+              <div><strong>Unique Personnel:</strong> ${parsedPromapData.personnel.length}</div>
+              <div><strong>Unique Projects:</strong> ${parsedPromapData.projects.length}</div>
+              <div><strong>Total Assignments:</strong> ${parsedPromapData.assignments.length}</div>
+            `;
+            
+            document.getElementById('promap-warnings').innerText = 
+              `Applied Normalisation: CRIMAC merged, eSakshya/eSummons split.`;
+            
+            resetAnalyzeBtn();
+          }
+
+          async function executePromapImport() {
+            if(!parsedPromapData) return;
+            const btn = document.getElementById('confirmImportBtn');
+            const statusDiv = document.getElementById('promap-import-status');
+            btn.disabled = true;
+            btn.innerText = "Importing...";
+            
+            try {
+              // We need existing staff to map IDs if possible
+              statusDiv.innerText = "1/4: Fetching existing staff...";
+              const existingStaff = await DataService.staff.getAll();
+              
+              // 1. Create Personnel
+              statusDiv.innerText = "2/4: Creating PRO-MAP Personnel...";
+              const personIdMap = {}; // name_genNo -> TS-P-XXX
+              for(const p of parsedPromapData.personnel) {
+                 // Try to link to existing Staff_ID if names match (basic check)
+                 const matched = existingStaff.find(s => s.Full_Name.toLowerCase() === p.name.toLowerCase());
+                 let pId = matched && matched.Staff_ID ? matched.Staff_ID : 'TS-P-' + Math.floor(Math.random()*900000 + 100000);
+                 
+                 const res = await DataService.promap_personnel.create({
+                   personnelId: pId,
+                   name: p.name,
+                   rank: p.rank,
+                   generalNo: p.generalNo,
+                   contactNumber: p.contactNumber,
+                   isActive: true
+                 });
+                 personIdMap[p.name.toLowerCase() + "_" + p.generalNo] = res.personnelId;
+              }
+
+              // 2. Create Projects
+              statusDiv.innerText = "3/4: Creating PRO-MAP Projects...";
+              const projIdMap = {}; // projectName -> TS-PRJ-XXX
+              for(const prj of parsedPromapData.projects) {
+                const res = await DataService.promap_projects.create({
+                  projectId: 'TS-PRJ-' + Math.floor(Math.random()*9000 + 1000),
+                  projectName: prj.projectName,
+                  category: prj.category,
+                  status: 'Active'
+                });
+                projIdMap[prj.projectName] = res.projectId;
+              }
+
+              // 3. Create Assignments
+              statusDiv.innerText = "4/4: Linking Assignments...";
+              for(const asg of parsedPromapData.assignments) {
+                const pId = personIdMap[asg.personnelKey];
+                const prjId = projIdMap[asg.projectName];
+                if(pId && prjId) {
+                  await DataService.promap_assignments.create({
+                    personnelId: pId,
+                    projectId: prjId,
+                    allocationPercentage: asg.allocationPercentage,
+                    role: asg.role,
+                    workstream: asg.workstream,
+                    primarySupport: asg.primarySupport,
+                    status: asg.status,
+                    verificationStatus: asg.verificationStatus
+                  });
+                }
+              }
+
+              statusDiv.style.color = "var(--success)";
+              statusDiv.innerText = "✅ Import completed successfully! Database seeded.";
+            } catch(e) {
+              console.error(e);
+              statusDiv.style.color = "var(--danger)";
+              statusDiv.innerText = "❌ Import failed: " + e.message;
+            } finally {
+              btn.innerText = "Import Complete";
+            }
+          }
+        </script>
 
         <!-- ====== PROJECTS SCREEN ====== -->
         <div id="screen-projects" class="screen">
