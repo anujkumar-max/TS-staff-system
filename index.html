@@ -1354,13 +1354,11 @@ select[multiple] option:selected {
 
         <!-- PROJECT SUITE -->
         <div class="nav-section-label" style="margin-top:8px">📦 PROJECT SUITE</div>
+        <div class="nav-item" onclick="showScreen('promap'); closeSidebar()">
+          <i class="fa-solid fa-users-viewfinder"></i><span>PRO-MAP Manpower</span>
+        </div>
         <div class="nav-item" onclick="showScreen('projects'); closeSidebar()">
           <i class="fa-solid fa-cubes"></i><span>Project Dashboard</span>
-        </div>
-
-        <div class="nav-section-label" style="margin-top:8px">👥 PERSONNEL</div>
-        <div class="nav-item" onclick="showScreen('staff'); closeSidebar()">
-          <i class="fa-solid fa-users"></i><span>Staff Dashboard</span>
         </div>
 
         <div class="nav-section-label" style="margin-top:8px">Admin</div>
@@ -1594,6 +1592,8 @@ select[multiple] option:selected {
               <option value="In Progress">In Progress</option>
               <option value="Completed">Completed</option>
             </select>
+
+            <!-- MY TASKS filter -->
             <button id="myTasksFilterBtn"
               onclick="toggleMyTasksFilter(this)"
               style="padding:8px 14px;border-radius:8px;
@@ -1721,6 +1721,27 @@ select[multiple] option:selected {
         </div>
 
         <!-- ====== PROJECT SUITE SCREEN ====== -->
+        <!-- ====== PRO-MAP SCREEN ====== -->
+        <div id="screen-promap" class="screen">
+          <div class="page-header">
+            <h1><i class="fa-solid fa-users-viewfinder" style="color:var(--navy)"></i> PRO-MAP (Part 1 Foundation)</h1>
+            <p>Project, Role, Outcome & Manpower Assessment Platform</p>
+          </div>
+          
+          <div class="card">
+            <h2 style="font-family:'Rajdhani',sans-serif; margin-bottom:10px;">Foundation Module Ready</h2>
+            <p style="font-size:13px; color:var(--text3); line-height:1.6;">
+              The native architecture for PRO-MAP has been successfully injected into this portal's DataService layer.
+              <br><br>
+              <strong>Data Collections Connected:</strong> <code>promap_personnel</code>, <code>promap_projects</code>, <code>promap_assignments</code>.<br>
+              <strong>Business Logic Connected:</strong> FTE Engine, Capacity Validation, Stable IDs.
+              <br><br>
+              <em>(In Part 2, the interactive Data Tables and Assigment UI will be constructed here)</em>
+            </p>
+          </div>
+        </div>
+
+        <!-- ====== PROJECTS SCREEN ====== -->
         <div id="screen-projects" class="screen">
           <!-- Page Header -->
           <div class="page-header">
@@ -1762,7 +1783,7 @@ select[multiple] option:selected {
           </div>
         </div>
 
-        <!-- ====== STAFF DIRECTORY ====== -->
+        <!-- ====== STAFF DIRECTORY / DASHBOARD ====== -->
         <div class="screen" id="screen-staff">
           <div class="page-header">
             <h1><i class="fa-solid fa-users" style="color:var(--navy)"></i> Staff Dashboard</h1>
@@ -1976,10 +1997,11 @@ select[multiple] option:selected {
               </div>
             </div>
 
-            <!-- CHANGE PASSWORD SECTION -->
-            <div class="card" style="margin-top:14px;
-                 border:1px solid rgba(13,59,122,0.2);
-                 background:linear-gradient(135deg,rgba(13,59,122,0.04),rgba(201,168,76,0.03))">
+            <!-- SECTION B2: Change Password (ALL users) -->
+            <div class="card" style="margin-top:14px;border:1px solid rgba(13,59,122,0.2);
+                                     background:linear-gradient(135deg,
+                                       rgba(13,59,122,0.04),
+                                       rgba(201,168,76,0.03))">
               <div class="section-header">
                 <div class="section-title">
                   <i class="fa-solid fa-lock" style="color:var(--navy)"></i>
@@ -2084,7 +2106,75 @@ select[multiple] option:selected {
               </div>
             </div>
 
+            <!-- SECTION D (FIX 4): My Work — Assigned Tasks & VCs -->
+            <div class="card navy-card" style="margin-top:16px">
+              <div class="section-header">
+                <div class="section-title">
+                  <i class="fa-solid fa-briefcase"></i>
+                  My Work — Assigned Tasks &amp; Meetings
+                </div>
+              </div>
 
+              <!-- Sub tabs -->
+              <div class="tab-pills">
+                <button class="tab-pill heart-pill active"
+                  onclick="showMyWorkTab('tasks',this)">
+                  <i class="fa-solid fa-layer-group"></i>
+                  Assigned Tasks</button>
+                <button class="tab-pill heart-pill"
+                  onclick="showMyWorkTab('vc',this)">
+                  <i class="fa-solid fa-video"></i>
+                  My Meetings</button>
+              </div>
+
+              <!-- Tasks table -->
+              <div id="myTasksSection">
+                <div class="table-wrap">
+                  <table>
+                    <thead class="heart-thead"><tr>
+                      <th>#</th>
+                      <th>Type</th>
+                      <th>Subject</th>
+                      <th>Priority</th>
+                      <th>Due Date</th>
+                      <th>Status</th>
+                    </tr></thead>
+                    <tbody id="myTasksBody">
+                      <tr><td colspan="6">
+                        <div class="empty-state">
+                          <i class="fa-solid fa-inbox"></i>
+                          <p>No tasks assigned yet.</p>
+                        </div>
+                      </td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- VCs table -->
+              <div id="myVCSection" style="display:none">
+                <div class="table-wrap">
+                  <table>
+                    <thead class="heart-thead"><tr>
+                      <th>#</th>
+                      <th>Subject</th>
+                      <th>Date</th>
+                      <th>Time</th>
+                      <th>Platform</th>
+                      <th>Status</th>
+                    </tr></thead>
+                    <tbody id="myVCBody">
+                      <tr><td colspan="6">
+                        <div class="empty-state">
+                          <i class="fa-solid fa-video-slash"></i>
+                          <p>No meetings assigned yet.</p>
+                        </div>
+                      </td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
 
           </div>
         </div>
@@ -2694,6 +2784,75 @@ function releaseSave(key) {
 // ║  from Firebase to SQL — screens unchanged.  ║
 // ╚══════════════════════════════════════════════╝
 window.DataService = {
+
+  // ── PRO-MAP DOMAIN REPOSITORIES ────────────────────────
+  promap_personnel: {
+    async getAll() {
+      const snap = await fsGetDocs(fsQuery(fsCollection(db, 'promap_personnel'), fsOrderBy('_createdAt', 'desc')));
+      return snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
+    },
+    async create(data) {
+      if (!data.personnelId) data.personnelId = 'TS-P-' + Date.now();
+      data._createdAt = fsTimestamp();
+      const ref = await fsAddDoc(fsCollection(db, 'promap_personnel'), data);
+      return { ok: true, docId: ref.id, personnelId: data.personnelId };
+    }
+  },
+
+  promap_projects: {
+    async getAll() {
+      const snap = await fsGetDocs(fsQuery(fsCollection(db, 'promap_projects'), fsOrderBy('_createdAt', 'desc')));
+      return snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
+    },
+    async create(data) {
+      if (!data.projectId) data.projectId = 'TS-PRJ-' + Date.now();
+      data._createdAt = fsTimestamp();
+      const ref = await fsAddDoc(fsCollection(db, 'promap_projects'), data);
+      return { ok: true, docId: ref.id, projectId: data.projectId };
+    }
+  },
+
+  promap_assignments: {
+    async getByProjectId(projectId) {
+      const q = fsQuery(fsCollection(db, 'promap_assignments'), fsWhere('projectId', '==', projectId));
+      const snap = await fsGetDocs(q);
+      return snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
+    },
+    async getByPersonnelId(personnelId) {
+      const q = fsQuery(fsCollection(db, 'promap_assignments'), fsWhere('personnelId', '==', personnelId));
+      const snap = await fsGetDocs(q);
+      return snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
+    },
+    async create(data) {
+      if (!data.assignmentId) data.assignmentId = 'TS-ASG-' + Date.now();
+      data._createdAt = fsTimestamp();
+      const ref = await fsAddDoc(fsCollection(db, 'promap_assignments'), data);
+      return { ok: true, docId: ref.id };
+    }
+  },
+
+  // ── PRO-MAP BUSINESS LOGIC LAYER ────────────────────────
+  promap_service: {
+    async calculateFTE(projectId) {
+      const assignments = await DataService.promap_assignments.getByProjectId(projectId);
+      return assignments.reduce((acc, curr) => acc + (Number(curr.allocationPercentage) || 0), 0) / 100;
+    },
+    async validateAndAssign(personnelId, projectId, allocationPercentage) {
+      const exist = await DataService.promap_assignments.getByPersonnelId(personnelId);
+      const total = exist.reduce((acc, curr) => acc + (Number(curr.allocationPercentage) || 0), 0);
+      
+      if (total + Number(allocationPercentage) > 100) {
+        return { ok: false, msg: `Total allocation exceeds 100%. Current: ${total}%.` };
+      }
+      if (exist.some(a => a.projectId === projectId)) {
+        return { ok: false, msg: `Already assigned to this project.` };
+      }
+      return DataService.promap_assignments.create({
+        personnelId, projectId, allocationPercentage, 
+        isPrimary: exist.length === 0, status: 'Active'
+      });
+    }
+  },
 
   // ── STAFF ─────────────────────────────────────────
   staff: {
@@ -4641,47 +4800,6 @@ function previewExperience() {
 window.onEditRankChange = onEditRankChange;
 window.previewExperience = previewExperience;
 
-async function changeMyPassword() {
-  const current = (document.getElementById('pwdCurrent')?.value || '').trim();
-  const newPwd  = (document.getElementById('pwdNew')?.value    || '').trim();
-  const confirm = (document.getElementById('pwdConfirm')?.value || '').trim();
-
-  if (!current || !newPwd || !confirm) {
-    showToast('❌ All password fields are required.', 'error'); return;
-  }
-  if (newPwd !== confirm) {
-    showToast('❌ New passwords do not match.', 'error'); return;
-  }
-  if (newPwd.length < 4) {
-    showToast('❌ Password must be at least 4 characters.', 'error'); return;
-  }
-
-  const docId = localStorage.getItem('userDocId');
-  if (!docId) {
-    showToast('❌ Session error. Please log in again.', 'error'); return;
-  }
-
-  try {
-    const snap = await fsGetDoc(fsDoc(db, 'staff', docId));
-    if (!snap.exists()) {
-      showToast('❌ Account not found.', 'error'); return;
-    }
-    const stored = String(snap.data().password || '');
-    if (stored !== current) {
-      showToast('❌ Current password is incorrect.', 'error'); return;
-    }
-    await fsUpdateDoc(fsDoc(db, 'staff', docId), { password: newPwd });
-    ['pwdCurrent','pwdNew','pwdConfirm'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.value = '';
-    });
-    showToast('✅ Password updated successfully!', 'success');
-  } catch(e) {
-    showToast('❌ Failed: ' + e.message, 'error');
-  }
-}
-window.changeMyPassword = changeMyPassword;
-
 async function saveMyProfileDetails() {
   const docId = localStorage.getItem('userDocId');
   if (!docId) {
@@ -4801,6 +4919,52 @@ async function saveAdminDuty() {
     showToast('Save failed: ' + err.message,'error');
   }
 }
+
+// ── Change My Password ─────────────────────────────
+async function changeMyPassword() {
+  const current = (document.getElementById('pwdCurrent')?.value || '').trim();
+  const newPwd  = (document.getElementById('pwdNew')?.value    || '').trim();
+  const confirm = (document.getElementById('pwdConfirm')?.value || '').trim();
+
+  if (!current || !newPwd || !confirm) {
+    showToast('❌ All password fields are required.', 'error'); return;
+  }
+  if (newPwd !== confirm) {
+    showToast('❌ New passwords do not match.', 'error'); return;
+  }
+  if (newPwd.length < 4) {
+    showToast('❌ Password must be at least 4 characters.', 'error'); return;
+  }
+
+  const docId = localStorage.getItem('userDocId');
+  if (!docId) { showToast('❌ Session error. Please log in again.', 'error'); return; }
+
+  try {
+    // Verify current password from Firestore
+    const snap = await fsGetDoc(fsDoc(db, 'staff', docId));
+    if (!snap.exists()) {
+      showToast('❌ Account not found.', 'error'); return;
+    }
+    const stored = String(snap.data().password || '');
+    if (stored !== current) {
+      showToast('❌ Current password is incorrect.', 'error'); return;
+    }
+
+    // Update password
+    await fsUpdateDoc(fsDoc(db, 'staff', docId), { password: newPwd });
+
+    // Clear fields
+    ['pwdCurrent','pwdNew','pwdConfirm'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+
+    showToast('✅ Password updated successfully!', 'success');
+  } catch(e) {
+    showToast('❌ Failed: ' + e.message, 'error');
+  }
+}
+window.changeMyPassword = changeMyPassword;
 
 
 function showMyWorkTab(tab, btn) {
@@ -5496,6 +5660,14 @@ function getHubTypeBadge(type) {
 window.currentHubTypeFilter = 'all';
 window.myTasksFilterActive = false;
 
+function filterHubByType(type, btn) {
+  document.querySelectorAll('#screen-hub .tab-pill')
+    .forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  window.currentHubTypeFilter = type;
+  renderHub();
+}
+
 function toggleMyTasksFilter(btn) {
   window.myTasksFilterActive = !window.myTasksFilterActive;
   if (window.myTasksFilterActive) {
@@ -5510,13 +5682,6 @@ function toggleMyTasksFilter(btn) {
   renderHub();
 }
 window.toggleMyTasksFilter = toggleMyTasksFilter;
-function filterHubByType(type, btn) {
-  document.querySelectorAll('#screen-hub .tab-pill')
-    .forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  window.currentHubTypeFilter = type;
-  renderHub();
-}
 
 function updateHubCategoryDropdown(type, selectedValue) {
   const group = document.getElementById('hubCategoryGroup');
@@ -5627,7 +5792,7 @@ function renderHub() {
       data = data.filter(h => (h.Status || h.status) === statusFilter);
     }
 
-    // My Tasks filter
+    // Filter by My Tasks (logged-in user's assigned tasks)
     if (window.myTasksFilterActive) {
       const myName = localStorage.getItem('userName') || '';
       if (myName) {
@@ -5654,6 +5819,29 @@ function renderHub() {
       const status = t.status || t.Status || 'Pending';
       const remarks = t.remarks || t.Remarks || '';
 
+      // ── Deadline colour logic ─────────────────────
+      const today = new Date(); today.setHours(0,0,0,0);
+      let dueCellStyle = 'font-size:12px;';
+      let dueLabel = dueDate || '—';
+      let dueIcon  = '';
+      if (dueDate && status !== 'Completed') {
+        const due = new Date(dueDate); due.setHours(0,0,0,0);
+        const diff = Math.round((due - today) / 86400000);
+        if (diff < 0) {
+          dueCellStyle = 'font-size:12px;color:#b91c1c;font-weight:700;';
+          dueIcon = '🔴 ';
+        } else if (diff === 0) {
+          dueCellStyle = 'font-size:12px;color:#d97706;font-weight:700;';
+          dueIcon = '🟡 ';
+        } else if (diff <= 3) {
+          dueCellStyle = 'font-size:12px;color:#ca8a04;font-weight:600;';
+          dueIcon = '⚠️ ';
+        } else {
+          dueCellStyle = 'font-size:12px;color:#16a34a;';
+          dueIcon = '🟢 ';
+        }
+      }
+
       let addedOnStr = '—';
       if (t.createdAt?.toDate) {
         addedOnStr = t.createdAt.toDate().toLocaleDateString('en-IN');
@@ -5678,7 +5866,7 @@ function renderHub() {
             ${priority||'Medium'}
           </span>
         </td>
-        <td style="font-size:12px">${dueDate||'—'}</td>
+        <td style="${dueCellStyle}">${dueIcon}${dueLabel}</td>
         <td>
           <span class="badge badge-${status==='Completed' ? 'completed' : status==='In Progress' ? 'progress' : 'pending'}">
             ${status||'Pending'}
@@ -6188,187 +6376,210 @@ function renderStaff() {
   if (!list) return;
 
   const search = (document.getElementById('stSearch')?.value || '').toLowerCase();
-  const filter = document.getElementById('stDesigFilter')?.value || 'all';
+  const desigFilter = document.getElementById('stDesigFilter')?.value || 'all';
+  
+  let data = allData.staff || [];
+  data = data.filter(s => s.Status === 'Active');
 
-  let staff = (allData.staff || []).filter(s => s.Status === 'Active');
-
+  // Apply filters
   if (search) {
-    staff = staff.filter(s =>
+    data = data.filter(s =>
       (s.Full_Name || '').toLowerCase().includes(search) ||
       (s.Rank || '').toLowerCase().includes(search) ||
-      String(s.Badge_No || '').includes(search) ||
-      String(s.Phone || '').includes(search)
+      String(s.Badge_No || '').toLowerCase().includes(search)
     );
   }
 
+  // Pre-calculate stats for all matching staff to avoid multiple loops
+  const hubData = allData.hub_entries || [];
+  const vcData = allData.vcschedule || [];
+
   const grouped = {};
   const HIERARCHY = [
-    'Director', 'Additional Director', 'Joint Director', 'Deputy Director',
-    'IT Manager', 'IT Team Lead', 'Asst. IT Team Lead',
-    'Senior IT Officer', 'Junior IT Officer', 'Other'
+    'Director',
+    'Additional Director',
+    'Joint Director',
+    'Deputy Director',
+    'IT Manager',
+    'IT Team Lead',
+    'Asst. IT Team Lead',
+    'Senior IT Officer',
+    'Junior IT Officer',
+    'Other'
   ];
 
-  staff.forEach(s => {
-    let title = getITTitle(s.Rank, s.Phone) || 'Other';
-    if (s.role === 'admin' || s.Role === 'admin') title = 'Director'; // Force Admin to Director
-    if (!HIERARCHY.includes(title)) title = 'Other';
+  data.forEach(s => {
+    const name = s.Full_Name || 'N/A';
+    const rank = s.Rank || 'N/A';
+    const phone = s.Phone || '';
+    const badge = s.Badge_No || '';
+    
+    // Determine IT Title group
+    let itTitle = getITTitle(rank, phone);
+    if (itTitle === 'Admin') itTitle = 'Director'; // Example override for admin
+    if (!itTitle) itTitle = 'Other';
 
-    if (filter !== 'all') {
-      if (filter === 'Director' && !['Director', 'Additional Director', 'Joint Director', 'Deputy Director'].includes(title)) return;
-      if (filter === 'IT Team Lead' && !['IT Team Lead', 'Asst. IT Team Lead'].includes(title)) return;
-      if (filter !== 'Director' && filter !== 'IT Team Lead' && title !== filter) return;
+    // Apply Designation Dropdown Filter
+    if (desigFilter !== 'all') {
+      if (desigFilter === 'Director' && !itTitle.includes('Director')) return;
+      if (desigFilter === 'IT Team Lead' && !itTitle.includes('Team Lead')) return;
+      if (desigFilter !== 'Director' && desigFilter !== 'IT Team Lead' && itTitle !== desigFilter) return;
     }
 
-    const name = s.Full_Name || 'N/A';
-    
-    let tAssigned = 0;
-    let tInProgress = 0;
-    let tCompleted = 0;
-    (allData.hub_entries || []).forEach(h => {
-      const assigned = (h.Assigned_To || h.assignedTo || '');
-      if (assigned.includes(name)) {
+    if (!grouped[itTitle]) grouped[itTitle] = [];
+
+    // Calculate Task Stats
+    let tAssigned = 0, tInProgress = 0, tCompleted = 0;
+    hubData.forEach(h => {
+      const assignedTo = h.Assigned_To || h.assignedTo || '';
+      if (assignedTo.toLowerCase() === name.toLowerCase()) {
+        const status = h.Status || h.status || '';
         tAssigned++;
-        const stat = h.Status || h.status || '';
-        if (stat === 'Pending' || stat === 'In Progress') tInProgress++;
-        if (stat === 'Completed') tCompleted++;
+        if (status === 'Pending' || status === 'In Progress') tInProgress++;
+        if (status === 'Completed') tCompleted++;
       }
     });
 
+    // Calculate VC Stats (Upcoming)
     let vcCount = 0;
-    (allData.vcschedule || []).forEach(v => {
+    vcData.forEach(v => {
       if (v.Status === 'Upcoming') {
-        const str = [v.Organiser, v.Speaker, ...(v.Participants||[])].join(' ');
-        if (str.includes(name)) vcCount++;
+        const org = (v.Organiser || '').toLowerCase();
+        const spk = (v.Speaker || '').toLowerCase();
+        const part = (v.Participants || '').toLowerCase();
+        const nm = name.toLowerCase();
+        if (org.includes(nm) || spk.includes(nm) || part.includes(nm)) {
+          vcCount++;
+        }
       }
     });
 
-    const exp = calculateExperience(s.Date_Joined);
+    const exp = calculateExperience(s.Date_Joined) || '—';
+    const projects = s.Assigned_Projects || '';
+    const avatar = name[0].toUpperCase();
 
-    if (!grouped[title]) grouped[title] = [];
-    grouped[title].push({ ...s, title, tAssigned, tInProgress, tCompleted, vcCount, exp });
+    grouped[itTitle].push({
+      docId: s.id,
+      name, rank, badge, phone, exp, projects, avatar,
+      itTitle, tAssigned, tInProgress, tCompleted, vcCount
+    });
   });
 
   if (Object.keys(grouped).length === 0) {
-    list.innerHTML = '<div class="empty-state"><i class="fa-solid fa-users"></i><p>No staff found matching criteria.</p></div>';
+    list.innerHTML = '<div class="empty-state"><i class="fa-solid fa-users"></i><p>No staff records found.</p></div>';
     return;
   }
 
-  list.innerHTML = HIERARCHY.map(groupTitle => {
-    const groupStaff = grouped[groupTitle];
-    if (!groupStaff || groupStaff.length === 0) return '';
+  let html = '';
+  
+  // Render groups in hierarchy order
+  HIERARCHY.forEach(groupName => {
+    const groupStaff = grouped[groupName];
+    if (!groupStaff || groupStaff.length === 0) return;
 
-    const cardsHtml = groupStaff.map(s => {
-      const docId = s.id || s.Entry_ID || '';
-      const name = s.Full_Name || 'N/A';
-      const rank = s.Rank || 'N/A';
-      const badge = s.Badge_No ? `• #${s.Badge_No}` : '';
-      const phone = s.Phone || 'N/A';
-      const projs = (s.Assigned_Projects || '').split(';').map(p=>p.trim()).filter(Boolean);
-      const projTags = projs.map(p => `<span style="background:rgba(13,59,122,0.1);color:var(--navy);font-size:10px;padding:2px 6px;border-radius:4px">${sanitize(p)}</span>`).join('') || '<span style="font-size:10px;color:var(--text3)">None</span>';
+    html += `
+      <div style="margin-bottom:12px;">
+        <h3 style="color:var(--navy);border-bottom:2px solid rgba(13,59,122,0.1);padding-bottom:8px;margin-bottom:16px;font-size:16px;display:flex;align-items:center;gap:8px">
+          <i class="fa-solid fa-sitemap" style="font-size:14px;opacity:0.7"></i>
+          ${groupName}
+        </h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px">
+    `;
 
-      return `
-        <div class="card staff-card" onclick="viewUserProfile('${docId}')"
-             style="cursor:pointer;transition:transform 0.2s, box-shadow 0.2s;display:flex;flex-direction:column;justify-content:space-between;padding:16px"
-             onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 16px rgba(0,0,0,0.06)'"
-             onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 2px 6px rgba(0,0,0,0.04)'">
-          
-          <div>
+    groupStaff.forEach(s => {
+      const projTags = projectsToHtml(s.projects);
+      html += `
+          <div class="card" onclick="viewUserProfile('${s.docId}')" style="cursor:pointer;transition:transform 0.2s, box-shadow 0.2s;padding:16px" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(13,59,122,0.1)'" onmouseout="this.style.transform='none';this.style.boxShadow='none'">
+            
             <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px">
-              <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--navy),#0d3b7a);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;flex-shrink:0">
-                ${name[0].toUpperCase()}
+              <div class="staff-avatar" style="width:48px;height:48px;font-size:20px;border:2px solid rgba(201,168,76,0.3)">${s.avatar}</div>
+              <div style="flex:1">
+                <div style="font-size:16px;font-weight:700;color:var(--text1)">${s.name}</div>
+                <div style="font-size:12px;color:var(--text2);font-weight:600">${s.itTitle}</div>
+                <div style="font-size:11px;color:var(--text3);margin-top:2px">${s.rank} ${s.badge ? ' • #'+s.badge : ''}</div>
               </div>
-              <div style="flex:1;min-width:0">
-                <div style="font-size:15px;font-weight:700;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${sanitize(name)}</div>
-                <div style="font-size:11px;font-weight:700;color:var(--navy);margin-top:2px">${s.title}</div>
-                <div style="font-size:11px;color:var(--text2);margin-top:2px">${sanitize(rank)} ${sanitize(badge)}</div>
-              </div>
+              <div style="background:rgba(22,163,74,0.1);color:#16a34a;padding:4px 8px;border-radius:12px;font-size:10px;font-weight:700">Active</div>
             </div>
 
-            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-bottom:8px">
-              <div><i class="fa-solid fa-phone"></i> ${sanitize(phone)}</div>
-              <div><i class="fa-solid fa-clock-rotate-left"></i> ${sanitize(s.exp)}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;background:var(--bg);padding:8px;border-radius:8px;border:1px solid var(--border)">
+              <div style="font-size:11px;color:var(--text2)"><i class="fa-solid fa-phone" style="width:14px;opacity:0.7"></i> ${s.phone}</div>
+              <div style="font-size:11px;color:var(--text2)"><i class="fa-solid fa-clock-rotate-left" style="width:14px;opacity:0.7"></i> ${s.exp}</div>
             </div>
 
-            <div style="margin-bottom:12px">
-              <div style="font-size:10px;font-weight:700;color:var(--text3);margin-bottom:4px;text-transform:uppercase">Projects</div>
+            <div style="margin-bottom:14px">
+              <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:6px;letter-spacing:0.5px">Projects</div>
               <div style="display:flex;flex-wrap:wrap;gap:4px">
                 ${projTags}
               </div>
             </div>
-          </div>
 
-          <div style="border-top:1px solid var(--border);padding-top:10px;display:flex;justify-content:space-between;align-items:center">
-            <div style="text-align:center">
-              <div style="font-size:16px;font-weight:700;color:var(--heart);font-family:'Rajdhani',sans-serif">${s.tInProgress} <span style="font-size:11px;color:var(--text3)">/ ${s.tAssigned}</span></div>
-              <div style="font-size:9px;color:var(--text3);text-transform:uppercase;font-weight:700">WIP Tasks</div>
+            <div style="border-top:1px dashed var(--border);padding-top:12px;display:flex;justify-content:space-between;align-items:center">
+              <div style="display:flex;gap:12px">
+                <div title="Tasks In Progress">
+                  <span style="font-size:11px;color:var(--text3)">Work</span>
+                  <div style="font-weight:700;color:var(--navy);font-size:14px">${s.tInProgress}<span style="font-size:10px;color:var(--text3);font-weight:500">/${s.tAssigned}</span></div>
+                </div>
+                <div title="Tasks Completed">
+                  <span style="font-size:11px;color:var(--text3)">Done</span>
+                  <div style="font-weight:700;color:var(--success);font-size:14px">${s.tCompleted}</div>
+                </div>
+              </div>
+              <div title="Upcoming VCs" style="text-align:right;background:rgba(13,59,122,0.05);padding:4px 10px;border-radius:6px">
+                <i class="fa-solid fa-video" style="color:var(--navy);font-size:10px"></i>
+                <span style="font-weight:700;color:var(--navy);font-size:13px;margin-left:4px">${s.vcCount}</span>
+              </div>
             </div>
-            <div style="text-align:center;border-left:1px solid var(--border);border-right:1px solid var(--border);padding:0 12px">
-              <div style="font-size:16px;font-weight:700;color:var(--success);font-family:'Rajdhani',sans-serif">${s.tCompleted}</div>
-              <div style="font-size:9px;color:var(--text3);text-transform:uppercase;font-weight:700">Done</div>
-            </div>
-            <div style="text-align:center">
-              <div style="font-size:16px;font-weight:700;color:var(--gold);font-family:'Rajdhani',sans-serif">${s.vcCount}</div>
-              <div style="font-size:9px;color:var(--text3);text-transform:uppercase;font-weight:700">VCs</div>
-            </div>
-          </div>
 
-        </div>
+          </div>
       `;
-    }).join('');
+    });
 
-    return `
-      <div style="margin-bottom:24px">
-        <h3 style="font-size:14px;color:var(--navy);margin-bottom:12px;display:flex;align-items:center;gap:8px">
-          <i class="fa-solid fa-sitemap" style="opacity:0.7"></i> ${groupTitle}
-        </h3>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px">
-          ${cardsHtml}
-        </div>
-      </div>
-    `;
-  }).join('');
+    html += `</div></div>`;
+  });
+
+  list.innerHTML = html;
+}
+
+function projectsToHtml(projStr) {
+  if (!projStr) return '<span style="font-size:10px;color:var(--text3)">None assigned</span>';
+  return projStr.split(';').map(p => p.trim()).filter(Boolean)
+    .map(p => `<span style="background:var(--bg3);color:var(--navy);font-size:10px;padding:3px 8px;border-radius:12px;font-weight:600;border:1px solid rgba(13,59,122,0.1)">${p}</span>`).join('');
 }
 
 async function viewUserProfile(docId) {
-  if (!docId) return;
-  const currentUserId = localStorage.getItem('userDocId');
-  const isAdmin = localStorage.getItem('userRole') === 'admin';
-  const isOwner = docId === currentUserId;
-
-  showScreen('profile');
-
   try {
-    const snap = await window.fsGetDoc(window.fsDoc(window.db, 'staff', docId));
+    const snap = await fsGetDoc(fsDoc(db, 'staff', docId));
     if (!snap.exists()) {
-      showToast('❌ User profile not found.', 'error'); return;
+      showToast('User profile not found.', 'error');
+      return;
     }
-    const data = snap.data();
-    data.id = snap.id;
-    window.currentProfileRecord = data;
     
-    renderProfileView(data);
-    loadMyAssignedWork(data.Full_Name || '');
-    showDutyTab('Daily', document.querySelector('#screen-profile .tab-pill'));
-    const staffId = data.Staff_ID || data.Full_Name || '';
-    loadMyAssignedProjects(staffId);
+    // Temporarily set this user as the target for profile render
+    window.currentProfileRecord = { id: snap.id, ...snap.data() };
+    
+    // Switch to profile screen
+    showScreen('profile');
+    
+    // Hide edit controls because we are viewing someone else
+    // (Unless the logged-in user is an admin)
+    const isAdmin = localStorage.getItem('userRole') === 'admin';
+    const isSelf = docId === localStorage.getItem('userDocId');
 
-    const profileScreen = document.getElementById('screen-profile');
-    const actions = profileScreen.querySelectorAll('.form-actions');
-    const inputs = profileScreen.querySelectorAll('input, textarea, select');
-    const changePwdCard = Array.from(profileScreen.querySelectorAll('.card')).find(c => c.innerHTML.includes('Change My Password'));
+    const canEdit = isAdmin || isSelf;
 
-    if (!isAdmin && !isOwner) {
-      actions.forEach(el => el.style.display = 'none');
-      inputs.forEach(el => el.disabled = true);
-      if (changePwdCard) changePwdCard.style.display = 'none';
-    } else {
-      actions.forEach(el => el.style.display = '');
-      inputs.forEach(el => el.disabled = false);
-      if (changePwdCard) changePwdCard.style.display = '';
-    }
+    // Hide Save/Reset buttons
+    document.querySelectorAll('#screen-profile .form-actions').forEach(el => {
+      el.style.display = canEdit ? 'flex' : 'none';
+    });
+    
+    // Disable inputs
+    document.querySelectorAll('#screen-profile input, #screen-profile textarea, #screen-profile select').forEach(el => {
+      el.disabled = !canEdit;
+    });
 
-  } catch (e) {
-    showToast('❌ Error loading profile: ' + e.message, 'error');
+  } catch(e) {
+    console.error(e);
+    showToast('Failed to load profile', 'error');
   }
 }
 window.viewUserProfile = viewUserProfile;
@@ -6886,9 +7097,6 @@ async function openProjectDetail(projectId) {
   // Stats
   setText('pdStaffCount', (p.assignedStaff||[]).length);
   setText('pdLinkCount', (p.importantLinks||[]).length);
-  setText('pdDocCount', (p.projectDocs||[]).length);
-  const addDocSec = document.getElementById('pdDocAddSection');
-  if (addDocSec) addDocSec.style.display = isAdmin ? 'block' : 'none';
 
   // Load tasks count for this project
   loadProjectTasks(p.name);
@@ -6908,10 +7116,12 @@ function closeProjectDetail() {
 // ── Project Tabs ───────────────────────────────────
 function showProjectTab(tab, btn) {
   ['overview','staff','tasks','links','docs'].forEach(t => {
-    const el = document.getElementById('pdTab' + t.charAt(0).toUpperCase() + t.slice(1));
+    const key = 'pdTab' + t.charAt(0).toUpperCase() + t.slice(1);
+    const el  = document.getElementById(key);
     if (el) el.style.display = t === tab ? 'block' : 'none';
   });
-  document.querySelectorAll('#projectDetailModal .tab-pill').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#projectDetailModal .tab-pill')
+    .forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
 
   if (tab === 'staff')  renderProjectStaff();
@@ -6919,6 +7129,179 @@ function showProjectTab(tab, btn) {
   if (tab === 'links')  renderProjectLinks();
   if (tab === 'docs')   renderProjectDocs();
 }
+
+// ── Document Hub ─────────────────────────────────────
+const DOC_TYPE_META = {
+  'Notes':        { emoji: '📋', bg: '#ea4335', color: '#fff', label: 'Project Notes' },
+  'Presentation': { emoji: '📊', bg: '#fbbc04', color: '#333', label: 'Presentation' },
+  'Roadmap':      { emoji: '🗺️', bg: '#34a853', color: '#fff', label: 'Roadmap' },
+  'Drive Folder': { emoji: '📁', bg: '#4285f4', color: '#fff', label: 'Drive Folder' },
+  'SOP':          { emoji: '📄', bg: '#9c27b0', color: '#fff', label: 'SOP / Manual' }
+};
+
+function renderProjectDocs() {
+  if (!currentProjectDoc) return;
+  const list    = document.getElementById('pdDocList');
+  if (!list) return;
+  const docs    = currentProjectDoc.projectDocs || [];
+  const isAdmin = localStorage.getItem('userRole') === 'admin';
+
+  if (!docs.length) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <i class="fa-brands fa-google-drive" style="color:#4285f4;font-size:32px"></i>
+        <p>No documents linked yet.</p>
+        ${isAdmin
+          ? '<small style="color:var(--text3)">Use the form below to add Google Drive links.</small>'
+          : '<small style="color:var(--text3)">Admin will add documents here.</small>'}
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = docs.map((d, i) => {
+    const meta = DOC_TYPE_META[d.type] || DOC_TYPE_META['Notes'];
+    const date = d.addedOn
+      ? new Date(d.addedOn).toLocaleDateString('en-IN',
+          { day:'2-digit', month:'short', year:'numeric' })
+      : '—';
+    return `
+    <div style="display:flex;align-items:center;
+                gap:12px;padding:12px 14px;
+                background:var(--bg3);
+                border-radius:10px;margin-bottom:10px;
+                border:1px solid var(--border);
+                transition:box-shadow 0.2s"
+         onmouseenter="this.style.boxShadow='0 4px 14px rgba(66,133,244,0.12)'"
+         onmouseleave="this.style.boxShadow='none'">
+
+      <!-- Type badge icon -->
+      <div style="width:44px;height:44px;border-radius:10px;
+                  background:${meta.bg};color:${meta.color};
+                  display:flex;align-items:center;
+                  justify-content:center;font-size:20px;
+                  flex-shrink:0">
+        ${meta.emoji}
+      </div>
+
+      <!-- Title + meta -->
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;color:var(--text1);
+                    white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+          ${d.title || '—'}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:3px;flex-wrap:wrap">
+          <span style="font-size:10px;font-weight:700;padding:2px 8px;
+                       border-radius:10px;background:${meta.bg};color:${meta.color}">
+            ${meta.label}
+          </span>
+          ${d.version
+            ? `<span style="font-size:10px;color:var(--text3);
+                            background:var(--bg);padding:2px 6px;
+                            border-radius:8px;border:1px solid var(--border)">
+               ${d.version}</span>`
+            : ''}
+          <span style="font-size:10px;color:var(--text3)">Added: ${date}</span>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <a href="${d.url}" target="_blank" rel="noopener"
+           style="display:flex;align-items:center;gap:5px;
+                  padding:6px 12px;border-radius:8px;
+                  background:#4285f4;color:#fff;
+                  font-size:11px;font-weight:700;
+                  text-decoration:none;border:none;cursor:pointer">
+          <i class="fa-brands fa-google-drive"></i> Open
+        </a>
+        ${isAdmin
+          ? `<button class="btn-mini btn-delete"
+               onclick="deleteProjectDoc(${i})"
+               title="Remove document link">
+               <i class="fa-solid fa-trash"></i>
+             </button>`
+          : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function addProjectDoc() {
+  if (!currentProjectId) return;
+  const type    = document.getElementById('pdDocType')?.value   || 'Notes';
+  const title   = (document.getElementById('pdDocTitle')?.value || '').trim();
+  const url     = (document.getElementById('pdDocURL')?.value   || '').trim();
+  const version = (document.getElementById('pdDocVersion')?.value || '').trim();
+
+  if (!title) { showToast('❌ Document title is required.', 'error'); return; }
+  if (!url)   { showToast('❌ Google Drive URL is required.', 'error'); return; }
+  if (!url.startsWith('http')) {
+    showToast('❌ Enter a valid URL starting with https://', 'error'); return;
+  }
+
+  const newDoc = {
+    type,
+    title,
+    url,
+    version,
+    addedOn: new Date().toISOString(),
+    addedBy: localStorage.getItem('userName') || 'Admin'
+  };
+
+  const current = currentProjectDoc?.projectDocs || [];
+  const updated = [...current, newDoc];
+
+  try {
+    await fsUpdateDoc(
+      fsDoc(db, 'projects', currentProjectId),
+      { projectDocs: updated }
+    );
+    if (currentProjectDoc) currentProjectDoc.projectDocs = updated;
+    const idx = allProjects.findIndex(x => x.id === currentProjectId);
+    if (idx > -1) allProjects[idx].projectDocs = updated;
+
+    // Update count
+    setText('pdDocCount', updated.length);
+
+    // Clear form
+    ['pdDocTitle','pdDocURL','pdDocVersion'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+
+    renderProjectDocs();
+    showToast(`✅ "${title}" added to project documents!`, 'success');
+  } catch(e) {
+    showToast('❌ Failed: ' + e.message, 'error');
+  }
+}
+
+async function deleteProjectDoc(index) {
+  if (!currentProjectId) return;
+  const current = currentProjectDoc?.projectDocs || [];
+  const doc     = current[index];
+  if (!confirm(`Remove "${doc?.title || 'this document'}" from the project?`)) return;
+
+  const updated = current.filter((_, i) => i !== index);
+  try {
+    await fsUpdateDoc(
+      fsDoc(db, 'projects', currentProjectId),
+      { projectDocs: updated }
+    );
+    if (currentProjectDoc) currentProjectDoc.projectDocs = updated;
+    const idx = allProjects.findIndex(x => x.id === currentProjectId);
+    if (idx > -1) allProjects[idx].projectDocs = updated;
+
+    setText('pdDocCount', updated.length);
+    renderProjectDocs();
+    showToast('✅ Document link removed.', 'success');
+  } catch(e) {
+    showToast('❌ Failed: ' + e.message, 'error');
+  }
+}
+
+window.addProjectDoc    = addProjectDoc;
+window.deleteProjectDoc = deleteProjectDoc;
 
 // ── Description — Word Count (100 word limit) ─────
 function countProjectWords() {
@@ -7787,161 +8170,6 @@ window.executeDeleteStaff = executeDeleteStaff;
 
 window.loadProjects = loadProjects;
 window.filterProjects = filterProjects;
-const DOC_TYPE_META = {
-  'Notes':        { emoji:'📋', bg:'#ea4335', color:'#fff', label:'Project Notes' },
-  'Presentation': { emoji:'📊', bg:'#fbbc04', color:'#333', label:'Presentation' },
-  'Roadmap':      { emoji:'🗺️', bg:'#34a853', color:'#fff', label:'Roadmap' },
-  'Drive Folder': { emoji:'📁', bg:'#4285f4', color:'#fff', label:'Drive Folder' },
-  'SOP':          { emoji:'📄', bg:'#9c27b0', color:'#fff', label:'SOP / Manual' }
-};
-
-function renderProjectDocs() {
-  const container = document.getElementById('pdDocList');
-  if (!container) return;
-
-  const docs = currentProjectDoc?.projectDocs || [];
-  if (docs.length === 0) {
-    container.innerHTML = `
-      <div class="empty-state" style="text-align:center;padding:30px;color:var(--text3)">
-        <i class="fa-brands fa-google-drive" style="font-size:40px;color:#4285f4;margin-bottom:10px;display:block"></i>
-        No documents linked yet.
-      </div>`;
-    return;
-  }
-
-  const isAdmin = localStorage.getItem('userRole') === 'admin';
-
-  container.innerHTML = docs.map((doc, index) => {
-    const meta = DOC_TYPE_META[doc.type] || { emoji:'📄', bg:'#6c757d', color:'#fff', label:'Document' };
-    const dateStr = doc.addedOn ? new Date(doc.addedOn).toLocaleDateString('en-IN') : '—';
-    const versionBadge = doc.version ? `<span style="background:var(--bg2);color:var(--text2);font-size:10px;padding:2px 6px;border-radius:4px;border:1px solid var(--border);font-weight:600">${sanitize(doc.version)}</span>` : '';
-
-    return `
-      <div class="card doc-card" 
-           style="display:flex;align-items:center;gap:14px;padding:12px;margin-bottom:8px;border-radius:10px;transition:box-shadow 0.2s"
-           onmouseover="this.style.boxShadow='0 4px 14px rgba(66,133,244,0.12)'"
-           onmouseout="this.style.boxShadow='none'">
-        <div style="width:44px;height:44px;border-radius:10px;background:${meta.bg};color:${meta.color};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">
-          ${meta.emoji}
-        </div>
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
-            <span style="font-weight:700;font-size:13px;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px" title="${sanitize(doc.title)}">${sanitize(doc.title)}</span>
-            <span style="font-size:10px;background:${meta.bg}20;color:${meta.bg};padding:1px 6px;border-radius:4px;font-weight:700">${meta.label}</span>
-            ${versionBadge}
-          </div>
-          <div style="font-size:10px;color:var(--text3)">
-            Added on ${dateStr} by ${sanitize(doc.addedBy || 'System')}
-          </div>
-        </div>
-        <div style="display:flex;gap:6px;align-items:center">
-          <a href="${doc.url}" target="_blank" class="btn-primary btn-sm" style="display:inline-flex;align-items:center;gap:4px;text-decoration:none;background:#4285f4;color:#fff;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:600;border:none">
-            <i class="fa-solid fa-arrow-up-right-from-square"></i> Open
-          </a>
-          ${isAdmin ? `
-            <button class="btn-danger btn-sm" onclick="deleteProjectDoc(${index})" style="background:rgba(220,53,69,0.1);color:#dc3545;border:1px solid rgba(220,53,69,0.2);padding:6px 8px;border-radius:6px;cursor:pointer">
-              <i class="fa-solid fa-trash-can"></i>
-            </button>
-          ` : ''}
-        </div>
-      </div>`;
-  }).join('');
-}
-
-async function addProjectDoc() {
-  if (!currentProjectId || !currentProjectDoc) return;
-  
-  const type = document.getElementById('pdDocType')?.value || 'Notes';
-  const title = sanitize(document.getElementById('pdDocTitle')?.value);
-  const url = sanitize(document.getElementById('pdDocURL')?.value);
-  const version = sanitize(document.getElementById('pdDocVersion')?.value);
-
-  if (!title) {
-    showToast('❌ Document Title is required.', 'error');
-    return;
-  }
-  if (!url) {
-    showToast('❌ Google Drive URL is required.', 'error');
-    return;
-  }
-  if (!url.toLowerCase().startsWith('http')) {
-    showToast('❌ URL must start with http:// or https://', 'error');
-    return;
-  }
-
-  const newDoc = {
-    type,
-    title,
-    url,
-    version,
-    addedOn: new Date().toISOString(),
-    addedBy: localStorage.getItem('userName') || 'Admin'
-  };
-
-  const projectDocs = currentProjectDoc.projectDocs || [];
-  projectDocs.push(newDoc);
-  currentProjectDoc.projectDocs = projectDocs;
-
-  try {
-    const docRef = fsDoc(db, 'projects', currentProjectId);
-    await fsUpdateDoc(docRef, { projectDocs });
-    
-    // update pdDocCount
-    setText('pdDocCount', projectDocs.length);
-    
-    // clear form
-    const titleInput = document.getElementById('pdDocTitle');
-    if (titleInput) titleInput.value = '';
-    const urlInput = document.getElementById('pdDocURL');
-    if (urlInput) urlInput.value = '';
-    const verInput = document.getElementById('pdDocVersion');
-    if (verInput) verInput.value = '';
-
-    showToast('✅ Document added successfully!', 'success');
-    renderProjectDocs();
-
-    // Refresh project in allProjects list
-    const index = allProjects.findIndex(x => x.id === currentProjectId);
-    if (index !== -1) {
-      allProjects[index].projectDocs = projectDocs;
-    }
-  } catch(e) {
-    showToast('❌ Failed to add document: ' + e.message, 'error');
-  }
-}
-
-async function deleteProjectDoc(index) {
-  if (!currentProjectId || !currentProjectDoc) return;
-  if (!confirm('Are you sure you want to delete this document?')) return;
-
-  const projectDocs = currentProjectDoc.projectDocs || [];
-  projectDocs.splice(index, 1);
-  currentProjectDoc.projectDocs = projectDocs;
-
-  try {
-    const docRef = fsDoc(db, 'projects', currentProjectId);
-    await fsUpdateDoc(docRef, { projectDocs });
-    
-    // update pdDocCount
-    setText('pdDocCount', projectDocs.length);
-
-    showToast('🗑️ Document deleted.', 'success');
-    renderProjectDocs();
-
-    // Refresh project in allProjects list
-    const pIdx = allProjects.findIndex(x => x.id === currentProjectId);
-    if (pIdx !== -1) {
-      allProjects[pIdx].projectDocs = projectDocs;
-    }
-  } catch(e) {
-    showToast('❌ Failed to delete document: ' + e.message, 'error');
-  }
-}
-
-window.renderProjectDocs = renderProjectDocs;
-window.addProjectDoc = addProjectDoc;
-window.deleteProjectDoc = deleteProjectDoc;
-
 window.openProjectDetail = openProjectDetail;
 window.closeProjectDetail = closeProjectDetail;
 window.showProjectTab = showProjectTab;
@@ -8616,7 +8844,7 @@ if ('serviceWorker' in navigator) {
     </div>
 
     <!-- Tabs -->
-    <div class="tab-pills" style="margin-bottom:16px">
+    <div class="tab-pills" style="margin-bottom:16px;flex-wrap:wrap;gap:4px">
       <button class="tab-pill active"
         onclick="showProjectTab('overview',this)">
         Overview
@@ -8635,7 +8863,7 @@ if ('serviceWorker' in navigator) {
       </button>
       <button class="tab-pill"
         onclick="showProjectTab('docs',this)"
-        style="background:linear-gradient(135deg,#4285f4,#0d3b7a); color:#fff">
+        style="background:linear-gradient(135deg,#4285f4,#0d3b7a);color:#fff;border-color:transparent">
         📁 Documents
       </button>
     </div>
@@ -8679,49 +8907,50 @@ if ('serviceWorker' in navigator) {
       <!-- Stats row -->
       <div style="display:grid;
                   grid-template-columns:repeat(4,1fr);
-                  gap:12px;margin-top:16px">
-        <div style="text-align:center;padding:14px;
+                  gap:10px;margin-top:16px">
+        <div style="text-align:center;padding:12px 8px;
                     background:var(--bg3);
                     border-radius:10px">
           <div id="pdStaffCount"
-               style="font-size:24px;font-weight:700;
+               style="font-size:22px;font-weight:700;
                       color:var(--navy);
                       font-family:'Rajdhani',sans-serif">
             0</div>
-          <div style="font-size:11px;color:var(--text3)">
+          <div style="font-size:10px;color:var(--text3)">
             Personnel</div>
         </div>
-        <div style="text-align:center;padding:14px;
+        <div style="text-align:center;padding:12px 8px;
                     background:var(--bg3);
                     border-radius:10px">
           <div id="pdTaskCount"
-               style="font-size:24px;font-weight:700;
+               style="font-size:22px;font-weight:700;
                       color:var(--heart);
                       font-family:'Rajdhani',sans-serif">
             0</div>
-          <div style="font-size:11px;color:var(--text3)">
+          <div style="font-size:10px;color:var(--text3)">
             Active Tasks</div>
         </div>
-        <div style="text-align:center;padding:14px;
+        <div style="text-align:center;padding:12px 8px;
                     background:var(--bg3);
                     border-radius:10px">
           <div id="pdLinkCount"
-               style="font-size:24px;font-weight:700;
+               style="font-size:22px;font-weight:700;
                       color:var(--gold);
                       font-family:'Rajdhani',sans-serif">
             0</div>
-          <div style="font-size:11px;color:var(--text3)">
+          <div style="font-size:10px;color:var(--text3)">
             Links</div>
         </div>
-        <div style="text-align:center;padding:14px;
-                    background:var(--bg3);
-                    border-radius:10px">
+        <div style="text-align:center;padding:12px 8px;
+                    background:linear-gradient(135deg,rgba(66,133,244,0.08),rgba(13,59,122,0.06));
+                    border-radius:10px;
+                    border:1px solid rgba(66,133,244,0.2)">
           <div id="pdDocCount"
-               style="font-size:24px;font-weight:700;
+               style="font-size:22px;font-weight:700;
                       color:#4285f4;
                       font-family:'Rajdhani',sans-serif">
             0</div>
-          <div style="font-size:11px;color:var(--text3)">
+          <div style="font-size:10px;color:var(--text3)">
             Documents</div>
         </div>
       </div>
@@ -8795,57 +9024,68 @@ if ('serviceWorker' in navigator) {
 
     <!-- DOCUMENTS TAB -->
     <div id="pdTabDocs" style="display:none">
-      <!-- Legend/Type guide row -->
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;font-size:11px;font-weight:600">
-        <span style="background:#ea4335;color:#fff;padding:4px 8px;border-radius:12px;display:inline-flex;align-items:center;gap:4px">📋 Notes</span>
-        <span style="background:#fbbc04;color:#333;padding:4px 8px;border-radius:12px;display:inline-flex;align-items:center;gap:4px">📊 Presentation</span>
-        <span style="background:#34a853;color:#fff;padding:4px 8px;border-radius:12px;display:inline-flex;align-items:center;gap:4px">🗺️ Roadmap</span>
-        <span style="background:#4285f4;color:#fff;padding:4px 8px;border-radius:12px;display:inline-flex;align-items:center;gap:4px">📁 Drive Folder</span>
-        <span style="background:#9c27b0;color:#fff;padding:4px 8px;border-radius:12px;display:inline-flex;align-items:center;gap:4px">📄 SOP / Manual</span>
+
+      <!-- Legend / type guide -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;
+                  margin-bottom:14px;padding:10px 12px;
+                  background:rgba(66,133,244,0.06);
+                  border:1px solid rgba(66,133,244,0.15);
+                  border-radius:10px">
+        <span style="font-size:11px;color:var(--text3);font-weight:600;width:100%;margin-bottom:4px">Document Types:</span>
+        <span style="font-size:10px;background:#ea4335;color:#fff;padding:2px 8px;border-radius:10px;font-weight:600">📋 Notes</span>
+        <span style="font-size:10px;background:#fbbc04;color:#333;padding:2px 8px;border-radius:10px;font-weight:600">📊 Presentation</span>
+        <span style="font-size:10px;background:#34a853;color:#fff;padding:2px 8px;border-radius:10px;font-weight:600">🗺️ Roadmap</span>
+        <span style="font-size:10px;background:#4285f4;color:#fff;padding:2px 8px;border-radius:10px;font-weight:600">📁 Drive Folder</span>
+        <span style="font-size:10px;background:#9c27b0;color:#fff;padding:2px 8px;border-radius:10px;font-weight:600">📄 SOP / Manual</span>
       </div>
 
-      <!-- Document List Container -->
-      <div id="pdDocList" style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px"></div>
+      <!-- Document list -->
+      <div id="pdDocList"></div>
 
-      <!-- Admin Add Document Form -->
-      <div class="admin-only-section" id="pdDocAddSection"
-           style="margin-top:20px;padding:16px;
-                  background:var(--bg3);
-                  border-radius:12px;
-                  border:1px solid rgba(66,133,244,0.15)">
-        <div style="font-size:13px;font-weight:700;color:var(--text1);margin-bottom:12px;display:flex;align-items:center;gap:6px">
-          <i class="fa-brands fa-google-drive" style="color:#4285f4;font-size:16px"></i>
-          Link Google Drive Document
+      <!-- Admin: Add Document -->
+      <div class="admin-only-section"
+           style="margin-top:16px;padding:16px;
+                  background:linear-gradient(135deg,rgba(66,133,244,0.06),rgba(13,59,122,0.04));
+                  border:1px solid rgba(66,133,244,0.2);
+                  border-radius:12px">
+        <div style="font-size:13px;font-weight:700;
+                    color:var(--text1);margin-bottom:12px;
+                    display:flex;align-items:center;gap:8px">
+          <i class="fa-brands fa-google-drive" style="color:#4285f4"></i>
+          Add Google Drive Document
         </div>
-        <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div class="form-grid" style="grid-template-columns:1fr 1fr">
           <div class="form-group">
-            <label style="font-size:11px;font-weight:600;color:var(--text2)">Doc Type</label>
-            <select id="pdDocType" style="width:100%">
-              <option value="Notes">Notes</option>
-              <option value="Presentation">Presentation</option>
-              <option value="Roadmap">Roadmap</option>
-              <option value="Drive Folder">Drive Folder</option>
-              <option value="SOP">SOP</option>
+            <label>Document Type *</label>
+            <select id="pdDocType">
+              <option value="Notes">📋 Project Notes</option>
+              <option value="Presentation">📊 Presentation / Slides</option>
+              <option value="Roadmap">🗺️ Roadmap / Timeline</option>
+              <option value="Drive Folder">📁 Drive Folder</option>
+              <option value="SOP">📄 SOP / Manual</option>
             </select>
           </div>
           <div class="form-group">
-            <label style="font-size:11px;font-weight:600;color:var(--text2)">Document Title *</label>
-            <input type="text" id="pdDocTitle" placeholder="e.g. Project Charter">
+            <label>Document Title *</label>
+            <input type="text" id="pdDocTitle"
+                   placeholder="e.g. CCTNS Project Roadmap 2026">
           </div>
-        </div>
-        <div class="form-group" style="margin-bottom:12px">
-          <label style="font-size:11px;font-weight:600;color:var(--text2)">Google Drive URL *</label>
-          <input type="url" id="pdDocURL" placeholder="https://drive.google.com/..." style="width:100%">
-        </div>
-        <div class="form-grid" style="grid-template-columns:1fr auto;gap:12px;align-items:flex-end">
+          <div class="form-group" style="grid-column:1/-1">
+            <label>Google Drive / Docs / Slides / Sheets URL *</label>
+            <input type="url" id="pdDocURL"
+                   placeholder="https://drive.google.com/... or https://docs.google.com/...">
+          </div>
           <div class="form-group">
-            <label style="font-size:11px;font-weight:600;color:var(--text2)">Version / Remarks (Optional)</label>
-            <input type="text" id="pdDocVersion" placeholder="e.g. v1.0 Draft">
+            <label>Version / Remarks <small style="color:var(--text3)">(optional)</small></label>
+            <input type="text" id="pdDocVersion"
+                   placeholder="e.g. v2.1, Updated July 2026">
           </div>
-          <button class="btn-primary" onclick="addProjectDoc()"
-                  style="background:linear-gradient(135deg,#4285f4,#0d3b7a);color:#fff;border:none;padding:10px 20px;border-radius:8px;font-weight:600;font-size:12px;cursor:pointer;height:40px">
-            <i class="fa-solid fa-plus"></i> Save Document
-          </button>
+          <div class="form-group" style="display:flex;align-items:flex-end">
+            <button class="btn-primary" style="width:100%;justify-content:center"
+              onclick="addProjectDoc()">
+              <i class="fa-solid fa-cloud-arrow-up"></i> Save Document Link
+            </button>
+          </div>
         </div>
       </div>
     </div>
