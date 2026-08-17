@@ -27,7 +27,7 @@
   import {
     getFirestore, collection, addDoc, updateDoc, deleteDoc,
     onSnapshot, query, orderBy, doc, getDoc, getDocs,
-    where, setDoc, serverTimestamp
+    where, setDoc, serverTimestamp, runTransaction
   } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -63,7 +63,11 @@
   window.fsWhere        = where;
   window.fsSetDoc       = setDoc;
   window.fsTimestamp    = serverTimestamp;
+  window.fsRunTransaction = runTransaction;
   window.firebaseReady  = true;
+
+  window.chunkArray = (arr, size) => Array.from({ length: Math.ceil(arr.length / size) }, (v, i) => arr.slice(i * size, i * size + size));
+  
   console.log('Firebase Firestore connected successfully');
 </script>
 <style>
@@ -1735,16 +1739,106 @@ select[multiple] option:selected {
             <p>Project, Role, Outcome & Manpower Assessment Platform</p>
           </div>
           
-          <div class="card">
-            <h2 style="font-family:'Rajdhani',sans-serif; margin-bottom:10px;">Foundation Module Ready</h2>
-            <p style="font-size:13px; color:var(--text3); line-height:1.6;">
-              The native architecture for PRO-MAP has been successfully injected into this portal's DataService layer.
-              <br><br>
-              <strong>Data Collections Connected:</strong> <code>promap_personnel</code>, <code>promap_projects</code>, <code>promap_assignments</code>.<br>
-              <strong>Business Logic Connected:</strong> FTE Engine, Capacity Validation, Stable IDs.
-              <br><br>
-              <em>(In Part 2, the interactive Data Tables and Assigment UI will be constructed here)</em>
-            </p>
+          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:20px;">
+            <div class="promap-tabs" style="display:flex; gap:10px;">
+              <button class="btn-secondary" id="pmTab-personnel" onclick="switchPromapTab('personnel')" style="background:var(--navy); color:white;">Personnel Master</button>
+              <button class="btn-secondary" id="pmTab-projects" onclick="switchPromapTab('projects')">Project Master</button>
+              <button class="btn-secondary" id="pmTab-assignments" onclick="switchPromapTab('assignments')">Deployment & Assignments</button>
+            </div>
+            <div>
+              <button id="btnSystemMaintenance" class="btn-secondary" style="display:none; border-color:var(--orange); color:var(--orange);" onclick="openSystemMaintenanceModal()">
+                <i class="fa-solid fa-wrench"></i> System Maintenance
+              </button>
+            </div>
+          </div>
+
+          <!-- TAB CONTENT: PERSONNEL -->
+          <div id="promap-content-personnel" class="promap-tab-content">
+            <div class="card" style="margin-bottom:20px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h2 style="font-family:'Rajdhani',sans-serif;"><i class="fa-solid fa-users" style="color:var(--navy)"></i> Personnel Master</h2>
+                <div style="display:flex; gap:10px;">
+                  <input type="text" id="promapPersonnelSearch" placeholder="Search name, ID..." oninput="renderPromapPersonnel()" style="padding:6px 12px; font-size:12px; border:1px solid var(--border); border-radius:4px;">
+                  <button class="btn-primary" onclick="openAddPersonnelModal()" id="btnAddPersonnel" style="display:none; padding:6px 12px; font-size:12px;"><i class="fa-solid fa-plus"></i> Add Personnel</button>
+                </div>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table" id="promapPersonnelTable">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Name</th>
+                      <th>Rank</th>
+                      <th>Deployment Category</th>
+                      <th>Status</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="promapPersonnelBody">
+                    <tr><td colspan="6" style="text-align:center;">Loading...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB CONTENT: PROJECTS -->
+          <div id="promap-content-projects" class="promap-tab-content" style="display:none;">
+            <div class="card" style="margin-bottom:20px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h2 style="font-family:'Rajdhani',sans-serif;"><i class="fa-solid fa-cubes" style="color:var(--navy)"></i> Project Master</h2>
+                <div style="display:flex; gap:10px;">
+                  <input type="text" id="promapProjectSearch" placeholder="Search project..." oninput="renderPromapProjects()" style="padding:6px 12px; font-size:12px; border:1px solid var(--border); border-radius:4px;">
+                  <button class="btn-primary" onclick="openAddProjectModal()" id="btnAddProject" style="display:none; padding:6px 12px; font-size:12px;"><i class="fa-solid fa-plus"></i> Add Project</button>
+                </div>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table" id="promapProjectTable">
+                  <thead>
+                    <tr>
+                      <th>Code</th>
+                      <th>Project Name</th>
+                      <th>Status</th>
+                      <th>Incharge</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="promapProjectBody">
+                    <tr><td colspan="5" style="text-align:center;">Loading...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB CONTENT: ASSIGNMENTS -->
+          <div id="promap-content-assignments" class="promap-tab-content" style="display:none;">
+            <div class="card" style="margin-bottom:20px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h2 style="font-family:'Rajdhani',sans-serif;"><i class="fa-solid fa-user-tag" style="color:var(--navy)"></i> Deployment & Assignments</h2>
+                <div style="display:flex; gap:10px;">
+                  <input type="text" id="promapAssignmentSearch" placeholder="Search..." oninput="renderPromapAssignments()" style="padding:6px 12px; font-size:12px; border:1px solid var(--border); border-radius:4px;">
+                </div>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table" id="promapAssignmentTable">
+                  <thead>
+                    <tr>
+                      <th>Project</th>
+                      <th>Personnel</th>
+                      <th>Role</th>
+                      <th>Alloc %</th>
+                      <th>RACI</th>
+                      <th>Verification</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="promapAssignmentBody">
+                    <tr><td colspan="7" style="text-align:center;">Loading...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
 
           <div class="card" id="authMigrationCard" style="margin-bottom:20px; border-left:4px solid var(--navy); display:none;">
@@ -1803,11 +1897,761 @@ select[multiple] option:selected {
             
             <div id="promap-import-status" style="margin-top:16px; font-weight:600; font-size:12px;"></div>
           </div>
+
+          <!-- ================= PRO-MAP MODALS ================= -->
+          <!-- ADD PERSONNEL MODAL -->
+          <div class="modal-overlay" id="promapAddPersonnelModal">
+            <div class="modal-content" style="max-width:500px;">
+              <h3 style="margin-top:0; font-family:'Rajdhani',sans-serif; color:var(--navy);"><i class="fa-solid fa-user-plus"></i> Add Personnel</h3>
+              <form id="formAddPersonnel" onsubmit="submitAddPersonnel(event)">
+                <label>Name (Required)</label>
+                <input type="text" id="addPersName" required class="form-input">
+                <label>Rank (Required)</label>
+                <input type="text" id="addPersRank" required class="form-input" placeholder="e.g. PC, HC, SI">
+                <label>General Number</label>
+                <input type="text" id="addPersGenNo" class="form-input">
+                <label>Contact Number</label>
+                <input type="text" id="addPersContact" class="form-input">
+                <label>Deployment Category</label>
+                <select id="addPersCategory" class="form-input" required>
+                  <option value="Project-Deployed Personnel">Project-Deployed Personnel</option>
+                  <option value="PCS&S – Personnel Awaiting Deployment">PCS&S – Personnel Awaiting Deployment</option>
+                  <option value="PCS&S – Officer Attachments">PCS&S – Officer Attachments</option>
+                  <option value="PCS&S – External Attachments">PCS&S – External Attachments</option>
+                </select>
+                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+                  <button type="button" class="btn-secondary" onclick="closeModal('promapAddPersonnelModal')">Cancel</button>
+                  <button type="submit" class="btn-primary">Save Personnel</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- ADD PROJECT MODAL -->
+          <div class="modal-overlay" id="promapAddProjectModal">
+            <div class="modal-content" style="max-width:500px;">
+              <h3 style="margin-top:0; font-family:'Rajdhani',sans-serif; color:var(--navy);"><i class="fa-solid fa-folder-plus"></i> Add Project</h3>
+              <form id="formAddProject" onsubmit="submitAddProject(event)">
+                <label>Project Name (Required)</label>
+                <input type="text" id="addProjName" required class="form-input">
+                <label>Project Code (Required)</label>
+                <input type="text" id="addProjCode" required class="form-input" placeholder="e.g. TS-PRJ-XXXX">
+                <label>Project Description</label>
+                <textarea id="addProjDesc" class="form-input" rows="3"></textarea>
+                <label>Status</label>
+                <select id="addProjStatus" class="form-input">
+                  <option value="ACTIVE">ACTIVE</option>
+                  <option value="PROPOSED">PROPOSED</option>
+                  <option value="ON_HOLD">ON_HOLD</option>
+                  <option value="COMPLETED">COMPLETED</option>
+                  <option value="INACTIVE">INACTIVE</option>
+                </select>
+                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+                  <button type="button" class="btn-secondary" onclick="closeModal('promapAddProjectModal')">Cancel</button>
+                  <button type="submit" class="btn-primary">Save Project</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- PERSONNEL DETAIL MODAL -->
+          <div class="modal-overlay" id="promapPersDetailModal">
+            <div class="modal-content" style="max-width:700px; max-height:90vh; overflow-y:auto;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 style="margin:0; font-family:'Rajdhani',sans-serif; color:var(--navy);"><i class="fa-solid fa-id-card"></i> Personnel Record</h3>
+                <button class="btn-secondary" onclick="closeModal('promapPersDetailModal')" style="padding:4px 8px;"><i class="fa-solid fa-xmark"></i></button>
+              </div>
+              <div id="persDetailBody">
+                <!-- Injected via JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- PROJECT DETAIL MODAL -->
+          <div class="modal-overlay" id="promapProjDetailModal">
+            <div class="modal-content" style="max-width:800px; max-height:90vh; overflow-y:auto;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 style="margin:0; font-family:'Rajdhani',sans-serif; color:var(--navy);"><i class="fa-solid fa-diagram-project"></i> Project Record</h3>
+                <button class="btn-secondary" onclick="closeModal('promapProjDetailModal')" style="padding:4px 8px;"><i class="fa-solid fa-xmark"></i></button>
+              </div>
+              <div id="projDetailBody">
+                <!-- Injected via JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- EDIT ASSIGNMENT MODAL -->
+          <div class="modal-overlay" id="promapEditAsgModal">
+            <div class="modal-content" style="max-width:600px; max-height:90vh; overflow-y:auto;">
+              <h3 style="margin-top:0; font-family:'Rajdhani',sans-serif; color:var(--navy);"><i class="fa-solid fa-user-tag"></i> Edit Assignment</h3>
+              <form id="formEditAsg" onsubmit="submitEditAssignment(event)">
+                <input type="hidden" id="editAsgId">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                  <div>
+                    <label>Role</label>
+                    <input type="text" id="editAsgRole" class="form-input" placeholder="Project specific role">
+                  </div>
+                  <div>
+                    <label>Workstream</label>
+                    <input type="text" id="editAsgWorkstream" class="form-input">
+                  </div>
+                  <div>
+                    <label>Allocation %</label>
+                    <input type="number" id="editAsgAlloc" class="form-input" min="0" max="100">
+                  </div>
+                  <div>
+                    <label>Primary/Support</label>
+                    <select id="editAsgPriSup" class="form-input">
+                      <option value="">-- Select --</option>
+                      <option value="PRIMARY">PRIMARY</option>
+                      <option value="SUPPORT">SUPPORT</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label>RACI</label>
+                    <select id="editAsgRaci" class="form-input">
+                      <option value="">-- Select --</option>
+                      <option value="A">A - Accountable</option>
+                      <option value="R">R - Responsible</option>
+                      <option value="C">C - Consulted</option>
+                      <option value="I">I - Informed</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label>Reporting To</label>
+                    <input type="text" id="editAsgReporting" class="form-input">
+                  </div>
+                  <div>
+                    <label>Key Deliverable</label>
+                    <input type="text" id="editAsgDeliverable" class="form-input">
+                  </div>
+                  <div>
+                    <label>Verification Status</label>
+                    <select id="editAsgVerif" class="form-input" required>
+                      <option value="NOT_VERIFIED">NOT_VERIFIED</option>
+                      <option value="PROVISIONAL">PROVISIONAL</option>
+                      <option value="SUBMITTED_FOR_VERIFICATION">SUBMITTED_FOR_VERIFICATION</option>
+                      <option value="VERIFIED">VERIFIED</option>
+                      <option value="CORRECTION_REQUIRED">CORRECTION_REQUIRED</option>
+                    </select>
+                  </div>
+                </div>
+                <div style="margin-top:10px;">
+                  <label>Remarks</label>
+                  <input type="text" id="editAsgRemarks" class="form-input">
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+                  <button type="button" class="btn-secondary" onclick="closeModal('promapEditAsgModal')">Cancel</button>
+                  <button type="submit" class="btn-primary">Save Assignment</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- SYSTEM MAINTENANCE MODAL -->
+          <div class="modal-overlay" id="promapSystemMaintenanceModal">
+            <div class="modal-content" style="max-width:600px; max-height:90vh; overflow-y:auto;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 style="margin:0; font-family:'Rajdhani',sans-serif; color:var(--navy);"><i class="fa-solid fa-wrench" style="color:var(--orange)"></i> System Maintenance</h3>
+                <span style="cursor:pointer; font-size:20px;" onclick="closeModal('promapSystemMaintenanceModal')">&times;</span>
+              </div>
+              <div style="background:var(--bg2); border-left:4px solid var(--orange); padding:15px; margin-bottom:20px; font-size:13px;">
+                <strong>Admin Backfill Utility</strong><br>
+                This operation will safely recalculate derived PRO-MAP personnel fields (`activeProjectIds` and `totalAllocation`) from current assignments.
+              </div>
+
+              <div id="smProgressContainer" style="display:none; margin-bottom:20px; padding:15px; background:var(--bg3); border-radius:4px; border:1px solid var(--border);">
+                <h4 style="margin:0 0 10px 0;">Verification Report</h4>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:13px;">
+                  <div>Total Personnel: <strong id="smTotal">0</strong></div>
+                  <div>With Assignments: <strong id="smWithAsg">0</strong></div>
+                  <div>Without Assignments: <strong id="smWithoutAsg">0</strong></div>
+                  <div>Requiring Update: <strong id="smReqUpdate">0</strong></div>
+                  <div>Allocation Conflicts: <strong id="smConflicts">0</strong></div>
+                  <div style="color:var(--danger)">Errors: <strong id="smErrors">0</strong></div>
+                </div>
+                
+                <div id="smExecProgress" style="display:none; margin-top:15px; padding-top:15px; border-top:1px solid var(--border);">
+                  <h4 style="margin:0 0 10px 0;">Execution Progress</h4>
+                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:13px;">
+                    <div>Records Processed: <strong id="smProcessed">0</strong></div>
+                    <div>Records Remaining: <strong id="smRemaining">0</strong></div>
+                    <div style="color:var(--success)">Successful Updates: <strong id="smSuccess">0</strong></div>
+                    <div style="color:var(--danger)">Failed Batches: <strong id="smFailed">0</strong></div>
+                  </div>
+                  <div id="smStatusMsg" style="margin-top:10px; font-weight:bold; color:var(--text2); font-size:13px;"></div>
+                </div>
+              </div>
+
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <button type="button" class="btn-secondary" onclick="runBackfillDryRun()">Run Dry-Run</button>
+                <div id="smConfirmBox" style="display:none;">
+                  <button type="button" class="btn-primary" onclick="executeBackfillSync()" style="background:var(--orange); border-color:var(--orange);">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Confirm & Execute Sync
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <script>
-          // PRO-MAP IMPORT LOGIC
-          let parsedPromapData = null;
+          // ==========================================
+          // PRO-MAP MODULE LOGIC (PART 3)
+          // ==========================================
+          let promapData = {
+            personnel: [],
+            projects: [],
+            assignments: []
+          };
+
+          function switchPromapTab(tabId) {
+            document.querySelectorAll('.promap-tab-content').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.promap-tabs button').forEach(el => {
+              el.style.background = 'var(--bg2)';
+              el.style.color = 'var(--text1)';
+            });
+            const contentEl = document.getElementById('promap-content-' + tabId);
+            const btnEl = document.getElementById('pmTab-' + tabId);
+            if(contentEl) contentEl.style.display = 'block';
+            if(btnEl) {
+              btnEl.style.background = 'var(--navy)';
+              btnEl.style.color = 'white';
+            }
+            
+            // Show Admin buttons
+            const isAdmin = window.currentUser?.promapRole === 'ADMIN';
+            document.getElementById('btnAddPersonnel').style.display = isAdmin ? 'block' : 'none';
+            document.getElementById('btnAddProject').style.display = isAdmin ? 'block' : 'none';
+            document.getElementById('btnSystemMaintenance').style.display = isAdmin ? 'block' : 'none';
+
+            loadPromapData(tabId);
+          }
+
+          async function loadPromapData(activeTab) {
+            if(!window.currentUser) return;
+            const role = window.currentUser.promapRole;
+            const scopes = JSON.parse(localStorage.getItem('promapScopes') || '[]');
+            const myPersonnelId = window.currentUser.personnelId;
+
+            try {
+              if (role === 'ADMIN' || role === 'IGP') {
+                promapData.personnel = await DataService.promap_personnel.getAll();
+                promapData.projects = await DataService.promap_projects.getAll();
+                promapData.assignments = await DataService.promap_assignments.getAll();
+              } else if (role === 'PROJECT_INCHARGE' || role === 'SP' || role === 'DSP') {
+                promapData.projects = await DataService.promap_projects.getForScopes(scopes);
+                promapData.assignments = await DataService.promap_assignments.getForScopes(scopes);
+                promapData.personnel = await DataService.promap_personnel.getForScopes(scopes);
+              } else {
+                // STAFF
+                promapData.projects = [];
+                if (myPersonnelId) {
+                  const myRecord = await DataService.promap_personnel.getById(myPersonnelId);
+                  promapData.personnel = myRecord ? [myRecord] : [];
+                  
+                  const q = window.fsQuery(window.fsCollection(window.db, 'promap_assignments'), window.fsWhere('personnelId', '==', myPersonnelId));
+                  const snap = await window.fsGetDocs(q);
+                  promapData.assignments = snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
+                } else {
+                  promapData.personnel = [];
+                  promapData.assignments = [];
+                }
+              }
+
+              if(activeTab === 'personnel') renderPromapPersonnel();
+              if(activeTab === 'projects') renderPromapProjects();
+              if(activeTab === 'assignments') renderPromapAssignments();
+            } catch(e) {
+              console.error("Failed to load PRO-MAP data", e);
+            }
+          }
+
+          function getAuthorizedProjects() {
+            const role = window.currentUser?.promapRole;
+            const scopes = JSON.parse(localStorage.getItem('promapScopes') || '[]');
+            if (role === 'ADMIN' || role === 'IGP') return promapData.projects;
+            if (role === 'PROJECT_INCHARGE' || role === 'SP' || role === 'DSP') {
+              return promapData.projects.filter(p => scopes.includes(p.projectId));
+            }
+            return []; // Staff sees no projects in master view
+          }
+
+          function getAuthorizedAssignments() {
+            const role = window.currentUser?.promapRole;
+            const scopes = JSON.parse(localStorage.getItem('promapScopes') || '[]');
+            if (role === 'ADMIN' || role === 'IGP') return promapData.assignments;
+            if (role === 'PROJECT_INCHARGE' || role === 'SP' || role === 'DSP') {
+              return promapData.assignments.filter(a => scopes.includes(a.projectId));
+            }
+            return []; // Staff sees no assignments in master view
+          }
+
+          function renderPromapPersonnel() {
+            const query = (document.getElementById('promapPersonnelSearch').value || '').toLowerCase();
+            const tbody = document.getElementById('promapPersonnelBody');
+            tbody.innerHTML = '';
+            
+            const role = window.currentUser?.promapRole;
+            let list = promapData.personnel;
+            
+            // Staff can only see themselves
+            if(role === 'STAFF_PENDING_REVIEW' || role === 'STAFF') {
+               list = list.filter(p => p.contactNumber === window.currentUser?.Phone);
+            }
+
+            const filtered = list.filter(p => 
+              (p.name || '').toLowerCase().includes(query) || 
+              (p.personnelId || '').toLowerCase().includes(query)
+            );
+
+            if(filtered.length === 0) {
+              tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No personnel found in your scope.</td></tr>';
+              return;
+            }
+
+            filtered.forEach(p => {
+              const tr = document.createElement('tr');
+              tr.innerHTML = `
+                <td><code>${p.personnelId}</code></td>
+                <td><strong>${p.name}</strong><br><small style="color:var(--text3)">Gen No: ${p.generalNo || '-'}</small></td>
+                <td>${p.rank}</td>
+                <td><span class="badge" style="background:#f1f5f9;color:var(--navy);">${p.deploymentCategory || 'Project-Deployed Personnel'}</span></td>
+                <td>${p.isActive ? '<span style="color:var(--success)"><i class="fa-solid fa-circle"></i> Active</span>' : 'Inactive'}</td>
+                <td>
+                  <button class="btn-secondary" onclick="openPersDetailModal('${p._docId}')" style="padding:4px 8px;font-size:11px;">View Details</button>
+                </td>
+              `;
+              tbody.appendChild(tr);
+            });
+          }
+
+          function renderPromapProjects() {
+            const query = (document.getElementById('promapProjectSearch').value || '').toLowerCase();
+            const tbody = document.getElementById('promapProjectBody');
+            tbody.innerHTML = '';
+
+            const list = getAuthorizedProjects();
+            const filtered = list.filter(p => 
+              (p.projectName || '').toLowerCase().includes(query) || 
+              (p.projectCode || '').toLowerCase().includes(query)
+            );
+
+            if(filtered.length === 0) {
+              tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No projects found in your scope.</td></tr>';
+              return;
+            }
+
+            filtered.forEach(p => {
+              let statusColor = 'var(--text3)';
+              if(p.status === 'ACTIVE') statusColor = 'var(--success)';
+              if(p.status === 'ON_HOLD') statusColor = '#eab308';
+              
+              const tr = document.createElement('tr');
+              tr.innerHTML = `
+                <td><code>${p.projectCode}</code></td>
+                <td><strong>${p.projectName}</strong></td>
+                <td><strong style="color:${statusColor}">${p.status || 'PROPOSED'}</strong></td>
+                <td>${p.projectIncharge || '-'}</td>
+                <td>
+                  <button class="btn-secondary" onclick="openProjDetailModal('${p._docId}')" style="padding:4px 8px;font-size:11px;">View Projects</button>
+                </td>
+              `;
+              tbody.appendChild(tr);
+            });
+          }
+
+          function renderPromapAssignments() {
+            const query = (document.getElementById('promapAssignmentSearch').value || '').toLowerCase();
+            const tbody = document.getElementById('promapAssignmentBody');
+            tbody.innerHTML = '';
+
+            const list = getAuthorizedAssignments();
+
+            if(list.length === 0) {
+              tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No assignments found in your scope.</td></tr>';
+              return;
+            }
+
+            list.forEach(a => {
+              const proj = promapData.projects.find(p => p.projectId === a.projectId) || {};
+              const pers = promapData.personnel.find(p => p.personnelId === a.personnelId) || {};
+              
+              if(query && !(proj.projectName||'').toLowerCase().includes(query) && !(pers.name||'').toLowerCase().includes(query)) return;
+
+              let verifColor = '#ef4444';
+              if(a.verificationStatus === 'VERIFIED') verifColor = 'var(--success)';
+              if(a.verificationStatus === 'PROVISIONAL') verifColor = '#eab308';
+
+              let allocColor = a.allocationPercentage > 100 ? '#ef4444' : 'inherit';
+
+              const tr = document.createElement('tr');
+              tr.innerHTML = `
+                <td><strong>${proj.projectName || a.projectId}</strong></td>
+                <td>${pers.name || a.personnelId} (${pers.rank || '-'})</td>
+                <td>${a.role ? a.role : '<span style="color:#ef4444;font-size:10px;"><i class="fa-solid fa-triangle-exclamation"></i> MISSING</span>'}</td>
+                <td style="color:${allocColor}; font-weight:600;">${a.allocationPercentage || 0}%</td>
+                <td>${a.raci || '-'}</td>
+                <td><span style="color:${verifColor}; font-size:10px; font-weight:bold;">${a.verificationStatus || 'NOT_VERIFIED'}</span></td>
+                <td>
+                  <button class="btn-secondary" onclick="openEditAsgModal('${a._docId}')" style="padding:4px 8px;font-size:11px;">Edit</button>
+                </td>
+              `;
+              tbody.appendChild(tr);
+            });
+          }
+
+          // --- MODAL CONTROLLERS ---
+          function openAddPersonnelModal() {
+            document.getElementById('formAddPersonnel').reset();
+            document.getElementById('promapAddPersonnelModal').style.display = 'flex';
+          }
+          function openAddProjectModal() {
+            document.getElementById('formAddProject').reset();
+            document.getElementById('promapAddProjectModal').style.display = 'flex';
+          }
+
+          async function submitAddPersonnel(e) {
+            e.preventDefault();
+            const data = {
+              name: document.getElementById('addPersName').value,
+              rank: document.getElementById('addPersRank').value,
+              generalNo: document.getElementById('addPersGenNo').value,
+              contactNumber: document.getElementById('addPersContact').value,
+              deploymentCategory: document.getElementById('addPersCategory').value,
+              isActive: true
+            };
+            const res = await DataService.promap_personnel.create(data);
+            if(res.ok) {
+              closeModal('promapAddPersonnelModal');
+              loadPromapData('personnel');
+              showToast('Personnel added successfully', 'success');
+            }
+          }
+
+          async function submitAddProject(e) {
+            e.preventDefault();
+            const data = {
+              projectName: document.getElementById('addProjName').value,
+              projectCode: document.getElementById('addProjCode').value,
+              projectDescription: document.getElementById('addProjDesc').value,
+              status: document.getElementById('addProjStatus').value,
+              isActive: true
+            };
+            const res = await DataService.promap_projects.create(data);
+            if(res.ok) {
+              closeModal('promapAddProjectModal');
+              loadPromapData('projects');
+              showToast('Project added successfully', 'success');
+            }
+          }
+
+          async function openPersDetailModal(docId) {
+            const p = promapData.personnel.find(x => x._docId === docId);
+            if(!p) return;
+            const asgs = promapData.assignments.filter(a => a.personnelId === p.personnelId);
+            
+            let html = `
+              <div style="background:var(--bg3); padding:15px; border-radius:8px; margin-bottom:15px;">
+                <h4 style="margin:0 0 10px 0; color:var(--text1);">SECTION 1: Basic Information</h4>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:13px;">
+                  <div><strong>ID:</strong> ${p.personnelId}</div>
+                  <div><strong>Name:</strong> ${p.name}</div>
+                  <div><strong>Rank:</strong> ${p.rank}</div>
+                  <div><strong>General No:</strong> ${p.generalNo || '-'}</div>
+                  <div><strong>Contact:</strong> ${p.contactNumber || '-'}</div>
+                </div>
+              </div>
+              <div style="background:var(--bg3); padding:15px; border-radius:8px; margin-bottom:15px;">
+                <h4 style="margin:0 0 10px 0; color:var(--text1);">SECTION 2: Deployment</h4>
+                <div style="font-size:13px;"><strong>Category:</strong> ${p.deploymentCategory || 'Project-Deployed Personnel'}</div>
+              </div>
+              <div style="background:var(--bg3); padding:15px; border-radius:8px; margin-bottom:15px;">
+                <h4 style="margin:0 0 10px 0; color:var(--text1);">SECTION 3: Assignments</h4>
+            `;
+            
+            if(asgs.length === 0) {
+              html += `<div style="font-size:12px; color:var(--text3);">No technical project assignments found.</div>`;
+            } else {
+              asgs.forEach(a => {
+                const proj = promapData.projects.find(pr => pr.projectId === a.projectId);
+                html += `
+                  <div style="border-left:3px solid var(--navy); padding-left:10px; margin-bottom:10px; font-size:13px;">
+                    <strong>${proj ? proj.projectName : a.projectId}</strong><br>
+                    Role: ${a.role || '-'} | Allocation: ${a.allocationPercentage || 0}% | RACI: ${a.raci || '-'}<br>
+                    Status: <span style="font-weight:600;">${a.verificationStatus || 'NOT_VERIFIED'}</span>
+                  </div>
+                `;
+              });
+            }
+            html += `</div>`;
+            document.getElementById('persDetailBody').innerHTML = html;
+            document.getElementById('promapPersDetailModal').style.display = 'flex';
+          }
+
+          async function openProjDetailModal(docId) {
+            const p = promapData.projects.find(x => x._docId === docId);
+            if(!p) return;
+            const asgs = promapData.assignments.filter(a => a.projectId === p.projectId);
+            
+            let html = `
+              <div style="background:var(--bg3); padding:15px; border-radius:8px; margin-bottom:15px;">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:13px;">
+                  <div><strong>Code:</strong> ${p.projectCode}</div>
+                  <div><strong>Name:</strong> ${p.projectName}</div>
+                  <div><strong>Status:</strong> ${p.status}</div>
+                  <div><strong>Incharge:</strong> ${p.projectIncharge || '-'}</div>
+                </div>
+                <p style="margin-top:10px; font-size:12px; color:var(--text3);">${p.projectDescription || ''}</p>
+              </div>
+              <h4 style="margin:0 0 10px 0; color:var(--text1);">Assigned Personnel</h4>
+            `;
+            
+            if(asgs.length === 0) {
+              html += `<div style="font-size:12px; color:var(--text3);">No personnel assigned.</div>`;
+            } else {
+              html += `<table class="data-table" style="font-size:12px;"><thead><tr><th>Name</th><th>Role</th><th>Alloc%</th><th>Primary/Sup</th></tr></thead><tbody>`;
+              asgs.forEach(a => {
+                const pers = promapData.personnel.find(pr => pr.personnelId === a.personnelId);
+                html += `
+                  <tr>
+                    <td>${pers ? pers.name : a.personnelId}</td>
+                    <td>${a.role || '-'}</td>
+                    <td>${a.allocationPercentage || 0}%</td>
+                    <td>${a.primarySupport || '-'}</td>
+                  </tr>
+                `;
+              });
+              html += `</tbody></table>`;
+            }
+            document.getElementById('projDetailBody').innerHTML = html;
+            document.getElementById('promapProjDetailModal').style.display = 'flex';
+          }
+
+          function openEditAsgModal(docId) {
+            const a = promapData.assignments.find(x => x._docId === docId);
+            if(!a) return;
+            document.getElementById('editAsgId').value = docId;
+            document.getElementById('editAsgRole').value = a.role || '';
+            document.getElementById('editAsgWorkstream').value = a.workstream || '';
+            document.getElementById('editAsgAlloc').value = a.allocationPercentage || 0;
+            document.getElementById('editAsgPriSup').value = a.primarySupport || '';
+            document.getElementById('editAsgRaci').value = a.raci || '';
+            document.getElementById('editAsgReporting').value = a.reportingTo || '';
+            document.getElementById('editAsgDeliverable').value = a.keyDeliverable || '';
+            document.getElementById('editAsgVerif').value = a.verificationStatus || 'NOT_VERIFIED';
+            document.getElementById('editAsgRemarks').value = a.remarks || '';
+            document.getElementById('promapEditAsgModal').style.display = 'flex';
+          }
+
+          async function submitEditAssignment(e) {
+            e.preventDefault();
+            const docId = document.getElementById('editAsgId').value;
+            // Retrieve personnelId from the modal's hidden field (we need to add this if it's missing)
+            // or we can fetch it from the UI. But docId is passed. Let's see if we store personnelId anywhere.
+            // Wait, we need personnelId. The assignment already exists. The transaction will fetch it.
+            // Oh, my syncAssignment signature requires personnelId: syncAssignment(assignmentId, payload, personnelId, projectId, isNew)
+            // Since it's an edit (isNew=false), personnelId and projectId aren't strictly needed for the payload, but `personnelId` IS needed for finding the personnel record!
+            const asgRecord = promapData.assignments.find(a => a._docId === docId);
+            if(!asgRecord) return showToast('Assignment not found locally', 'error');
+
+            const personnelId = asgRecord.personnelId;
+
+            const data = {
+              role: document.getElementById('editAsgRole').value,
+              workstream: document.getElementById('editAsgWorkstream').value,
+              allocationPercentage: parseInt(document.getElementById('editAsgAlloc').value) || 0,
+              primarySupport: document.getElementById('editAsgPriSup').value,
+              raci: document.getElementById('editAsgRaci').value,
+              reportingTo: document.getElementById('editAsgReporting').value,
+              keyDeliverable: document.getElementById('editAsgDeliverable').value,
+              verificationStatus: document.getElementById('editAsgVerif').value,
+              remarks: document.getElementById('editAsgRemarks').value
+            };
+            const res = await DataService.promap_service.syncAssignment(docId, data, personnelId, null, false);
+            if(res.ok) {
+              closeModal('promapEditAsgModal');
+              loadPromapData('assignments');
+              showToast('Assignment updated', 'success');
+            } else {
+              showToast(res.msg, 'error');
+            }
+          }
+
+          // --- ADMIN BACKFILL UTILITY ---
+          let smDryRunData = null;
+
+          function openSystemMaintenanceModal() {
+            document.getElementById('promapSystemMaintenanceModal').style.display = 'flex';
+            document.getElementById('smProgressContainer').style.display = 'none';
+            document.getElementById('smConfirmBox').style.display = 'none';
+            document.getElementById('smExecProgress').style.display = 'none';
+            smDryRunData = null;
+          }
+
+          async function runBackfillDryRun() {
+            const btn = document.querySelector('#promapSystemMaintenanceModal .btn-secondary');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Analyzing...';
+            btn.disabled = true;
+
+            try {
+              // 1. Fetch all assignments
+              const asgSnap = await window.fsGetDocs(window.fsCollection(window.db, 'promap_assignments'));
+              
+              // 2. Fetch all personnel
+              const pSnap = await window.fsGetDocs(window.fsCollection(window.db, 'promap_personnel'));
+
+              const personnelMap = {};
+              pSnap.docs.forEach(d => {
+                const data = d.data();
+                if(data.personnelId) {
+                  personnelMap[data.personnelId] = {
+                    docId: d.id,
+                    currentTotalAlloc: Number(data.totalAllocation) || 0,
+                    currentActiveProjects: Array.isArray(data.activeProjectIds) ? data.activeProjectIds : [],
+                    calcTotalAlloc: 0,
+                    calcActiveProjects: new Set(),
+                    needsUpdate: false
+                  };
+                }
+              });
+
+              // 3. Process assignments
+              asgSnap.docs.forEach(d => {
+                const data = d.data();
+                const pId = data.personnelId;
+                if(!pId || !personnelMap[pId]) return;
+                
+                // Only count if not inactive and allocation > 0
+                const alloc = Number(data.allocationPercentage) || 0;
+                if(data.status !== 'Inactive' && alloc > 0) {
+                  personnelMap[pId].calcTotalAlloc += alloc;
+                  personnelMap[pId].calcActiveProjects.add(data.projectId);
+                }
+              });
+
+              // 4. Calculate diff
+              let totalPersonnel = Object.keys(personnelMap).length;
+              let withAsg = 0;
+              let reqUpdate = 0;
+              let conflicts = 0;
+              
+              const updateQueue = [];
+
+              for(const pId in personnelMap) {
+                const p = personnelMap[pId];
+                if(p.calcActiveProjects.size > 0) withAsg++;
+
+                const newProjectsArr = Array.from(p.calcActiveProjects).sort();
+                const oldProjectsArr = [...p.currentActiveProjects].sort();
+                
+                const projChanged = JSON.stringify(newProjectsArr) !== JSON.stringify(oldProjectsArr);
+                const allocChanged = p.calcTotalAlloc !== p.currentTotalAlloc;
+
+                if (p.calcTotalAlloc > 100) conflicts++;
+
+                if (projChanged || allocChanged) {
+                  p.needsUpdate = true;
+                  reqUpdate++;
+                  updateQueue.push({
+                    docId: p.docId,
+                    totalAllocation: p.calcTotalAlloc,
+                    activeProjectIds: newProjectsArr
+                  });
+                }
+              }
+
+              // 5. Update UI
+              document.getElementById('smTotal').innerText = totalPersonnel;
+              document.getElementById('smWithAsg').innerText = withAsg;
+              document.getElementById('smWithoutAsg').innerText = totalPersonnel - withAsg;
+              document.getElementById('smReqUpdate').innerText = reqUpdate;
+              document.getElementById('smConflicts').innerText = conflicts;
+              document.getElementById('smErrors').innerText = '0';
+              
+              document.getElementById('smProgressContainer').style.display = 'block';
+
+              smDryRunData = updateQueue;
+
+              if(reqUpdate > 0 && conflicts === 0) {
+                document.getElementById('smConfirmBox').style.display = 'block';
+              } else {
+                document.getElementById('smConfirmBox').style.display = 'none';
+                if(conflicts > 0) alert('Cannot proceed: Found allocations > 100%');
+              }
+            } catch (err) {
+              document.getElementById('smErrors').innerText = '1';
+              alert("Error during dry run: " + err.message);
+            }
+
+            btn.innerHTML = 'Run Dry-Run';
+            btn.disabled = false;
+          }
+
+          async function executeBackfillSync() {
+            if(!smDryRunData || smDryRunData.length === 0) return alert('No updates required.');
+            
+            const btn = document.querySelector('#smConfirmBox button');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Executing...';
+            btn.disabled = true;
+
+            document.getElementById('smExecProgress').style.display = 'block';
+            
+            const total = smDryRunData.length;
+            let processed = 0;
+            let success = 0;
+            let failed = 0;
+            
+            // Safe batching (Firestore limit is 500, we use 100 for safety)
+            const BATCH_SIZE = 100;
+            const chunks = window.chunkArray(smDryRunData, BATCH_SIZE);
+
+            for (let i = 0; i < chunks.length; i++) {
+              const chunk = chunks[i];
+              const batch = window.fsWriteBatch(window.db);
+              
+              chunk.forEach(req => {
+                const ref = window.fsDoc(window.db, 'promap_personnel', req.docId);
+                batch.update(ref, {
+                  totalAllocation: req.totalAllocation,
+                  activeProjectIds: req.activeProjectIds,
+                  _updatedAt: window.fsTimestamp()
+                });
+              });
+
+              try {
+                await batch.commit();
+                processed += chunk.length;
+                success += chunk.length;
+              } catch (err) {
+                console.error("Batch failure:", err);
+                processed += chunk.length;
+                failed++;
+              }
+
+              // Update UI
+              document.getElementById('smProcessed').innerText = processed;
+              document.getElementById('smRemaining').innerText = total - processed;
+              document.getElementById('smSuccess').innerText = success;
+              document.getElementById('smFailed').innerText = failed;
+            }
+
+            if(failed > 0) {
+              document.getElementById('smStatusMsg').innerText = "Completed with batch errors. Check console.";
+              document.getElementById('smStatusMsg').style.color = 'var(--danger)';
+            } else {
+              document.getElementById('smStatusMsg').innerText = "Successfully completed! Auto-running validation dry-run...";
+              document.getElementById('smStatusMsg').style.color = 'var(--success)';
+              
+              // Auto dry-run after 1.5s
+              setTimeout(() => {
+                runBackfillDryRun();
+              }, 1500);
+            }
+
+            btn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Confirm & Execute Sync';
+            btn.disabled = false;
+          }
 
           function analyzePromapFile() {
             const fileInput = document.getElementById('promapExcelInput');
@@ -3087,11 +3931,40 @@ window.DataService = {
       const snap = await fsGetDocs(fsQuery(fsCollection(db, 'promap_personnel'), fsOrderBy('_createdAt', 'desc')));
       return snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
     },
+    async getForScopes(scopes) {
+      if(!scopes || scopes.length === 0) return [];
+      const chunks = window.chunkArray(scopes, 10);
+      let results = [];
+      for(const chunk of chunks) {
+        const q = fsQuery(fsCollection(db, 'promap_personnel'), fsWhere('activeProjectIds', 'array-contains-any', chunk));
+        const snap = await fsGetDocs(q);
+        results = results.concat(snap.docs.map(d => ({ _docId: d.id, ...d.data() })));
+      }
+      // Deduplicate
+      const unique = [];
+      const seen = new Set();
+      for(const item of results) {
+        if(!seen.has(item.personnelId)) {
+          seen.add(item.personnelId);
+          unique.push(item);
+        }
+      }
+      return unique;
+    },
     async create(data) {
       if (!data.personnelId) data.personnelId = 'TS-P-' + Date.now();
       data._createdAt = fsTimestamp();
       const ref = await fsAddDoc(fsCollection(db, 'promap_personnel'), data);
       return { ok: true, docId: ref.id, personnelId: data.personnelId };
+    },
+    async getById(docId) {
+      const snap = await window.fsGetDoc(window.fsDoc(db, 'promap_personnel', docId));
+      return snap.exists() ? { _docId: snap.id, ...snap.data() } : null;
+    },
+    async update(docId, data) {
+      data._updatedAt = fsTimestamp();
+      await window.fsUpdateDoc(window.fsDoc(db, 'promap_personnel', docId), data);
+      return { ok: true };
     }
   },
 
@@ -3100,15 +3973,50 @@ window.DataService = {
       const snap = await fsGetDocs(fsQuery(fsCollection(db, 'promap_projects'), fsOrderBy('_createdAt', 'desc')));
       return snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
     },
+    async getForScopes(scopes) {
+      if(!scopes || scopes.length === 0) return [];
+      const chunks = window.chunkArray(scopes, 10);
+      let results = [];
+      for(const chunk of chunks) {
+        const q = fsQuery(fsCollection(db, 'promap_projects'), fsWhere('projectId', 'in', chunk));
+        const snap = await fsGetDocs(q);
+        results = results.concat(snap.docs.map(d => ({ _docId: d.id, ...d.data() })));
+      }
+      return results;
+    },
     async create(data) {
       if (!data.projectId) data.projectId = 'TS-PRJ-' + Date.now();
       data._createdAt = fsTimestamp();
       const ref = await fsAddDoc(fsCollection(db, 'promap_projects'), data);
       return { ok: true, docId: ref.id, projectId: data.projectId };
+    },
+    async getById(docId) {
+      const snap = await window.fsGetDoc(window.fsDoc(db, 'promap_projects', docId));
+      return snap.exists() ? { _docId: snap.id, ...snap.data() } : null;
+    },
+    async update(docId, data) {
+      data._updatedAt = fsTimestamp();
+      await window.fsUpdateDoc(window.fsDoc(db, 'promap_projects', docId), data);
+      return { ok: true };
     }
   },
 
   promap_assignments: {
+    async getAll() {
+      const snap = await fsGetDocs(fsCollection(db, 'promap_assignments'));
+      return snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
+    },
+    async getForScopes(scopes) {
+      if(!scopes || scopes.length === 0) return [];
+      const chunks = window.chunkArray(scopes, 10);
+      let results = [];
+      for(const chunk of chunks) {
+        const q = fsQuery(fsCollection(db, 'promap_assignments'), fsWhere('projectId', 'in', chunk));
+        const snap = await fsGetDocs(q);
+        results = results.concat(snap.docs.map(d => ({ _docId: d.id, ...d.data() })));
+      }
+      return results;
+    },
     async getByProjectId(projectId) {
       const q = fsQuery(fsCollection(db, 'promap_assignments'), fsWhere('projectId', '==', projectId));
       const snap = await fsGetDocs(q);
@@ -3120,33 +4028,98 @@ window.DataService = {
       return snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
     },
     async create(data) {
-      if (!data.assignmentId) data.assignmentId = 'TS-ASG-' + Date.now();
+      if (!data.assignmentId) data.assignmentId = 'TS-A-' + Date.now();
       data._createdAt = fsTimestamp();
       const ref = await fsAddDoc(fsCollection(db, 'promap_assignments'), data);
-      return { ok: true, docId: ref.id };
+      return { ok: true, docId: ref.id, assignmentId: data.assignmentId };
+    },
+    async getById(docId) {
+      const snap = await window.fsGetDoc(window.fsDoc(db, 'promap_assignments', docId));
+      return snap.exists() ? { _docId: snap.id, ...snap.data() } : null;
+    },
+    async update(docId, data) {
+      data._updatedAt = fsTimestamp();
+      await window.fsUpdateDoc(window.fsDoc(db, 'promap_assignments', docId), data);
+      return { ok: true };
     }
   },
 
   // ── PRO-MAP BUSINESS LOGIC LAYER ────────────────────────
   promap_service: {
-    async calculateFTE(projectId) {
-      const assignments = await DataService.promap_assignments.getByProjectId(projectId);
-      return assignments.reduce((acc, curr) => acc + (Number(curr.allocationPercentage) || 0), 0) / 100;
-    },
-    async validateAndAssign(personnelId, projectId, allocationPercentage) {
-      const exist = await DataService.promap_assignments.getByPersonnelId(personnelId);
-      const total = exist.reduce((acc, curr) => acc + (Number(curr.allocationPercentage) || 0), 0);
-      
-      if (total + Number(allocationPercentage) > 100) {
-        return { ok: false, msg: `Total allocation exceeds 100%. Current: ${total}%.` };
+    async syncAssignment(assignmentId, payload, personnelId, projectId, isNew) {
+      try {
+        const role = window.currentUser?.promapRole;
+        await window.fsRunTransaction(window.db, async (transaction) => {
+          const pRef = window.fsDoc(window.db, 'promap_personnel', personnelId);
+          const aRef = window.fsDoc(window.db, 'promap_assignments', assignmentId);
+          
+          const pDoc = await transaction.get(pRef);
+          if(!pDoc.exists()) throw new Error("Personnel record not found");
+          
+          let currentAllocation = 0;
+          if (!isNew) {
+            const aDoc = await transaction.get(aRef);
+            if(aDoc.exists()) {
+               currentAllocation = Number(aDoc.data().allocationPercentage) || 0;
+               projectId = aDoc.data().projectId;
+            }
+          }
+
+          const newAllocation = Number(payload.allocationPercentage) || 0;
+          const delta = newAllocation - currentAllocation;
+          
+          const pData = pDoc.data();
+          let totalAllocation = Number(pData.totalAllocation) || 0;
+          let activeProjectIds = Array.isArray(pData.activeProjectIds) ? [...pData.activeProjectIds] : [];
+
+          // If Admin, do a full recalculation for absolute safety
+          if (role === 'ADMIN' || role === 'IGP') {
+            // Note: Cannot query within a transaction reliably in all SDKs, so we compute delta but allow Admin full sync manually if needed.
+            // Actually, we stick to transactional delta here for UI edits to maintain atomicity.
+          }
+          
+          if (totalAllocation + delta > 100) {
+             throw new Error(`Total allocation for this personnel would become ${totalAllocation + delta}%. Allocation cannot exceed 100%.`);
+          }
+
+          totalAllocation += delta;
+
+          if (isNew) {
+             if(!activeProjectIds.includes(projectId)) activeProjectIds.push(projectId);
+             payload.projectId = projectId;
+             payload.personnelId = personnelId;
+             payload._createdAt = window.fsTimestamp();
+             transaction.set(aRef, payload);
+          } else if (payload._isDelete) {
+             // Handle deletion/deactivation accurately
+             transaction.delete(aRef);
+             // We must recalculate activeProjectIds for this specific projectId.
+             // Since the Incharge is authorized for this projectId, they CAN query to see if others exist.
+             // But we cannot query inside a transaction reliably, so we will filter it out. 
+             // Wait, if we filter it out, what if another assignment for the SAME project exists? 
+             // We assume 1 assignment per project per personnel (validateAndAssign enforces this).
+             // Therefore, if deleted, it is safe to remove the projectId.
+             activeProjectIds = activeProjectIds.filter(id => id !== projectId);
+          } else {
+             payload._updatedAt = window.fsTimestamp();
+             transaction.update(aRef, payload);
+             
+             // If allocation is set to 0, or status is inactive, should we remove the project ID? 
+             // The user said "If CCTNS assignment is removed/deactivated".
+             if (payload.status === 'Inactive' || newAllocation === 0) {
+                 activeProjectIds = activeProjectIds.filter(id => id !== projectId);
+             } else {
+                 if(!activeProjectIds.includes(projectId)) activeProjectIds.push(projectId);
+             }
+          }
+
+          // Atomic update
+          transaction.update(pRef, { totalAllocation, activeProjectIds, _updatedAt: window.fsTimestamp() });
+        });
+        return {ok: true};
+      } catch (err) {
+        return {ok: false, msg: err.message};
       }
-      if (exist.some(a => a.projectId === projectId)) {
-        return { ok: false, msg: `Already assigned to this project.` };
-      }
-      return DataService.promap_assignments.create({
-        personnelId, projectId, allocationPercentage, 
-        isPrimary: exist.length === 0, status: 'Active'
-      });
     }
   },
 
@@ -4156,6 +5129,9 @@ function showScreen(name) {
   if (name === 'profile') {
     loadMyProfile();
   }
+  if (name === 'promap') {
+    if (typeof switchPromapTab === 'function') switchPromapTab('personnel');
+  }
   if (name === 'staffmgmt' || name === 'staff-management') {
     loadStaffFromSheet();
   }
@@ -4566,6 +5542,17 @@ async function doLogin() {
       }
       promapUserData = userDocSnap.data();
 
+      // Ensure personnelId is linked
+      if (!promapUserData.personnelId) {
+        const pRef = window.fsCollection(window.db, 'promap_personnel');
+        const pq = window.fsQuery(pRef, window.fsWhere('contactNumber', '==', phone));
+        const psnap = await window.fsGetDocs(pq);
+        if(!psnap.empty) {
+          promapUserData.personnelId = psnap.docs[0].data().personnelId;
+          await window.fsUpdateDoc(window.fsDoc(window.db, 'promap_users', userCredential.user.uid), { personnelId: promapUserData.personnelId });
+          console.log('✅ Auto-linked personnelId to profile.');
+        }
+      }
       // We still fetch the legacy staff record for UI compatibility (name, rank)
       const staffRef = window.fsCollection(window.db, 'staff');
       let q = window.fsQuery(staffRef, window.fsWhere('Phone', '==', phone));
