@@ -617,6 +617,133 @@ select[multiple] option:selected {
 }
 .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--navy); }
 .form-group textarea { resize: vertical; min-height: 80px; }
+
+/* FIX FOR BROKEN PRO-MAP FORMS */
+.form-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text1);
+  font-size: 13px;
+  outline: none;
+  transition: border 0.2s;
+  display: block;
+}
+.form-input:focus { border-color: var(--navy); }
+
+.modal-content form label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text2);
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  margin-top: 12px;
+}
+.modal-content form label:first-child,
+.modal-content form div label {
+  margin-top: 0;
+}
+
+/* ============================================================
+   PRINT CSS
+   ============================================================ */
+@media print {
+  body { background: white; color: black; }
+  .sidebar, .promap-tabs, .hide-on-print, .btn-primary, .btn-secondary, .btn-success, .btn-heart { display: none !important; }
+  .main-content { margin-left: 0; padding: 0; }
+  .print-card { border: none; box-shadow: none; padding: 0; }
+  .data-table th, .data-table td { border-color: #ddd; color: black; }
+  .data-table th { background: #f5f5f5; color: black; -webkit-print-color-adjust: exact; }
+}
+
+/* ============================================================
+   PRO-MAP DASHBOARD
+   ============================================================ */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+.stat-card {
+  background: var(--bg3);
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+.stat-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--navy);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+.stat-card-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--text2);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  margin-bottom: 5px;
+}
+.stat-card-value {
+  font-size: 26px;
+  font-family: 'Rajdhani', sans-serif;
+  color: var(--navy);
+  font-weight: 700;
+}
+.stat-card-sub {
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 5px;
+}
+.analytics-panel {
+  background: var(--bg);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  padding: 15px;
+  margin-bottom: 20px;
+}
+.analytics-panel h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 14px;
+  color: var(--navy);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+.analytics-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.analytics-table th, .analytics-table td {
+  padding: 8px 10px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+.analytics-table th {
+  font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase;
+  font-size: 10px;
+  background: var(--bg2);
+}
+.analytics-table tr:hover td {
+  background: var(--bg2);
+  cursor: pointer;
+}
+
+
 .form-actions { display: flex; gap: 10px; margin-top: 16px; }
 .btn-primary {
   padding: 10px 20px; background: var(--navy); color: #fff;
@@ -1741,6 +1868,8 @@ select[multiple] option:selected {
           
           <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:20px;">
             <div class="promap-tabs" style="display:flex; gap:10px;">
+              <button class="btn-secondary" id="pmTab-dashboard" onclick="switchPromapTab('dashboard')">Dashboard</button>
+              <button class="btn-secondary" id="pmTab-reports" onclick="switchPromapTab('reports')">Reports</button>
               <button class="btn-secondary" id="pmTab-personnel" onclick="switchPromapTab('personnel')" style="background:var(--navy); color:white;">Personnel Master</button>
               <button class="btn-secondary" id="pmTab-projects" onclick="switchPromapTab('projects')">Project Master</button>
               <button class="btn-secondary" id="pmTab-assignments" onclick="switchPromapTab('assignments')">Deployment & Assignments</button>
@@ -1750,6 +1879,168 @@ select[multiple] option:selected {
                 <i class="fa-solid fa-wrench"></i> System Maintenance
               </button>
             </div>
+          </div>
+
+          <!-- TAB CONTENT: REPORTS -->
+          <div id="promap-content-reports" class="promap-tab-content" style="display:none;">
+            <div class="card" style="margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+              <div style="display:flex; align-items:center; gap:15px; flex-grow:1;">
+                <h3 style="margin:0; font-size:16px; color:var(--navy);"><i class="fa-solid fa-file-invoice"></i> Reports Engine</h3>
+                <select id="reportTypeSelector" class="form-input" style="max-width:300px; font-weight:600;" onchange="renderPromapReports()">
+                  <option value="personnel">1. Personnel Report</option>
+                  <option value="project">2. Project Report</option>
+                  <option value="assignment">3. Assignment Report</option>
+                  <option value="allocation">4. Allocation Report</option>
+                  <option value="verification">5. Verification Report</option>
+                  <option value="deployment">6. Deployment Status Report</option>
+                  <option value="project_manpower">7. Project-wise Manpower Report</option>
+                  <option value="personnel_assignment">8. Personnel-wise Assignment Report</option>
+                  <option value="exception">9. Exception / Correction Report</option>
+                  <option value="audit">10. Audit Report</option>
+                </select>
+              </div>
+              <div style="display:flex; gap:10px;" class="hide-on-print">
+                 <button class="btn-secondary" onclick="window.print()"><i class="fa-solid fa-print"></i> Print</button>
+                 <button class="btn-secondary" onclick="exportReportCSV()"><i class="fa-solid fa-file-csv"></i> CSV</button>
+                 <button class="btn-success" onclick="exportReportExcel()" style="background:var(--success); color:white; border:none; padding:8px 16px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer;"><i class="fa-solid fa-file-excel"></i> Excel</button>
+              </div>
+            </div>
+
+            <div class="card hide-on-print" style="margin-bottom:20px; background:var(--bg2);">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:12px; font-weight:600; text-transform:uppercase; color:var(--text2);">Report Filters</span>
+                <button class="btn-secondary" onclick="resetReportFilters()" style="font-size:11px; padding:4px 8px;">Reset Filters</button>
+              </div>
+              <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px;">
+                <select class="form-input" id="repFilterProject" onchange="renderPromapReports()"><option value="">All Projects</option></select>
+                <select class="form-input" id="repFilterIncharge" onchange="renderPromapReports()"><option value="">All Incharges</option></select>
+                <select class="form-input" id="repFilterPersonnel" onchange="renderPromapReports()"><option value="">All Personnel</option></select>
+                <select class="form-input" id="repFilterRank" onchange="renderPromapReports()"><option value="">All Ranks</option></select>
+                <select class="form-input" id="repFilterVerif" onchange="renderPromapReports()">
+                  <option value="">All Verif. Status</option>
+                  <option value="Pending Verification">Pending Verification</option>
+                  <option value="Correction Required">Correction Required</option>
+                  <option value="Corrected">Corrected</option>
+                  <option value="Verified">Verified</option>
+                  <option value="Approved">Approved</option>
+                </select>
+                <select class="form-input" id="repFilterAlloc" onchange="renderPromapReports()">
+                  <option value="">All Allocations</option>
+                  <option value="0">0% (Unallocated)</option>
+                  <option value="1-25">1-25%</option>
+                  <option value="26-50">26-50%</option>
+                  <option value="51-75">51-75%</option>
+                  <option value="76-99">76-99%</option>
+                  <option value="100">100% (Fully Allocated)</option>
+                  <option value="OVER">Over 100%</option>
+                </select>
+                <select class="form-input" id="repFilterDeployment" onchange="renderPromapReports()">
+                  <option value="">All Deployments</option>
+                  <option value="Project-Deployed">Project-Deployed</option>
+                  <option value="Awaiting Deployment">Awaiting Deployment</option>
+                  <option value="Officer Attachment">Officer Attachment</option>
+                  <option value="External Attachment">External Attachment</option>
+                  <option value="Administrative">Administrative</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="card print-card">
+               <div id="promapReportSummary" style="margin-bottom:15px; font-size:13px; color:var(--text2); display:flex; gap:20px; flex-wrap:wrap;">
+                 <!-- Populated via JS -->
+               </div>
+               <div style="overflow-x:auto;">
+                 <table class="data-table" id="promapReportTable">
+                   <thead id="promapReportHead"></thead>
+                   <tbody id="promapReportBody"></tbody>
+                 </table>
+               </div>
+            </div>
+          </div>
+
+          <!-- TAB CONTENT: DASHBOARD -->
+          <div id="promap-content-dashboard" class="promap-tab-content" style="display:none;">
+            
+            <!-- Dashboard Filters -->
+            <div class="card" style="margin-bottom:20px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 style="margin:0; font-size:16px; color:var(--navy);">Dashboard Analytics</h3>
+                <button class="btn-secondary" onclick="resetDashboardFilters()" style="font-size:11px; padding:4px 8px;">Reset Filters</button>
+              </div>
+              <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px;">
+                <select class="form-input" id="dashFilterProject" onchange="renderPromapDashboard()"><option value="">All Projects</option></select>
+                <select class="form-input" id="dashFilterIncharge" onchange="renderPromapDashboard()"><option value="">All Incharges</option></select>
+                <select class="form-input" id="dashFilterPersonnel" onchange="renderPromapDashboard()"><option value="">All Personnel</option></select>
+                <select class="form-input" id="dashFilterRank" onchange="renderPromapDashboard()"><option value="">All Ranks</option></select>
+                <select class="form-input" id="dashFilterVerif" onchange="renderPromapDashboard()">
+                  <option value="">All Verif. Status</option>
+                  <option value="Pending Verification">Pending Verification</option>
+                  <option value="Correction Required">Correction Required</option>
+                  <option value="Corrected">Corrected</option>
+                  <option value="Verified">Verified</option>
+                  <option value="Approved">Approved</option>
+                </select>
+                <select class="form-input" id="dashFilterAlloc" onchange="renderPromapDashboard()">
+                  <option value="">All Allocations</option>
+                  <option value="0">0% (Unallocated)</option>
+                  <option value="1-25">1-25%</option>
+                  <option value="26-50">26-50%</option>
+                  <option value="51-75">51-75%</option>
+                  <option value="76-99">76-99%</option>
+                  <option value="100">100% (Fully Allocated)</option>
+                  <option value="OVER">Over 100%</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Dashboard Summary Grid -->
+            <div id="dashboardSummaryGrid" class="dashboard-grid">
+               <!-- Populated via JS -->
+            </div>
+
+            <!-- Two-Column Analytics -->
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:20px;">
+              <div class="analytics-panel">
+                 <h3><i class="fa-solid fa-list-check"></i> Project Distribution</h3>
+                 <div style="overflow-x:auto;">
+                   <table class="analytics-table" id="dashProjectTable">
+                     <thead><tr><th>Project Name</th><th>Personnel</th><th>Avg Alloc</th><th>Verif Progress</th></tr></thead>
+                     <tbody id="dashProjectBody"></tbody>
+                   </table>
+                 </div>
+              </div>
+
+              <div class="analytics-panel">
+                 <h3><i class="fa-solid fa-chart-pie"></i> Verification Breakdown</h3>
+                 <div id="dashVerifBreakdown" style="display:flex; flex-direction:column; gap:10px;"></div>
+                 
+                 <h3 style="margin-top:20px;"><i class="fa-solid fa-layer-group"></i> Deployment Status</h3>
+                 <div id="dashDeploymentBreakdown" style="display:flex; flex-direction:column; gap:10px;"></div>
+              </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:20px;">
+               <div class="analytics-panel">
+                 <h3><i class="fa-solid fa-triangle-exclamation"></i> Over-Allocated Personnel (>100%)</h3>
+                 <div style="overflow-x:auto;">
+                   <table class="analytics-table" id="dashOverAllocTable">
+                     <thead><tr><th>Name / Gen No</th><th>Total %</th><th>Projects</th></tr></thead>
+                     <tbody id="dashOverAllocBody"></tbody>
+                   </table>
+                 </div>
+               </div>
+               
+               <div class="analytics-panel">
+                 <h3><i class="fa-solid fa-battery-half"></i> Available Capacity (<100%)</h3>
+                 <div style="overflow-x:auto;">
+                   <table class="analytics-table" id="dashAvailAllocTable">
+                     <thead><tr><th>Name / Gen No</th><th>Total %</th><th>Capacity</th></tr></thead>
+                     <tbody id="dashAvailAllocBody"></tbody>
+                   </table>
+                 </div>
+               </div>
+            </div>
+
           </div>
 
           <!-- TAB CONTENT: PERSONNEL -->
@@ -1813,12 +2104,48 @@ select[multiple] option:selected {
 
           <!-- TAB CONTENT: ASSIGNMENTS -->
           <div id="promap-content-assignments" class="promap-tab-content" style="display:none;">
+            <!-- METRICS SUMMARY -->
+            <div style="display:flex; gap:15px; margin-bottom:20px;">
+              <div class="card" style="flex:1; text-align:center;">
+                <div style="font-size:24px; font-weight:700; color:var(--navy);" id="asgMetricTotal">0</div>
+                <div style="font-size:12px; color:var(--text3);">Total Assignments</div>
+              </div>
+              <div class="card" style="flex:1; text-align:center;">
+                <div style="font-size:24px; font-weight:700; color:var(--success);" id="asgMetricVerified">0</div>
+                <div style="font-size:12px; color:var(--text3);">Verified / Approved</div>
+              </div>
+              <div class="card" style="flex:1; text-align:center;">
+                <div style="font-size:24px; font-weight:700; color:#ef4444;" id="asgMetricCorrection">0</div>
+                <div style="font-size:12px; color:var(--text3);">Correction Required</div>
+              </div>
+              <div class="card" style="flex:1; text-align:center;">
+                <div style="font-size:24px; font-weight:700; color:#eab308;" id="asgMetricPending">0</div>
+                <div style="font-size:12px; color:var(--text3);">Pending / Corrected</div>
+              </div>
+            </div>
+
+            <!-- FILTERS & ACTIONS -->
             <div class="card" style="margin-bottom:20px;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h2 style="font-family:'Rajdhani',sans-serif;"><i class="fa-solid fa-user-tag" style="color:var(--navy)"></i> Deployment & Assignments</h2>
-                <div style="display:flex; gap:10px;">
-                  <input type="text" id="promapAssignmentSearch" placeholder="Search..." oninput="renderPromapAssignments()" style="padding:6px 12px; font-size:12px; border:1px solid var(--border); border-radius:4px;">
-                </div>
+                <h2 style="font-family:'Rajdhani',sans-serif; margin:0;"><i class="fa-solid fa-user-tag" style="color:var(--navy)"></i> Deployment & Assignments</h2>
+                <button class="btn-primary" onclick="openAddAsgModal()"><i class="fa-solid fa-plus"></i> Add Assignment</button>
+              </div>
+              <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:10px; margin-bottom:15px;">
+                <select id="asgFilterProject" class="form-input" onchange="renderPromapAssignments()">
+                  <option value="">All Projects</option>
+                </select>
+                <select id="asgFilterPersonnel" class="form-input" onchange="renderPromapAssignments()">
+                  <option value="">All Personnel</option>
+                </select>
+                <select id="asgFilterVerif" class="form-input" onchange="renderPromapAssignments()">
+                  <option value="">All Statuses</option>
+                  <option value="Pending Verification">Pending Verification</option>
+                  <option value="Verified">Verified</option>
+                  <option value="Correction Required">Correction Required</option>
+                  <option value="Corrected">Corrected</option>
+                  <option value="Approved">Approved</option>
+                </select>
+                <input type="text" id="promapAssignmentSearch" placeholder="Search keyword..." oninput="renderPromapAssignments()" class="form-input">
               </div>
               <div class="table-responsive">
                 <table class="data-table" id="promapAssignmentTable">
@@ -2027,34 +2354,38 @@ select[multiple] option:selected {
               <h3 style="margin-top:0; font-family:'Rajdhani',sans-serif; color:var(--navy);"><i class="fa-solid fa-user-tag"></i> Edit Assignment</h3>
               <form id="formEditAsg" onsubmit="submitEditAssignment(event)">
                 <input type="hidden" id="editAsgId">
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                  <div>
-                    <label>Project</label>
-                    <select id="editAsgProject" class="form-input"></select>
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap:15px;">
+                  <div id="editAsgPersonnelContainer" style="display:flex; flex-direction:column; gap:4px;">
+                    <label style="font-weight:600; font-size:12px; margin:0;">Personnel</label>
+                    <select id="editAsgPersonnel" class="form-input" style="width:100%; box-sizing:border-box;"></select>
                   </div>
-                  <div>
-                    <label>Role</label>
-                    <input type="text" id="editAsgRole" class="form-input" placeholder="Project specific role">
+                  <div style="display:flex; flex-direction:column; gap:4px;">
+                    <label style="font-weight:600; font-size:12px; margin:0;">Project</label>
+                    <select id="editAsgProject" class="form-input" style="width:100%; box-sizing:border-box;"></select>
                   </div>
-                  <div>
-                    <label>Workstream</label>
-                    <input type="text" id="editAsgWorkstream" class="form-input">
+                  <div style="display:flex; flex-direction:column; gap:4px;">
+                    <label style="font-weight:600; font-size:12px; margin:0;">Role</label>
+                    <input type="text" id="editAsgRole" class="form-input" placeholder="Project specific role" style="width:100%; box-sizing:border-box;">
                   </div>
-                  <div>
-                    <label>Allocation %</label>
-                    <input type="number" id="editAsgAlloc" class="form-input" min="0" max="100">
+                  <div style="display:flex; flex-direction:column; gap:4px;">
+                    <label style="font-weight:600; font-size:12px; margin:0;">Workstream</label>
+                    <input type="text" id="editAsgWorkstream" class="form-input" style="width:100%; box-sizing:border-box;">
                   </div>
-                  <div>
-                    <label>Primary/Support</label>
-                    <select id="editAsgPriSup" class="form-input">
+                  <div style="display:flex; flex-direction:column; gap:4px;">
+                    <label style="font-weight:600; font-size:12px; margin:0;">Allocation %</label>
+                    <input type="number" id="editAsgAlloc" class="form-input" min="0" max="100" style="width:100%; box-sizing:border-box;">
+                  </div>
+                  <div style="display:flex; flex-direction:column; gap:4px;">
+                    <label style="font-weight:600; font-size:12px; margin:0;">Primary/Support</label>
+                    <select id="editAsgPriSup" class="form-input" style="width:100%; box-sizing:border-box;">
                       <option value="">-- Select --</option>
                       <option value="PRIMARY">PRIMARY</option>
                       <option value="SUPPORT">SUPPORT</option>
                     </select>
                   </div>
-                  <div>
-                    <label>RACI</label>
-                    <select id="editAsgRaci" class="form-input">
+                  <div style="display:flex; flex-direction:column; gap:4px;">
+                    <label style="font-weight:600; font-size:12px; margin:0;">RACI</label>
+                    <select id="editAsgRaci" class="form-input" style="width:100%; box-sizing:border-box;">
                       <option value="">-- Select --</option>
                       <option value="A">A - Accountable</option>
                       <option value="R">R - Responsible</option>
@@ -2062,29 +2393,29 @@ select[multiple] option:selected {
                       <option value="I">I - Informed</option>
                     </select>
                   </div>
-                  <div>
-                    <label>Reporting To</label>
-                    <input type="text" id="editAsgReporting" class="form-input">
+                  <div style="display:flex; flex-direction:column; gap:4px;">
+                    <label style="font-weight:600; font-size:12px; margin:0;">Reporting To</label>
+                    <input type="text" id="editAsgReporting" class="form-input" style="width:100%; box-sizing:border-box;">
                   </div>
-                  <div>
-                    <label>Key Deliverable</label>
-                    <input type="text" id="editAsgDeliverable" class="form-input">
+                  <div style="display:flex; flex-direction:column; gap:4px;">
+                    <label style="font-weight:600; font-size:12px; margin:0;">Key Deliverable</label>
+                    <input type="text" id="editAsgDeliverable" class="form-input" style="width:100%; box-sizing:border-box;">
                   </div>
-                  <div>
-                    <label>Work Allocation Status</label>
-                    <input type="text" id="editAsgAllocStatus" class="form-input">
+                  <div style="display:flex; flex-direction:column; gap:4px;">
+                    <label style="font-weight:600; font-size:12px; margin:0;">Work Allocation Status</label>
+                    <input type="text" id="editAsgAllocStatus" class="form-input" style="width:100%; box-sizing:border-box;">
                   </div>
-                  <div>
-                    <label>Evidence / Reference</label>
-                    <input type="text" id="editAsgEvidence" class="form-input">
+                  <div style="display:flex; flex-direction:column; gap:4px;">
+                    <label style="font-weight:600; font-size:12px; margin:0;">Evidence / Reference</label>
+                    <input type="text" id="editAsgEvidence" class="form-input" style="width:100%; box-sizing:border-box;">
                   </div>
-                  <div style="grid-column: 1 / -1;">
-                    <label>Additional Official Responsibility</label>
-                    <input type="text" id="editAsgAddlResp" class="form-input">
+                  <div style="grid-column: 1 / -1; display:flex; flex-direction:column; gap:4px;">
+                    <label style="font-weight:600; font-size:12px; margin:0;">Additional Official Responsibility</label>
+                    <input type="text" id="editAsgAddlResp" class="form-input" style="width:100%; box-sizing:border-box;">
                   </div>
-                  <div>
-                    <label>Verification Status</label>
-                    <select id="editAsgVerif" class="form-input" required>
+                  <div style="display:flex; flex-direction:column; gap:4px;">
+                    <label style="font-weight:600; font-size:12px; margin:0;">Verification Status</label>
+                    <select id="editAsgVerif" class="form-input" required style="width:100%; box-sizing:border-box;">
                       <option value="Pending Verification">Pending Verification</option>
                       <option value="Verified">Verified</option>
                       <option value="Correction Required">Correction Required</option>
@@ -2093,13 +2424,13 @@ select[multiple] option:selected {
                     </select>
                   </div>
                 </div>
-                <div style="margin-top:10px;">
-                  <label>Remarks</label>
-                  <input type="text" id="editAsgRemarks" class="form-input">
+                <div style="margin-top:10px; display:flex; flex-direction:column; gap:4px;">
+                  <label style="font-weight:600; font-size:12px; margin:0;">Remarks</label>
+                  <input type="text" id="editAsgRemarks" class="form-input" style="width:100%; box-sizing:border-box;">
                 </div>
-                <div style="margin-top:10px;">
-                  <label>Reason for Correction (Audit)</label>
-                  <input type="text" id="editAsgReason" class="form-input" placeholder="Required if changing values">
+                <div style="margin-top:10px; display:flex; flex-direction:column; gap:4px;">
+                  <label style="font-weight:600; font-size:12px; margin:0;">Reason for Correction (Audit)</label>
+                  <input type="text" id="editAsgReason" class="form-input" placeholder="Required if changing values" style="width:100%; box-sizing:border-box;">
                 </div>
                 <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
                   <button type="button" class="btn-secondary" onclick="closeModal('promapEditAsgModal')">Cancel</button>
@@ -2113,9 +2444,20 @@ select[multiple] option:selected {
           <div class="modal-overlay" id="promapSystemMaintenanceModal">
             <div class="modal-content" style="max-width:600px; max-height:90vh; overflow-y:auto;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h3 style="margin:0; font-family:'Rajdhani',sans-serif; color:var(--navy);"><i class="fa-solid fa-wrench" style="color:var(--orange)"></i> System Maintenance</h3>
+                <h3 style="margin:0; font-family:'Rajdhani',sans-serif; color:var(--navy);"><i class="fa-solid fa-shield-halved" style="color:var(--orange)"></i> Admin Settings & Maintenance</h3>
                 <span style="cursor:pointer; font-size:20px;" onclick="closeModal('promapSystemMaintenanceModal')">&times;</span>
               </div>
+              
+              <!-- Session & RBAC Info -->
+              <div style="background:var(--bg3); border:1px solid var(--border); border-radius:4px; padding:15px; margin-bottom:20px;">
+                 <h4 style="margin:0 0 10px 0; font-size:14px;">Session Authorization</h4>
+                 <div style="display:grid; grid-template-columns:120px 1fr; gap:8px; font-size:13px;">
+                    <div style="color:var(--text2)">Current User:</div><div id="adminSettingsUser" style="font-weight:bold;">-</div>
+                    <div style="color:var(--text2)">System Role:</div><div id="adminSettingsRole" style="font-weight:bold;">-</div>
+                    <div style="color:var(--text2)">Project Scope:</div><div id="adminSettingsScope">-</div>
+                 </div>
+              </div>
+
               <div style="background:var(--bg2); border-left:4px solid var(--orange); padding:15px; margin-bottom:20px; font-size:13px;">
                 <strong>Admin Backfill Utility</strong><br>
                 This operation will safely recalculate derived PRO-MAP personnel fields (`activeProjectIds` and `totalAllocation`) from current assignments.
@@ -2165,6 +2507,51 @@ select[multiple] option:selected {
             projects: [],
             assignments: []
           };
+
+          // ==========================================
+          // PART 7 - SECURITY & AUTHORIZATION GUARDS
+          // ==========================================
+          function checkPromapAuth(action, targetProjectIds = []) {
+            if (!window.currentUser) {
+              showToast("Authentication required.", "error");
+              return false;
+            }
+            
+            const role = window.currentUser.promapRole;
+            const scopes = JSON.parse(localStorage.getItem('promapScopes') || '[]');
+
+            // ADMIN and IGP have full statewide access to all operations
+            if (role === 'ADMIN' || role === 'IGP') return true;
+
+            // Global/Administrative actions restricted to ADMIN/IGP
+            const adminOnlyActions = ['admin_backfill', 'seed_import', 'create_project', 'create_personnel', 'delete_assignment', 'edit_personnel', 'edit_project'];
+            if (adminOnlyActions.includes(action)) {
+              showToast("Access denied \u2014 you are not authorized to perform this action.", "error");
+              return false;
+            }
+
+            // Project Incharge / SP / DSP authorization
+            if (role === 'PROJECT_INCHARGE' || role === 'SP' || role === 'DSP') {
+              // Action must be permitted
+              const permittedActions = ['add_assignment', 'edit_assignment', 'verify_assignment'];
+              if (!permittedActions.includes(action)) {
+                showToast("Access denied \u2014 you are not authorized to perform this action.", "error");
+                return false;
+              }
+              // Scope must match ALL target projects
+              if (targetProjectIds.length === 0) return false;
+              const isAuthorized = targetProjectIds.every(id => scopes.includes(id));
+              if (!isAuthorized) {
+                showToast("Access denied \u2014 you are not authorized to perform this action.", "error");
+                return false;
+              }
+              return true;
+            }
+
+            // Any other role (STAFF)
+            showToast("Access denied \u2014 you are not authorized to perform this action.", "error");
+            return false;
+          }
 
           function switchPromapTab(tabId) {
             document.querySelectorAll('.promap-tab-content').forEach(el => el.style.display = 'none');
@@ -2220,6 +2607,8 @@ select[multiple] option:selected {
                 }
               }
 
+              if(activeTab === 'dashboard') renderPromapDashboard();
+              if(activeTab === 'reports') renderPromapReports();
               if(activeTab === 'personnel') renderPromapPersonnel();
               if(activeTab === 'projects') renderPromapProjects();
               if(activeTab === 'assignments') renderPromapAssignments();
@@ -2246,6 +2635,725 @@ select[multiple] option:selected {
               return promapData.assignments.filter(a => scopes.includes(a.projectId));
             }
             return []; // Staff sees no assignments in master view
+          }
+
+          // ==========================================
+          // PART 5 - DASHBOARD LOGIC
+          // ==========================================
+          function resetDashboardFilters() {
+             document.getElementById('dashFilterProject').value = '';
+             document.getElementById('dashFilterIncharge').value = '';
+             document.getElementById('dashFilterPersonnel').value = '';
+             document.getElementById('dashFilterRank').value = '';
+             document.getElementById('dashFilterVerif').value = '';
+             document.getElementById('dashFilterAlloc').value = '';
+             renderPromapDashboard();
+          }
+
+          function drillDownToAssignments(verifStatus, allocStatus = '') {
+             switchPromapTab('assignments');
+             document.getElementById('promapAssignmentSearch').value = '';
+             document.getElementById('promapAsgFilterProject').value = '';
+             document.getElementById('promapAsgFilterVerif').value = verifStatus;
+             // Alloc status is not explicitly a filter in assignment tab yet, but could be added or ignored
+             renderPromapAssignments();
+          }
+
+          function drillDownToProject(projectId) {
+             openProjDetailModal(promapData.projects.find(p => p.projectId === projectId)?._docId);
+          }
+
+          function renderPromapDashboard() {
+             // 1. Gather Authorized Data
+             const authProjects = getAuthorizedProjects();
+             const authAssignments = getAuthorizedAssignments();
+             // For personnel, only include those who have assignments in the authorized scope, OR if ADMIN, all personnel.
+             const role = window.currentUser?.promapRole;
+             let authPersonnel = [];
+             if (role === 'ADMIN' || role === 'IGP') {
+                authPersonnel = promapData.personnel;
+             } else {
+                const assignedPIds = new Set(authAssignments.map(a => a.personnelId));
+                authPersonnel = promapData.personnel.filter(p => assignedPIds.has(p.personnelId));
+             }
+
+             // 2. Populate Dropdowns (only if empty to preserve selection)
+             const projSelect = document.getElementById('dashFilterProject');
+             if(projSelect.options.length <= 1) {
+                authProjects.forEach(p => {
+                   projSelect.insertAdjacentHTML('beforeend', `<option value="${p.projectId}">${p.projectName}</option>`);
+                });
+             }
+             const pSelect = document.getElementById('dashFilterPersonnel');
+             if(pSelect.options.length <= 1) {
+                authPersonnel.forEach(p => {
+                   pSelect.insertAdjacentHTML('beforeend', `<option value="${p.personnelId}">${p.name} (${p.generalNo||'-'})</option>`);
+                });
+             }
+
+             // 3. Apply Filters
+             const fProj = document.getElementById('dashFilterProject').value;
+             const fInc = document.getElementById('dashFilterIncharge').value.toLowerCase();
+             const fPers = document.getElementById('dashFilterPersonnel').value;
+             const fRank = document.getElementById('dashFilterRank').value.toLowerCase();
+             const fVerif = document.getElementById('dashFilterVerif').value;
+             const fAlloc = document.getElementById('dashFilterAlloc').value;
+
+             let filteredAsg = authAssignments.filter(a => {
+                if (fProj && a.projectId !== fProj) return false;
+                if (fPers && a.personnelId !== fPers) return false;
+                if (fVerif && a.verificationStatus !== fVerif) return false;
+                
+                const pers = authPersonnel.find(p => p.personnelId === a.personnelId);
+                if (fRank && (!pers || !(pers.rank||'').toLowerCase().includes(fRank))) return false;
+                
+                const proj = authProjects.find(p => p.projectId === a.projectId);
+                if (fInc && (!proj || !(proj.projectIncharge||'').toLowerCase().includes(fInc))) return false;
+                
+                return true;
+             });
+
+             // If allocation filter is applied, we might need to filter personnel based on their TOTAL allocation.
+             // But assignment is per-assignment. We'll filter assignments where the personnel's total alloc fits the bucket.
+             let filteredPersonnelIds = new Set(authPersonnel.map(p => p.personnelId));
+             
+             if (fAlloc) {
+                filteredPersonnelIds = new Set(authPersonnel.filter(p => {
+                   const t = Number(p.totalAllocation) || 0;
+                   if (fAlloc === '0') return t === 0;
+                   if (fAlloc === '1-25') return t >= 1 && t <= 25;
+                   if (fAlloc === '26-50') return t >= 26 && t <= 50;
+                   if (fAlloc === '51-75') return t >= 51 && t <= 75;
+                   if (fAlloc === '76-99') return t >= 76 && t <= 99;
+                   if (fAlloc === '100') return t === 100;
+                   if (fAlloc === 'OVER') return t > 100;
+                   return true;
+                }).map(p => p.personnelId));
+
+                filteredAsg = filteredAsg.filter(a => filteredPersonnelIds.has(a.personnelId));
+             }
+
+             // 4. Compute Metrics based on filtered data
+             // Only count projects that have at least one filtered assignment, or all if no strict assignment filters
+             let activeProjSet = new Set(filteredAsg.map(a => a.projectId));
+             if (!fProj && !fInc && !fPers && !fRank && !fVerif && !fAlloc) {
+                activeProjSet = new Set(authProjects.map(p => p.projectId));
+             }
+             const totalProjects = activeProjSet.size;
+
+             let activePersSet = new Set(filteredAsg.map(a => a.personnelId));
+             if (!fProj && !fInc && !fPers && !fRank && !fVerif && !fAlloc) {
+                activePersSet = new Set(authPersonnel.map(p => p.personnelId));
+             }
+             const totalPersonnel = activePersSet.size;
+             
+             const totalAsg = filteredAsg.length;
+
+             let verifBuckets = { 'Pending Verification':0, 'Correction Required':0, 'Corrected':0, 'Verified':0, 'Approved':0 };
+             let totalAllocPoints = 0;
+
+             filteredAsg.forEach(a => {
+                const vs = a.verificationStatus || 'Pending Verification';
+                if (verifBuckets[vs] !== undefined) verifBuckets[vs]++;
+                else verifBuckets['Pending Verification']++;
+                totalAllocPoints += (Number(a.allocationPercentage) || 0);
+             });
+
+             // Personnel Allocation Distribution
+             let allocBuckets = { '0':0, '1-25':0, '26-50':0, '51-75':0, '76-99':0, '100':0, 'OVER':0 };
+             let overAllocatedPers = [];
+             let availablePers = [];
+
+             Array.from(activePersSet).forEach(pId => {
+                const p = authPersonnel.find(x => x.personnelId === pId);
+                if (!p) return;
+                const t = Number(p.totalAllocation) || 0;
+                
+                if (t === 0) allocBuckets['0']++;
+                else if (t <= 25) allocBuckets['1-25']++;
+                else if (t <= 50) allocBuckets['26-50']++;
+                else if (t <= 75) allocBuckets['51-75']++;
+                else if (t <= 99) allocBuckets['76-99']++;
+                else if (t === 100) allocBuckets['100']++;
+                else allocBuckets['OVER']++;
+
+                if (t > 100) overAllocatedPers.push(p);
+                if (t < 100) availablePers.push(p);
+             });
+
+             // 5. Render Summary Cards
+             const grid = document.getElementById('dashboardSummaryGrid');
+             grid.innerHTML = `
+               <div class="stat-card" onclick="switchPromapTab('personnel')">
+                 <div class="stat-card-title">Total Personnel</div>
+                 <div class="stat-card-value">${totalPersonnel}</div>
+                 <div class="stat-card-sub">In selected scope</div>
+               </div>
+               <div class="stat-card" onclick="switchPromapTab('projects')">
+                 <div class="stat-card-title">Total Projects</div>
+                 <div class="stat-card-value">${totalProjects}</div>
+                 <div class="stat-card-sub">In selected scope</div>
+               </div>
+               <div class="stat-card" onclick="switchPromapTab('assignments')">
+                 <div class="stat-card-title">Active Assignments</div>
+                 <div class="stat-card-value">${totalAsg}</div>
+                 <div class="stat-card-sub">Total records</div>
+               </div>
+               <div class="stat-card">
+                 <div class="stat-card-title">Avg Allocation</div>
+                 <div class="stat-card-value">${totalPersonnel ? Math.round(totalAllocPoints / totalPersonnel) : 0}%</div>
+                 <div class="stat-card-sub">Across personnel</div>
+               </div>
+               <div class="stat-card" style="border-left:4px solid var(--orange);" onclick="drillDownToAssignments('Pending Verification')">
+                 <div class="stat-card-title">Pending Verification</div>
+                 <div class="stat-card-value">${verifBuckets['Pending Verification']}</div>
+                 <div class="stat-card-sub">Assignments</div>
+               </div>
+               <div class="stat-card" style="border-left:4px solid var(--danger);" onclick="drillDownToAssignments('Correction Required')">
+                 <div class="stat-card-title">Correction Required</div>
+                 <div class="stat-card-value">${verifBuckets['Correction Required']}</div>
+                 <div class="stat-card-sub">Assignments</div>
+               </div>
+               <div class="stat-card" style="border-left:4px solid var(--success);" onclick="drillDownToAssignments('Verified')">
+                 <div class="stat-card-title">Verified & Approved</div>
+                 <div class="stat-card-value">${verifBuckets['Verified'] + verifBuckets['Approved']}</div>
+                 <div class="stat-card-sub">Assignments</div>
+               </div>
+             `;
+
+             // 6. Render Verification Breakdown
+             const verifHtml = Object.keys(verifBuckets).map(k => {
+                const count = verifBuckets[k];
+                const pct = totalAsg ? Math.round((count / totalAsg) * 100) : 0;
+                let color = 'var(--navy)';
+                if (k === 'Pending Verification') color = 'var(--orange)';
+                if (k === 'Correction Required') color = 'var(--danger)';
+                if (k === 'Verified' || k === 'Approved') color = 'var(--success)';
+                
+                return `
+                  <div style="display:flex; justify-content:space-between; font-size:13px; align-items:center; cursor:pointer;" onclick="drillDownToAssignments('${k}')">
+                    <span>${k}</span>
+                    <div style="display:flex; align-items:center; gap:10px; width:50%;">
+                       <div style="flex-grow:1; background:var(--bg3); height:8px; border-radius:4px; overflow:hidden;">
+                         <div style="width:${pct}%; background:${color}; height:100%;"></div>
+                       </div>
+                       <strong style="width:30px; text-align:right;">${count}</strong>
+                    </div>
+                  </div>
+                `;
+             }).join('');
+             document.getElementById('dashVerifBreakdown').innerHTML = verifHtml || '<div style="font-size:12px;">No assignments</div>';
+
+             // Deployment Breakdown (Deriving from Personnel Master Categories, though assignments could also hold it)
+             let depBuckets = { 'Project-Deployed':0, 'Awaiting Deployment':0, 'Officer Attachment':0, 'External Attachment':0, 'Administrative':0 };
+             Array.from(activePersSet).forEach(pId => {
+                const p = authPersonnel.find(x => x.personnelId === pId);
+                if (!p) return;
+                const cat = p.deploymentCategory || 'Project-Deployed';
+                if (depBuckets[cat] !== undefined) depBuckets[cat]++;
+                else depBuckets[cat] = 1;
+             });
+             const depHtml = Object.keys(depBuckets).map(k => {
+                const count = depBuckets[k];
+                if (count === 0) return '';
+                return `
+                  <div style="display:flex; justify-content:space-between; font-size:13px; padding:4px 0; border-bottom:1px solid var(--border);">
+                    <span>${k}</span>
+                    <strong>${count}</strong>
+                  </div>
+                `;
+             }).join('');
+             document.getElementById('dashDeploymentBreakdown').innerHTML = depHtml || '<div style="font-size:12px;">No personnel data</div>';
+
+             // 7. Render Project Distribution Table
+             let projStats = [];
+             Array.from(activeProjSet).forEach(pId => {
+                const p = authProjects.find(x => x.projectId === pId);
+                const asgs = filteredAsg.filter(a => a.projectId === pId);
+                if (!p && asgs.length===0) return;
+                
+                let totAlloc = 0;
+                let verified = 0;
+                asgs.forEach(a => {
+                   totAlloc += (Number(a.allocationPercentage)||0);
+                   if (a.verificationStatus === 'Verified' || a.verificationStatus === 'Approved') verified++;
+                });
+                
+                projStats.push({
+                   id: pId,
+                   name: p ? p.projectName : pId,
+                   count: asgs.length,
+                   avg: asgs.length ? Math.round(totAlloc / asgs.length) : 0,
+                   verifPct: asgs.length ? Math.round((verified / asgs.length) * 100) : 0
+                });
+             });
+             
+             projStats.sort((a,b) => b.count - a.count); // sort by personnel count
+
+             document.getElementById('dashProjectBody').innerHTML = projStats.map(ps => `
+                <tr onclick="drillDownToProject('${ps.id}')">
+                  <td>${ps.name}</td>
+                  <td>${ps.count}</td>
+                  <td>${ps.avg}%</td>
+                  <td>
+                    <div style="display:flex; align-items:center; gap:5px;">
+                      <div style="width:40px; background:var(--bg3); height:6px; border-radius:3px; overflow:hidden;">
+                        <div style="width:${ps.verifPct}%; background:var(--success); height:100%;"></div>
+                      </div>
+                      <span style="font-size:10px;">${ps.verifPct}%</span>
+                    </div>
+                  </td>
+                </tr>
+             `).join('') || '<tr><td colspan="4" style="text-align:center;">No project data</td></tr>';
+
+             // 8. Render Exception Tables
+             document.getElementById('dashOverAllocBody').innerHTML = overAllocatedPers.map(p => `
+                <tr>
+                  <td>${p.name}<br><span style="font-size:10px; color:var(--text3);">${p.generalNo||'-'}</span></td>
+                  <td style="color:var(--danger); font-weight:bold;">${p.totalAllocation}%</td>
+                  <td>${(p.activeProjectIds || []).length}</td>
+                </tr>
+             `).join('') || '<tr><td colspan="3" style="text-align:center; color:var(--text3);">No over-allocated personnel</td></tr>';
+
+             document.getElementById('dashAvailAllocBody').innerHTML = availablePers.map(p => `
+                <tr>
+                  <td>${p.name}<br><span style="font-size:10px; color:var(--text3);">${p.generalNo||'-'}</span></td>
+                  <td>${p.totalAllocation || 0}%</td>
+                  <td style="color:var(--success); font-weight:bold;">${100 - (Number(p.totalAllocation)||0)}%</td>
+                </tr>
+             `).join('') || '<tr><td colspan="3" style="text-align:center; color:var(--text3);">No available personnel</td></tr>';
+
+          }
+
+          // ==========================================
+          // PART 6 - REPORTS LOGIC
+          // ==========================================
+          let currentReportHeaders = [];
+          let currentReportRows = [];
+
+          function resetReportFilters() {
+             document.getElementById('repFilterProject').value = '';
+             document.getElementById('repFilterIncharge').value = '';
+             document.getElementById('repFilterPersonnel').value = '';
+             document.getElementById('repFilterRank').value = '';
+             document.getElementById('repFilterVerif').value = '';
+             document.getElementById('repFilterAlloc').value = '';
+             document.getElementById('repFilterDeployment').value = '';
+             renderPromapReports();
+          }
+
+          function renderPromapReports() {
+             const type = document.getElementById('reportTypeSelector').value;
+             
+             // 1. Gather Authorized Data
+             const authProjects = getAuthorizedProjects();
+             const authAssignments = getAuthorizedAssignments();
+             
+             const role = window.currentUser?.promapRole;
+             let authPersonnel = [];
+             if (role === 'ADMIN' || role === 'IGP') {
+                authPersonnel = promapData.personnel;
+             } else {
+                const assignedPIds = new Set(authAssignments.map(a => a.personnelId));
+                authPersonnel = promapData.personnel.filter(p => assignedPIds.has(p.personnelId));
+             }
+
+             // 2. Populate Dropdowns (only if empty to preserve selection)
+             const projSelect = document.getElementById('repFilterProject');
+             if(projSelect.options.length <= 1) {
+                authProjects.forEach(p => projSelect.insertAdjacentHTML('beforeend', `<option value="${p.projectId}">${p.projectName}</option>`));
+             }
+             const pSelect = document.getElementById('repFilterPersonnel');
+             if(pSelect.options.length <= 1) {
+                authPersonnel.forEach(p => pSelect.insertAdjacentHTML('beforeend', `<option value="${p.personnelId}">${p.name} (${p.generalNo||'-'})</option>`));
+             }
+
+             // 3. Read Filters
+             const fProj = document.getElementById('repFilterProject').value;
+             const fInc = document.getElementById('repFilterIncharge').value.toLowerCase();
+             const fPers = document.getElementById('repFilterPersonnel').value;
+             const fRank = document.getElementById('repFilterRank').value.toLowerCase();
+             const fVerif = document.getElementById('repFilterVerif').value;
+             const fAlloc = document.getElementById('repFilterAlloc').value;
+             const fDep = document.getElementById('repFilterDeployment').value;
+
+             // 4. Base filtering helper for assignments
+             const getFilteredAssignments = () => {
+                 return authAssignments.filter(a => {
+                    if (fProj && a.projectId !== fProj) return false;
+                    if (fPers && a.personnelId !== fPers) return false;
+                    if (fVerif && a.verificationStatus !== fVerif) return false;
+                    
+                    const pers = authPersonnel.find(p => p.personnelId === a.personnelId);
+                    if (fRank && (!pers || !(pers.rank||'').toLowerCase().includes(fRank))) return false;
+                    if (fDep && (!pers || pers.deploymentCategory !== fDep)) return false;
+                    
+                    if (fAlloc) {
+                       if (!pers) return false;
+                       const t = Number(pers.totalAllocation) || 0;
+                       if (fAlloc === '0' && t !== 0) return false;
+                       if (fAlloc === '1-25' && (t < 1 || t > 25)) return false;
+                       if (fAlloc === '26-50' && (t < 26 || t > 50)) return false;
+                       if (fAlloc === '51-75' && (t < 51 || t > 75)) return false;
+                       if (fAlloc === '76-99' && (t < 76 || t > 99)) return false;
+                       if (fAlloc === '100' && t !== 100) return false;
+                       if (fAlloc === 'OVER' && t <= 100) return false;
+                    }
+                    
+                    const proj = authProjects.find(p => p.projectId === a.projectId);
+                    if (fInc && (!proj || !(proj.projectIncharge||'').toLowerCase().includes(fInc))) return false;
+                    
+                    return true;
+                 });
+             };
+
+             // Base filtering helper for personnel
+             const getFilteredPersonnel = () => {
+                 return authPersonnel.filter(p => {
+                    if (fPers && p.personnelId !== fPers) return false;
+                    if (fRank && !(p.rank||'').toLowerCase().includes(fRank)) return false;
+                    if (fDep && p.deploymentCategory !== fDep) return false;
+                    
+                    if (fAlloc) {
+                       const t = Number(p.totalAllocation) || 0;
+                       if (fAlloc === '0' && t !== 0) return false;
+                       if (fAlloc === '1-25' && (t < 1 || t > 25)) return false;
+                       if (fAlloc === '26-50' && (t < 26 || t > 50)) return false;
+                       if (fAlloc === '51-75' && (t < 51 || t > 75)) return false;
+                       if (fAlloc === '76-99' && (t < 76 || t > 99)) return false;
+                       if (fAlloc === '100' && t !== 100) return false;
+                       if (fAlloc === 'OVER' && t <= 100) return false;
+                    }
+
+                    // For Project, Incharge, Verif Status -> these require checking their assignments
+                    if (fProj || fInc || fVerif) {
+                       const pAsg = authAssignments.filter(a => a.personnelId === p.personnelId);
+                       if (pAsg.length === 0) return false; // if filtering by project traits, they must have assignments
+                       
+                       let match = pAsg.some(a => {
+                          if (fProj && a.projectId !== fProj) return false;
+                          if (fVerif && a.verificationStatus !== fVerif) return false;
+                          const proj = authProjects.find(pr => pr.projectId === a.projectId);
+                          if (fInc && (!proj || !(proj.projectIncharge||'').toLowerCase().includes(fInc))) return false;
+                          return true;
+                       });
+                       if (!match) return false;
+                    }
+                    
+                    return true;
+                 });
+             };
+
+             // Base filtering helper for projects
+             const getFilteredProjects = () => {
+                 return authProjects.filter(p => {
+                    if (fProj && p.projectId !== fProj) return false;
+                    if (fInc && !(p.projectIncharge||'').toLowerCase().includes(fInc)) return false;
+                    
+                    // For Personnel, Rank, Verif Status -> check assignments
+                    if (fPers || fRank || fVerif || fDep || fAlloc) {
+                       const pAsg = authAssignments.filter(a => a.projectId === p.projectId);
+                       if (pAsg.length === 0) return false;
+                       
+                       let match = pAsg.some(a => {
+                          if (fPers && a.personnelId !== fPers) return false;
+                          if (fVerif && a.verificationStatus !== fVerif) return false;
+                          const pers = authPersonnel.find(pr => pr.personnelId === a.personnelId);
+                          if (fRank && (!pers || !(pers.rank||'').toLowerCase().includes(fRank))) return false;
+                          if (fDep && (!pers || pers.deploymentCategory !== fDep)) return false;
+                          if (fAlloc) {
+                             if (!pers) return false;
+                             const t = Number(pers.totalAllocation) || 0;
+                             if (fAlloc === '0' && t !== 0) return false;
+                             if (fAlloc === '1-25' && (t < 1 || t > 25)) return false;
+                             if (fAlloc === '26-50' && (t < 26 || t > 50)) return false;
+                             if (fAlloc === '51-75' && (t < 51 || t > 75)) return false;
+                             if (fAlloc === '76-99' && (t < 76 || t > 99)) return false;
+                             if (fAlloc === '100' && t !== 100) return false;
+                             if (fAlloc === 'OVER' && t <= 100) return false;
+                          }
+                          return true;
+                       });
+                       if (!match) return false;
+                    }
+                    return true;
+                 });
+             };
+
+             let headers = [];
+             let rows = [];
+             let summaryHtml = '';
+
+             // 5. Generate Report based on Type
+             switch(type) {
+                case 'personnel': {
+                   headers = ['Name', 'General Number', 'Rank', 'Mobile', 'Status', 'Deployment', 'Projects', 'Total Alloc %'];
+                   const fp = getFilteredPersonnel();
+                   rows = fp.map(p => [
+                      p.name || '',
+                      p.generalNo || '',
+                      p.rank || '',
+                      p.officialMobile || '',
+                      p.isActive ? 'Active' : 'Inactive',
+                      p.deploymentCategory || 'Project-Deployed',
+                      (p.activeProjectIds || []).length,
+                      p.totalAllocation || 0
+                   ]);
+                   summaryHtml = `<span><strong>Total Personnel:</strong> ${fp.length}</span>`;
+                   break;
+                }
+                case 'project': {
+                   headers = ['Project Name', 'Incharge', 'Description', 'Personnel Count', 'Primary', 'Support', 'Total Alloc %'];
+                   const fproj = getFilteredProjects();
+                   rows = fproj.map(p => {
+                      const pAsgs = authAssignments.filter(a => a.projectId === p.projectId);
+                      const primary = pAsgs.filter(a => a.primaryOrSupport === 'Primary').length;
+                      const support = pAsgs.filter(a => a.primaryOrSupport === 'Support').length;
+                      const totalA = pAsgs.reduce((sum, a) => sum + (Number(a.allocationPercentage)||0), 0);
+                      return [
+                         p.projectName || '',
+                         p.projectIncharge || '',
+                         p.description || '',
+                         pAsgs.length,
+                         primary,
+                         support,
+                         totalA
+                      ];
+                   });
+                   summaryHtml = `<span><strong>Total Projects:</strong> ${fproj.length}</span>`;
+                   break;
+                }
+                case 'assignment': {
+                   headers = ['Personnel', 'Gen No', 'Rank', 'Project', 'Incharge', 'Role', 'Primary/Support', 'Alloc %', 'Verif Status', 'Created At'];
+                   const fasg = getFilteredAssignments();
+                   rows = fasg.map(a => {
+                      const p = authPersonnel.find(x => x.personnelId === a.personnelId) || {};
+                      const pr = authProjects.find(x => x.projectId === a.projectId) || {};
+                      return [
+                         p.name || '',
+                         p.generalNo || '',
+                         p.rank || '',
+                         pr.projectName || '',
+                         pr.projectIncharge || '',
+                         a.role || '',
+                         a.primaryOrSupport || '',
+                         a.allocationPercentage || 0,
+                         a.verificationStatus || 'Pending Verification',
+                         a.createdAt ? new Date(a.createdAt).toLocaleDateString() : ''
+                      ];
+                   });
+                   summaryHtml = `<span><strong>Total Assignments:</strong> ${fasg.length}</span>`;
+                   break;
+                }
+                case 'allocation': {
+                   headers = ['Personnel', 'Gen No', 'Rank', 'Deployment', 'Total Alloc %', 'Available Capacity', 'Over-Allocated'];
+                   const fpa = getFilteredPersonnel();
+                   rows = fpa.map(p => {
+                      const t = Number(p.totalAllocation) || 0;
+                      return [
+                         p.name || '',
+                         p.generalNo || '',
+                         p.rank || '',
+                         p.deploymentCategory || 'Project-Deployed',
+                         t,
+                         t < 100 ? (100 - t) + '%' : '0%',
+                         t > 100 ? 'YES' : 'NO'
+                      ];
+                   });
+                   const overCount = rows.filter(r => r[6] === 'YES').length;
+                   summaryHtml = `<span><strong>Total Personnel:</strong> ${fpa.length}</span> <span style="color:var(--danger)"><strong>Over-Allocated:</strong> ${overCount}</span>`;
+                   break;
+                }
+                case 'verification': {
+                   headers = ['Project', 'Personnel', 'Gen No', 'Verif Status', 'Correction Reason', 'Last Action', 'Remarks'];
+                   const fasgv = getFilteredAssignments();
+                   rows = fasgv.map(a => {
+                      const p = authPersonnel.find(x => x.personnelId === a.personnelId) || {};
+                      const pr = authProjects.find(x => x.projectId === a.projectId) || {};
+                      let lastAction = '';
+                      if (a.auditLog && a.auditLog.length > 0) {
+                         lastAction = a.auditLog[a.auditLog.length-1].action || '';
+                      }
+                      return [
+                         pr.projectName || '',
+                         p.name || '',
+                         p.generalNo || '',
+                         a.verificationStatus || 'Pending Verification',
+                         a.correctionReason || '',
+                         lastAction,
+                         a.remarks || ''
+                      ];
+                   });
+                   summaryHtml = `<span><strong>Assignments:</strong> ${fasgv.length}</span>`;
+                   break;
+                }
+                case 'deployment': {
+                   headers = ['Deployment Category', 'Personnel', 'Gen No', 'Rank', 'Status'];
+                   const fpd = getFilteredPersonnel();
+                   rows = fpd.map(p => [
+                      p.deploymentCategory || 'Project-Deployed',
+                      p.name || '',
+                      p.generalNo || '',
+                      p.rank || '',
+                      p.isActive ? 'Active' : 'Inactive'
+                   ]);
+                   summaryHtml = `<span><strong>Total Personnel:</strong> ${fpd.length}</span>`;
+                   break;
+                }
+                case 'project_manpower': {
+                   headers = ['Project', 'Incharge', 'Total Personnel', 'Primary', 'Support', 'Total Alloc %', 'Pending Verif', 'Verified/Approved'];
+                   const fprojm = getFilteredProjects();
+                   rows = fprojm.map(p => {
+                      const pAsgs = getFilteredAssignments().filter(a => a.projectId === p.projectId);
+                      let vOk = 0, vPend = 0, totA = 0, prim = 0, supp = 0;
+                      pAsgs.forEach(a => {
+                         totA += (Number(a.allocationPercentage)||0);
+                         if(a.primaryOrSupport==='Primary') prim++; else supp++;
+                         if(a.verificationStatus==='Verified' || a.verificationStatus==='Approved') vOk++;
+                         else vPend++;
+                      });
+                      return [
+                         p.projectName || '',
+                         p.projectIncharge || '',
+                         pAsgs.length,
+                         prim,
+                         supp,
+                         totA,
+                         vPend,
+                         vOk
+                      ];
+                   });
+                   summaryHtml = `<span><strong>Total Projects:</strong> ${fprojm.length}</span>`;
+                   break;
+                }
+                case 'personnel_assignment': {
+                   headers = ['Personnel', 'Gen No', 'Rank', 'Project', 'Role', 'Alloc %', 'Verif Status'];
+                   const fasgpa = getFilteredAssignments();
+                   rows = fasgpa.map(a => {
+                      const p = authPersonnel.find(x => x.personnelId === a.personnelId) || {};
+                      const pr = authProjects.find(x => x.projectId === a.projectId) || {};
+                      return [
+                         p.name || '',
+                         p.generalNo || '',
+                         p.rank || '',
+                         pr.projectName || '',
+                         a.role || '',
+                         a.allocationPercentage || 0,
+                         a.verificationStatus || 'Pending Verification'
+                      ];
+                   });
+                   summaryHtml = `<span><strong>Total Records:</strong> ${fasgpa.length}</span>`;
+                   break;
+                }
+                case 'exception': {
+                   headers = ['Exception Type', 'Details', 'Personnel / Project', 'Severity'];
+                   
+                   // Over allocated
+                   getFilteredPersonnel().filter(p => (Number(p.totalAllocation)||0) > 100).forEach(p => {
+                      rows.push(['Over-Allocated', `Total: ${p.totalAllocation}%`, `${p.name} (${p.generalNo||'-'})`, 'HIGH']);
+                   });
+
+                   // Correction Required
+                   getFilteredAssignments().filter(a => a.verificationStatus === 'Correction Required').forEach(a => {
+                      const p = authPersonnel.find(x => x.personnelId === a.personnelId) || {};
+                      const pr = authProjects.find(x => x.projectId === a.projectId) || {};
+                      rows.push(['Correction Required', `Reason: ${a.correctionReason||'N/A'}`, `${p.name} -> ${pr.projectName}`, 'HIGH']);
+                   });
+
+                   // Missing data (No Gen No)
+                   getFilteredPersonnel().filter(p => !p.generalNo).forEach(p => {
+                      rows.push(['Missing Master Data', `No General Number`, `${p.name}`, 'MEDIUM']);
+                   });
+
+                   summaryHtml = `<span><strong style="color:var(--danger)">Total Exceptions:</strong> ${rows.length}</span>`;
+                   break;
+                }
+                case 'audit': {
+                   headers = ['Timestamp', 'User', 'Action', 'Project', 'Personnel', 'Reason / Remarks'];
+                   const fasga = getFilteredAssignments();
+                   fasga.forEach(a => {
+                      const pr = authProjects.find(x => x.projectId === a.projectId) || {};
+                      const p = authPersonnel.find(x => x.personnelId === a.personnelId) || {};
+                      if (a.auditLog && Array.isArray(a.auditLog)) {
+                         a.auditLog.forEach(log => {
+                            rows.push([
+                               log.timestamp ? new Date(log.timestamp).toLocaleString() : '',
+                               log.userEmail || '',
+                               log.action || '',
+                               pr.projectName || '',
+                               p.name || '',
+                               log.reason || log.remarks || ''
+                            ]);
+                         });
+                      }
+                   });
+                   // Sort by timestamp desc
+                   rows.sort((a,b) => new Date(b[0]) - new Date(a[0]));
+                   summaryHtml = `<span><strong>Total Audit Events:</strong> ${rows.length}</span>`;
+                   break;
+                }
+             }
+
+             // Render Table
+             currentReportHeaders = headers;
+             currentReportRows = rows;
+
+             document.getElementById('promapReportSummary').innerHTML = summaryHtml;
+
+             if (rows.length === 0) {
+                document.getElementById('promapReportHead').innerHTML = `<tr><th>Notice</th></tr>`;
+                document.getElementById('promapReportBody').innerHTML = `<tr><td style="text-align:center; padding:30px;">No records available for the selected filters.</td></tr>`;
+             } else {
+                document.getElementById('promapReportHead').innerHTML = `<tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
+                document.getElementById('promapReportBody').innerHTML = rows.map(row => `
+                   <tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>
+                `).join('');
+             }
+          }
+
+          function exportReportExcel() {
+             if (!currentReportHeaders.length || !currentReportRows.length) {
+                alert("No data to export.");
+                return;
+             }
+             const ws = XLSX.utils.aoa_to_sheet([currentReportHeaders, ...currentReportRows]);
+             const wb = XLSX.utils.book_new();
+             XLSX.utils.book_append_sheet(wb, ws, "Report Data");
+             
+             const sel = document.getElementById('reportTypeSelector');
+             const rName = sel.options[sel.selectedIndex].text.replace(/[^a-zA-Z0-9]/g, '_');
+             XLSX.writeFile(wb, `PROMAP_${rName}_${new Date().toISOString().slice(0,10)}.xlsx`);
+          }
+
+          function exportReportCSV() {
+             if (!currentReportHeaders.length || !currentReportRows.length) {
+                alert("No data to export.");
+                return;
+             }
+             let csvContent = "data:text/csv;charset=utf-8,";
+             
+             // Escape helper
+             const escapeCSV = (str) => {
+                 if (str === null || str === undefined) return '""';
+                 const s = String(str).replace(/"/g, '""');
+                 return `"${s}"`;
+             };
+
+             csvContent += currentReportHeaders.map(escapeCSV).join(",") + "\r\n";
+             currentReportRows.forEach(row => {
+                 csvContent += row.map(escapeCSV).join(",") + "\r\n";
+             });
+
+             const sel = document.getElementById('reportTypeSelector');
+             const rName = sel.options[sel.selectedIndex].text.replace(/[^a-zA-Z0-9]/g, '_');
+             
+             const encodedUri = encodeURI(csvContent);
+             const link = document.createElement("a");
+             link.setAttribute("href", encodedUri);
+             link.setAttribute("download", `PROMAP_${rName}_${new Date().toISOString().slice(0,10)}.csv`);
+             document.body.appendChild(link);
+             link.click();
+             document.body.removeChild(link);
           }
 
           function renderPromapPersonnel() {
@@ -2322,24 +3430,78 @@ select[multiple] option:selected {
             });
           }
 
+          let isAsgFilterPopulated = false;
+
           function renderPromapAssignments() {
+            const list = getAuthorizedAssignments();
+
+            if (!isAsgFilterPopulated) {
+                const prjSelect = document.getElementById('asgFilterProject');
+                const existingPrjs = new Set();
+                list.forEach(a => existingPrjs.add(a.projectId));
+                promapData.projects.filter(p => existingPrjs.has(p.projectId)).forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.projectId;
+                    opt.textContent = p.projectName;
+                    prjSelect.appendChild(opt);
+                });
+
+                const persSelect = document.getElementById('asgFilterPersonnel');
+                const existingPers = new Set();
+                list.forEach(a => existingPers.add(a.personnelId));
+                promapData.personnel.filter(p => existingPers.has(p.personnelId)).forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.personnelId;
+                    opt.textContent = p.name;
+                    persSelect.appendChild(opt);
+                });
+                isAsgFilterPopulated = true;
+            }
+
             const query = (document.getElementById('promapAssignmentSearch').value || '').toLowerCase();
+            const fProj = document.getElementById('asgFilterProject').value;
+            const fPers = document.getElementById('asgFilterPersonnel').value;
+            const fVerif = document.getElementById('asgFilterVerif').value;
+            
             const tbody = document.getElementById('promapAssignmentBody');
             tbody.innerHTML = '';
 
-            const list = getAuthorizedAssignments();
+            let filtered = list;
+            if(fProj) filtered = filtered.filter(a => a.projectId === fProj);
+            if(fPers) filtered = filtered.filter(a => a.personnelId === fPers);
+            if(fVerif) filtered = filtered.filter(a => a.verificationStatus === fVerif);
+            
+            if (query) {
+                filtered = filtered.filter(a => {
+                    const proj = promapData.projects.find(p => p.projectId === a.projectId) || {};
+                    const pers = promapData.personnel.find(p => p.personnelId === a.personnelId) || {};
+                    const searchStr = `${proj.projectName} ${pers.name} ${a.role} ${a.workstream}`.toLowerCase();
+                    return searchStr.includes(query);
+                });
+            }
 
-            if(list.length === 0) {
-              tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No assignments found in your scope.</td></tr>';
+            // Metrics
+            let vCount = 0, cCount = 0, pCount = 0;
+            filtered.forEach(a => {
+               const vs = a.verificationStatus || '';
+               if (vs === 'Verified' || vs === 'Approved' || vs === 'VERIFIED') vCount++;
+               else if (vs === 'Correction Required' || vs === 'NOT_VERIFIED') cCount++;
+               else pCount++;
+            });
+            document.getElementById('asgMetricTotal').textContent = filtered.length;
+            document.getElementById('asgMetricVerified').textContent = vCount;
+            document.getElementById('asgMetricCorrection').textContent = cCount;
+            document.getElementById('asgMetricPending').textContent = pCount;
+
+            if(filtered.length === 0) {
+              tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No assignments match criteria.</td></tr>';
               return;
             }
 
-            list.forEach(a => {
+            filtered.forEach(a => {
               const proj = promapData.projects.find(p => p.projectId === a.projectId) || {};
               const pers = promapData.personnel.find(p => p.personnelId === a.personnelId) || {};
               
-              if(query && !(proj.projectName||'').toLowerCase().includes(query) && !(pers.name||'').toLowerCase().includes(query)) return;
-
               let verifColor = '#ef4444';
               if(a.verificationStatus === 'Verified' || a.verificationStatus === 'Approved' || a.verificationStatus === 'VERIFIED') verifColor = 'var(--success)';
               if(a.verificationStatus === 'Pending Verification' || a.verificationStatus === 'Corrected' || a.verificationStatus === 'PROVISIONAL') verifColor = '#eab308';
@@ -2417,11 +3579,10 @@ select[multiple] option:selected {
               <div style="background:var(--bg3); padding:15px; border-radius:8px; margin-bottom:15px;">
                 <h4 style="margin:0 0 10px 0; color:var(--text1);">SECTION 1: Basic Information</h4>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:13px;">
-                  <div><strong>ID:</strong> ${p.personnelId}</div>
                   <div><strong>Name:</strong> ${p.name}</div>
-                  <div><strong>Rank:</strong> ${p.rank}</div>
+                  <div><strong>Rank:</strong> ${p.rank || '-'}</div>
                   <div><strong>General No:</strong> ${p.generalNo || '-'}</div>
-                  <div><strong>Contact:</strong> ${p.contactNumber || '-'}</div>
+                  <div><strong>Contact:</strong> ${p.contactNumber && String(p.contactNumber).length > 5 ? p.contactNumber : 'Not Available / Protected'}</div>
                 </div>
               </div>
               <div style="background:var(--bg3); padding:15px; border-radius:8px; margin-bottom:15px;">
@@ -2433,15 +3594,27 @@ select[multiple] option:selected {
             `;
             
             if(asgs.length === 0) {
-              html += `<div style="font-size:12px; color:var(--text3);">No technical project assignments found.</div>`;
+              html += `<div style="font-size:12px; color:var(--text3);">No assignments found.</div>`;
             } else {
               asgs.forEach(a => {
                 const proj = promapData.projects.find(pr => pr.projectId === a.projectId);
+                let auditHtml = '';
+                if(a.auditLog && a.auditLog.length > 0) {
+                  auditHtml = `<div style="margin-top:10px; font-size:11px; color:var(--text3); border-top:1px solid var(--border); padding-top:5px;">
+                    <strong>Audit History:</strong><br>
+                    ${a.auditLog.map(al => `- ${new Date(al.timestamp).toLocaleString()} by ${al.changedBy}: ${al.reason}`).join('<br>')}
+                  </div>`;
+                }
+
                 html += `
-                  <div style="border-left:3px solid var(--navy); padding-left:10px; margin-bottom:10px; font-size:13px;">
-                    <strong>${proj ? proj.projectName : a.projectId}</strong><br>
-                    Role: ${a.role || '-'} | Allocation: ${a.allocationPercentage || 0}% | RACI: ${a.raci || '-'}<br>
+                  <div style="border-left:3px solid var(--navy); padding-left:10px; margin-bottom:10px; font-size:13px; background:var(--bg2); padding:10px;">
+                    <div style="display:flex; justify-content:space-between;">
+                        <strong>${proj ? proj.projectName : a.projectId}</strong>
+                        <button class="btn-secondary" onclick="openEditAsgModal('${a._docId}'); closeModal('promapPersDetailModal');" style="padding:2px 6px; font-size:10px;">Edit</button>
+                    </div>
+                    Role: ${a.role || '-'} | Workstream: ${a.workstream || '-'} | Allocation: ${a.allocationPercentage || 0}%<br>
                     Status: <span style="font-weight:600;">${a.verificationStatus || 'NOT_VERIFIED'}</span>
+                    ${auditHtml}
                   </div>
                 `;
               });
@@ -2456,49 +3629,110 @@ select[multiple] option:selected {
             if(!p) return;
             const asgs = promapData.assignments.filter(a => a.projectId === p.projectId);
             
+            let totalAlloc = 0;
+            asgs.forEach(a => totalAlloc += (Number(a.allocationPercentage) || 0));
+
             let html = `
               <div style="background:var(--bg3); padding:15px; border-radius:8px; margin-bottom:15px;">
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:13px;">
-                  <div><strong>Code:</strong> ${p.projectCode}</div>
                   <div><strong>Name:</strong> ${p.projectName}</div>
-                  <div><strong>Status:</strong> ${p.status}</div>
                   <div><strong>Incharge:</strong> ${p.projectIncharge || '-'}</div>
+                  <div><strong>Total Personnel:</strong> ${asgs.length}</div>
+                  <div><strong>Total Allocation:</strong> ${totalAlloc}%</div>
                 </div>
-                <p style="margin-top:10px; font-size:12px; color:var(--text3);">${p.projectDescription || ''}</p>
               </div>
-              <h4 style="margin:0 0 10px 0; color:var(--text1);">Assigned Personnel</h4>
+              <h4 style="margin:0 0 10px 0; color:var(--navy);"><i class="fa-solid fa-users"></i> Assigned Personnel</h4>
             `;
-            
+
             if(asgs.length === 0) {
-              html += `<div style="font-size:12px; color:var(--text3);">No personnel assigned.</div>`;
+              html += `<div style="font-size:12px; color:var(--text3);">No personnel assigned to this project.</div>`;
             } else {
-              html += `<table class="data-table" style="font-size:12px;"><thead><tr><th>Name</th><th>Role</th><th>Alloc%</th><th>Primary/Sup</th></tr></thead><tbody>`;
+              html += `<table class="data-table" style="font-size:12px;"><thead><tr><th>Name</th><th>General No</th><th>Role</th><th>Alloc %</th><th>Verification</th><th>Action</th></tr></thead><tbody>`;
               asgs.forEach(a => {
-                const pers = promapData.personnel.find(pr => pr.personnelId === a.personnelId);
-                html += `
-                  <tr>
-                    <td>${pers ? pers.name : a.personnelId}</td>
-                    <td>${a.role || '-'}</td>
-                    <td>${a.allocationPercentage || 0}%</td>
-                    <td>${a.primarySupport || '-'}</td>
-                  </tr>
-                `;
+                const pers = promapData.personnel.find(pr => pr.personnelId === a.personnelId) || {};
+                let verifColor = '#ef4444';
+                if(a.verificationStatus === 'Verified' || a.verificationStatus === 'Approved' || a.verificationStatus === 'VERIFIED') verifColor = 'var(--success)';
+                else if(a.verificationStatus === 'Pending Verification' || a.verificationStatus === 'Corrected' || a.verificationStatus === 'PROVISIONAL') verifColor = '#eab308';
+                
+                html += `<tr>
+                  <td>${pers.name || a.personnelId}</td>
+                  <td>${pers.generalNo || '-'}</td>
+                  <td>${a.role || '-'}</td>
+                  <td>${a.allocationPercentage || 0}%</td>
+                  <td style="color:${verifColor}; font-weight:bold;">${a.verificationStatus || 'NOT_VERIFIED'}</td>
+                  <td><button class="btn-secondary" onclick="openEditAsgModal('${a._docId}'); closeModal('promapProjDetailModal');" style="padding:2px 6px; font-size:10px;">Edit</button></td>
+                </tr>`;
               });
               html += `</tbody></table>`;
             }
+
             document.getElementById('projDetailBody').innerHTML = html;
             document.getElementById('promapProjDetailModal').style.display = 'flex';
+          }
+
+          function openAddAsgModal() {
+            if (!checkPromapAuth('add_assignment', [])) {
+               // We pass empty array for modal open, but real check is on save.
+               // However, we want to at least check if they have 'add_assignment' perm.
+               const role = window.currentUser?.promapRole;
+               if (role !== 'ADMIN' && role !== 'IGP' && role !== 'PROJECT_INCHARGE' && role !== 'SP' && role !== 'DSP') {
+                  return showToast("Access denied \u2014 you are not authorized to perform this action.", "error");
+               }
+            }
+            document.querySelectorAll('.modal-overlay').forEach(el => el.style.display = 'none');
+            document.getElementById('editAsgId').value = 'NEW_ASSIGNMENT';
+            document.getElementById('editAsgPersonnelContainer').style.display = 'flex';
+            
+            const persSelect = document.getElementById('editAsgPersonnel');
+            persSelect.innerHTML = '<option value="">-- Select Personnel --</option>';
+            promapData.personnel.forEach(p => {
+              const opt = document.createElement('option');
+              opt.value = p.personnelId;
+              opt.textContent = `${p.name} (${p.generalNo || 'No GenNo'})`;
+              persSelect.appendChild(opt);
+            });
+
+            const prjSelect = document.getElementById('editAsgProject');
+            prjSelect.innerHTML = '<option value="">-- Select Project --</option>';
+            getAuthorizedProjects().forEach(p => {
+              const opt = document.createElement('option');
+              opt.value = p.projectId;
+              opt.textContent = p.projectName;
+              prjSelect.appendChild(opt);
+            });
+
+            document.getElementById('editAsgRole').value = '';
+            document.getElementById('editAsgWorkstream').value = '';
+            document.getElementById('editAsgAlloc').value = 0;
+            document.getElementById('editAsgPriSup').value = '';
+            document.getElementById('editAsgRaci').value = '';
+            document.getElementById('editAsgReporting').value = '';
+            document.getElementById('editAsgDeliverable').value = '';
+            document.getElementById('editAsgAllocStatus').value = '';
+            document.getElementById('editAsgEvidence').value = '';
+            document.getElementById('editAsgAddlResp').value = '';
+            document.getElementById('editAsgVerif').value = 'Pending Verification';
+            document.getElementById('editAsgRemarks').value = '';
+            document.getElementById('editAsgReason').value = '';
+            
+            const modal = document.getElementById('promapEditAsgModal');
+            modal.style.zIndex = '9999';
+            modal.style.display = 'flex';
           }
 
           function openEditAsgModal(docId) {
             const a = promapData.assignments.find(x => x._docId === docId);
             if(!a) return;
+            if (!checkPromapAuth('edit_assignment', [a.projectId])) return;
+            
+            document.querySelectorAll('.modal-overlay').forEach(el => el.style.display = 'none');
             document.getElementById('editAsgId').value = docId;
+            document.getElementById('editAsgPersonnelContainer').style.display = 'none';
             
             // Populate project dropdown
             const prjSelect = document.getElementById('editAsgProject');
             prjSelect.innerHTML = '<option value="">-- Select Project --</option>';
-            promapData.projects.forEach(p => {
+            getAuthorizedProjects().forEach(p => {
               const opt = document.createElement('option');
               opt.value = p.projectId;
               opt.textContent = p.projectName;
@@ -2517,7 +3751,6 @@ select[multiple] option:selected {
             document.getElementById('editAsgEvidence').value = a.evidenceReference || '';
             document.getElementById('editAsgAddlResp').value = a.additionalOfficialResponsibility || '';
             
-            // Map old Verification Status to new if necessary, else default to 'Pending Verification'
             let vs = a.verificationStatus || 'Pending Verification';
             if (vs === 'NOT_VERIFIED' || vs === 'PROVISIONAL' || vs === 'SUBMITTED_FOR_VERIFICATION') vs = 'Pending Verification';
             if (vs === 'CORRECTION_REQUIRED') vs = 'Correction Required';
@@ -2526,21 +3759,24 @@ select[multiple] option:selected {
             
             document.getElementById('editAsgRemarks').value = a.remarks || '';
             document.getElementById('editAsgReason').value = '';
-            document.getElementById('promapEditAsgModal').style.display = 'flex';
+            
+            const modal = document.getElementById('promapEditAsgModal');
+            modal.style.zIndex = '9999';
+            modal.style.display = 'flex';
           }
 
           async function submitEditAssignment(e) {
             e.preventDefault();
             const docId = document.getElementById('editAsgId').value;
-            const asgRecord = promapData.assignments.find(a => a._docId === docId);
-            if(!asgRecord) return showToast('Assignment not found locally', 'error');
-
-            const personnelId = asgRecord.personnelId;
+            const isNew = docId === 'NEW_ASSIGNMENT';
+            
             const newProjectId = document.getElementById('editAsgProject').value;
             if(!newProjectId) return showToast('Project is required', 'error');
 
+            if (!checkPromapAuth(isNew ? 'add_assignment' : 'edit_assignment', [newProjectId])) return;
+
             const reason = document.getElementById('editAsgReason').value.trim();
-            if(!reason) return showToast('Reason for correction is required for the audit trail', 'error');
+            if(!reason && !isNew) return showToast('Reason for correction is required for the audit trail', 'error');
 
             const data = {
               projectId: newProjectId,
@@ -2558,38 +3794,129 @@ select[multiple] option:selected {
               remarks: document.getElementById('editAsgRemarks').value
             };
 
-            // Build audit record
-            const oldValues = {};
-            const newValues = {};
-            Object.keys(data).forEach(k => {
-              if (data[k] !== asgRecord[k]) {
-                oldValues[k] = asgRecord[k];
-                newValues[k] = data[k];
+            let personnelId;
+            let asgRecord = null;
+            let pRecord = null;
+
+            if (isNew) {
+              personnelId = document.getElementById('editAsgPersonnel').value;
+              if(!personnelId) return showToast('Personnel is required', 'error');
+              
+              // DUPLICATE CHECK
+              const duplicate = promapData.assignments.find(a => (a.personnelId === personnelId || a.personnelId === personnelId) && a.projectId === data.projectId);
+              if (duplicate) return showToast('Duplicate Assignment: This personnel is already assigned to this project.', 'error');
+              
+              // ALLOCATION CHECK
+              pRecord = promapData.personnel.find(p => p.personnelId === personnelId || p._docId === personnelId);
+              let currentTotal = Number(pRecord?.totalAllocation) || 0;
+              if (currentTotal + data.allocationPercentage > 100) {
+                 return showToast(`Allocation Error: Cannot exceed 100%. Current: ${currentTotal}%, This: ${data.allocationPercentage}%`, 'error');
               }
-            });
 
-            if (Object.keys(newValues).length === 0) {
-               return showToast('No changes detected', 'info');
-            }
+              // MOCK DATA SAFETY FOR TESTING
+              const mockDocId = 'MOCK_' + Date.now();
+              const newAsg = { _docId: mockDocId, personnelId, ...data, auditLog: [{
+                   userEmail: window.currentUser?.email || 'Unknown',
+                   timestamp: new Date().toISOString(),
+                   action: 'Created',
+                   reason: reason || 'Initial assignment creation',
+                   previousValue: '',
+                   newValue: data.verificationStatus || 'Pending Verification'
+                }] 
+              };
+              promapData.assignments.push(newAsg);
+              
+              // Local Recalculation
+              if (pRecord) {
+                 pRecord.totalAllocation = currentTotal + data.allocationPercentage;
+                 if (!pRecord.activeProjectIds) pRecord.activeProjectIds = [];
+                 if (!pRecord.activeProjectIds.includes(data.projectId)) {
+                    pRecord.activeProjectIds.push(data.projectId);
+                 }
+              }
 
-            const auditRecord = {
-               changedBy: window.currentUser.name || window.currentUser.phone || 'Unknown',
-               timestamp: new Date().toISOString(),
-               oldValues,
-               newValues,
-               reason
-            };
-
-            const existingAuditLog = Array.isArray(asgRecord.auditLog) ? asgRecord.auditLog : [];
-            data.auditLog = [...existingAuditLog, auditRecord];
-
-            const res = await DataService.promap_service.syncAssignment(docId, data, personnelId, newProjectId, false);
-            if(res.ok) {
               closeModal('promapEditAsgModal');
-              loadPromapData('assignments');
-              showToast('Assignment updated', 'success');
+              renderPromapAssignments();
+              if (typeof window.renderPromapPersonnel === 'function') window.renderPromapPersonnel();
+              return showToast('Mock Assignment added (Database untouched)', 'success');
             } else {
-              showToast(res.msg, 'error');
+              asgRecord = promapData.assignments.find(a => a._docId === docId);
+              if(!asgRecord) return showToast('Assignment not found locally', 'error');
+              personnelId = asgRecord.personnelId;
+
+              const oldAlloc = Number(asgRecord.allocationPercentage) || 0;
+              const diff = data.allocationPercentage - oldAlloc;
+              pRecord = promapData.personnel.find(p => p.personnelId === personnelId || p._docId === personnelId);
+              let currentTotal = Number(pRecord?.totalAllocation) || 0;
+              
+              if (currentTotal + diff > 100) {
+                 return showToast(`Allocation Error: Cannot exceed 100%. Current: ${currentTotal}%, New Total would be: ${currentTotal + diff}%`, 'error');
+              }
+
+              const oldStatus = asgRecord.verificationStatus || 'Pending Verification';
+              const newStatus = data.verificationStatus;
+              
+              // Transition Enforcement for Verification Status
+              if (oldStatus !== newStatus) {
+                 const role = window.currentUser?.promapRole;
+                 if (role !== 'ADMIN' && role !== 'IGP') {
+                    const validTransitions = {
+                       'Pending Verification': ['Correction Required', 'Verified'],
+                       'Correction Required': ['Corrected'],
+                       'Corrected': ['Correction Required', 'Verified'],
+                       'Verified': ['Correction Required', 'Approved'],
+                       'Approved': [] // Only ADMIN can demote from Approved
+                    };
+                    if (!validTransitions[oldStatus] || !validTransitions[oldStatus].includes(newStatus)) {
+                       return showToast(`Invalid status transition from '${oldStatus}' to '${newStatus}'.`, 'error');
+                    }
+                 }
+              }
+
+              const oldValues = {};
+              const newValues = {};
+              Object.keys(data).forEach(k => {
+                if (data[k] !== asgRecord[k]) {
+                  oldValues[k] = asgRecord[k];
+                  newValues[k] = data[k];
+                }
+              });
+
+              if (Object.keys(newValues).length === 0) return showToast('No changes detected', 'info');
+
+              let actionName = 'Updated';
+              if (oldStatus !== newStatus) actionName = newStatus;
+
+              const auditRecord = {
+                 userEmail: window.currentUser?.email || 'Unknown',
+                 timestamp: new Date().toISOString(),
+                 action: actionName,
+                 reason: reason || 'Updated via UI',
+                 previousValue: oldStatus !== newStatus ? oldStatus : JSON.stringify(oldValues),
+                 newValue: oldStatus !== newStatus ? newStatus : JSON.stringify(newValues)
+              };
+              
+              Object.assign(asgRecord, data);
+              if(!asgRecord.auditLog) asgRecord.auditLog = [];
+              asgRecord.auditLog.push(auditRecord);
+
+              // Local Recalculation
+              if (pRecord) {
+                 pRecord.totalAllocation = currentTotal + diff;
+                 if (newValues.projectId) {
+                    if (!pRecord.activeProjectIds) pRecord.activeProjectIds = [];
+                    if (!pRecord.activeProjectIds.includes(data.projectId)) {
+                       pRecord.activeProjectIds.push(data.projectId);
+                    }
+                 }
+              }
+
+              // MOCK UPDATE FOR TESTING
+              Object.assign(asgRecord, data);
+              closeModal('promapEditAsgModal');
+              renderPromapAssignments();
+              if (typeof window.renderPromapPersonnel === 'function') window.renderPromapPersonnel();
+              return showToast('Mock Assignment updated (Database untouched)', 'success');
             }
           }
 
@@ -2597,6 +3924,12 @@ select[multiple] option:selected {
           let smDryRunData = null;
 
           function openSystemMaintenanceModal() {
+            document.getElementById('adminSettingsUser').textContent = window.currentUser?.email || 'Unknown';
+            document.getElementById('adminSettingsRole').textContent = window.currentUser?.promapRole || 'None';
+            const scopes = JSON.parse(localStorage.getItem('promapScopes') || '[]');
+            const scopeText = scopes.length ? scopes.join(', ') : 'Statewide (All Projects)';
+            document.getElementById('adminSettingsScope').textContent = scopeText;
+            
             document.getElementById('promapSystemMaintenanceModal').style.display = 'flex';
             document.getElementById('smProgressContainer').style.display = 'none';
             document.getElementById('smConfirmBox').style.display = 'none';
@@ -2605,6 +3938,7 @@ select[multiple] option:selected {
           }
 
           async function runBackfillDryRun() {
+            if (!checkPromapAuth('admin_backfill')) return;
             const btn = document.querySelector('#promapSystemMaintenanceModal .btn-secondary');
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Analyzing...';
             btn.disabled = true;
@@ -2704,7 +4038,9 @@ select[multiple] option:selected {
           }
 
           async function executeBackfillSync() {
+            if (!checkPromapAuth('admin_backfill')) return;
             if(!smDryRunData || smDryRunData.length === 0) return alert('No updates required.');
+            if (!confirm("DANGEROUS OPERATION: This will apply the computed values to the personnel data. Are you sure?")) return;
             
             const btn = document.querySelector('#smConfirmBox button');
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Executing...';
@@ -2771,6 +4107,7 @@ select[multiple] option:selected {
           let assignmentSeedData = [];
 
           async function runAssignmentSeedDryRun() {
+            if (!checkPromapAuth('seed_import')) return;
             const fileInput = document.getElementById('promapSeedExcelInput');
             if (!fileInput.files.length) return alert('Please select the Excel file first.');
             const file = fileInput.files[0];
@@ -2820,10 +4157,15 @@ select[multiple] option:selected {
                   "Shakthi"
               ];
 
-              let stats = { total: rows.length, candidates: 0, matchedPGen: 0, matchedPName: 0, unmatchedP: 0, knownPrj: 0, admin: 0, special: 0, existing: 0, new: 0, dupes: 0, missingAlloc: 0, missingRole: 0, errors: 0, review: 0 };
+              let stats = { total: rows.length, candidates: 0, matchedPGen: 0, matchedPName: 0, unmatchedP: 0, knownPrj: 0, admin: 0, special: 0, existing: 0, new: 0, dupes: 0, missingAlloc: 0, missingRole: 0, errors: 0, review: 0, overAllocated: 0 };
               
               assignmentSeedData = [];
               let html = '';
+
+              const personnelAllocations = {};
+              existingPersonnel.forEach(p => {
+                 personnelAllocations[p.id] = Number(p.totalAllocation) || 0;
+              });
 
               // Process rows
               rows.forEach(r => {
@@ -2927,6 +4269,18 @@ select[multiple] option:selected {
                   }
                 }
 
+                // 7. Allocation > 100% Check
+                if (pId && action === 'CREATE') {
+                  const allocVal = parseFloat(allocRaw) || 0;
+                  const currentTotal = personnelAllocations[pId] || 0;
+                  if (currentTotal + allocVal > 100) {
+                    action = 'REVIEW — OVER-ALLOCATED';
+                    reason = `Exceeds 100% allocation (Current: ${currentTotal}%, This: ${allocVal}%)`;
+                  } else {
+                    personnelAllocations[pId] = currentTotal + allocVal;
+                  }
+                }
+
                 const record = {
                   pId, prjId, action, reason,
                   sourceData: r,
@@ -2958,6 +4312,7 @@ select[multiple] option:selected {
                 
                 if (action.startsWith('REVIEW')) stats.review++;
                 if (action === 'REVIEW — MISSING ALLOCATION') stats.missingAlloc++;
+                if (action === 'REVIEW — OVER-ALLOCATED') stats.overAllocated++;
                 if (!role && action === 'CREATE') stats.missingRole++;
 
                 if (pId) {
@@ -3026,38 +4381,69 @@ select[multiple] option:selected {
           }
 
           async function executeAssignmentSeedImport() {
+            if (!checkPromapAuth('seed_import')) return;
+            if (!confirm("DANGEROUS OPERATION: You are about to execute the Assignment Seed Import. This will modify assignments. Are you sure?")) return;
             const btn = document.getElementById('btnExecuteSeed');
             const statusDiv = document.getElementById('seed-exec-status');
             btn.disabled = true;
             btn.innerText = "Executing...";
 
             try {
-              let batches = window.chunkArray(assignmentSeedData, 100);
               let successCount = 0;
               
-              for (let i = 0; i < batches.length; i++) {
-                statusDiv.innerText = `Writing batch ${i + 1} of ${batches.length}...`;
-                const batch = window.fsWriteBatch(window.db);
+              // MOCK EXECUTION FOR PART 4.3 LOCAL TESTING
+              // ZERO FIRESTORE WRITES
+              assignmentSeedData.forEach(record => {
+                const mockId = 'local-mock-' + Date.now() + Math.floor(Math.random() * 1000) + successCount;
+                const allocVal = record.allocationPercentage === '' ? 0 : parseFloat(record.allocationPercentage);
                 
-                batches[i].forEach(record => {
-                  const newRef = window.fsDoc(window.fsCollection(window.db, 'promap_assignments'));
-                  batch.set(newRef, {
-                    assignmentId: 'TS-A-' + Date.now() + Math.floor(Math.random() * 1000),
-                    personnelId: record.pId,
-                    projectId: record.prjId,
-                    allocationPercentage: record.allocationPercentage === '' ? '' : parseFloat(record.allocationPercentage),
-                    role: record.role,
-                    workstream: record.workstream,
-                    primarySupport: record.primarySupport,
-                    status: 'Active',
-                    verificationStatus: record.verificationStatus,
-                    _createdAt: window.fsTimestamp()
-                  });
-                  successCount++;
-                });
+                const newAsg = {
+                  _docId: mockId,
+                  assignmentId: 'TS-A-MOCK-' + Math.floor(Math.random() * 10000),
+                  personnelId: record.pId,
+                  projectId: record.prjId,
+                  allocationPercentage: allocVal,
+                  role: record.role,
+                  workstream: record.workstream,
+                  primarySupport: record.primarySupport,
+                  status: 'Active',
+                  verificationStatus: record.verificationStatus,
+                  _createdAt: new Date(),
+                  auditHistory: [
+                    {
+                      changedBy: 'System Import',
+                      timestamp: new Date().toISOString(),
+                      oldValues: {},
+                      newValues: { status: 'Created via Seed Import — LOCAL MOCK' },
+                      reason: 'Initial Import'
+                    }
+                  ]
+                };
                 
-                await batch.commit();
-              }
+                // Push to local assignment array
+                if (!window.promapData.assignments) window.promapData.assignments = [];
+                window.promapData.assignments.push(newAsg);
+                
+                // Recalculate personnel locally
+                if (window.promapData.personnel) {
+                  const pMatch = window.promapData.personnel.find(p => p._docId === record.pId);
+                  if (pMatch) {
+                     pMatch.totalAllocation = (Number(pMatch.totalAllocation) || 0) + allocVal;
+                     if (!pMatch.activeProjectIds) pMatch.activeProjectIds = [];
+                     if (!pMatch.activeProjectIds.includes(record.prjId)) {
+                        pMatch.activeProjectIds.push(record.prjId);
+                     }
+                  }
+                }
+                
+                successCount++;
+              });
+              
+              // Refresh UI
+              if (typeof window.renderPromapPersonnel === 'function') window.renderPromapPersonnel();
+              if (typeof window.renderPromapProjects === 'function') window.renderPromapProjects();
+              if (typeof window.renderPromapAssignments === 'function') window.renderPromapAssignments();
+              if (typeof window.renderPromapDashboard === 'function') window.renderPromapDashboard();
               
               statusDiv.style.color = "var(--success)";
               statusDiv.innerText = `✅ Successfully created ${successCount} assignments. Please Run Dry-Run again to verify.`;
