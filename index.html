@@ -2444,9 +2444,20 @@ select[multiple] option:selected {
           <div class="modal-overlay" id="promapSystemMaintenanceModal">
             <div class="modal-content" style="max-width:600px; max-height:90vh; overflow-y:auto;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h3 style="margin:0; font-family:'Rajdhani',sans-serif; color:var(--navy);"><i class="fa-solid fa-wrench" style="color:var(--orange)"></i> System Maintenance</h3>
+                <h3 style="margin:0; font-family:'Rajdhani',sans-serif; color:var(--navy);"><i class="fa-solid fa-shield-halved" style="color:var(--orange)"></i> Admin Settings & Maintenance</h3>
                 <span style="cursor:pointer; font-size:20px;" onclick="closeModal('promapSystemMaintenanceModal')">&times;</span>
               </div>
+              
+              <!-- Session & RBAC Info -->
+              <div style="background:var(--bg3); border:1px solid var(--border); border-radius:4px; padding:15px; margin-bottom:20px;">
+                 <h4 style="margin:0 0 10px 0; font-size:14px;">Session Authorization</h4>
+                 <div style="display:grid; grid-template-columns:120px 1fr; gap:8px; font-size:13px;">
+                    <div style="color:var(--text2)">Current User:</div><div id="adminSettingsUser" style="font-weight:bold;">-</div>
+                    <div style="color:var(--text2)">System Role:</div><div id="adminSettingsRole" style="font-weight:bold;">-</div>
+                    <div style="color:var(--text2)">Project Scope:</div><div id="adminSettingsScope">-</div>
+                 </div>
+              </div>
+
               <div style="background:var(--bg2); border-left:4px solid var(--orange); padding:15px; margin-bottom:20px; font-size:13px;">
                 <strong>Admin Backfill Utility</strong><br>
                 This operation will safely recalculate derived PRO-MAP personnel fields (`activeProjectIds` and `totalAllocation`) from current assignments.
@@ -2496,6 +2507,51 @@ select[multiple] option:selected {
             projects: [],
             assignments: []
           };
+
+          // ==========================================
+          // PART 7 - SECURITY & AUTHORIZATION GUARDS
+          // ==========================================
+          function checkPromapAuth(action, targetProjectIds = []) {
+            if (!window.currentUser) {
+              showToast("Authentication required.", "error");
+              return false;
+            }
+            
+            const role = window.currentUser.promapRole;
+            const scopes = JSON.parse(localStorage.getItem('promapScopes') || '[]');
+
+            // ADMIN and IGP have full statewide access to all operations
+            if (role === 'ADMIN' || role === 'IGP') return true;
+
+            // Global/Administrative actions restricted to ADMIN/IGP
+            const adminOnlyActions = ['admin_backfill', 'seed_import', 'create_project', 'create_personnel', 'delete_assignment', 'edit_personnel', 'edit_project'];
+            if (adminOnlyActions.includes(action)) {
+              showToast("Access denied \u2014 you are not authorized to perform this action.", "error");
+              return false;
+            }
+
+            // Project Incharge / SP / DSP authorization
+            if (role === 'PROJECT_INCHARGE' || role === 'SP' || role === 'DSP') {
+              // Action must be permitted
+              const permittedActions = ['add_assignment', 'edit_assignment', 'verify_assignment'];
+              if (!permittedActions.includes(action)) {
+                showToast("Access denied \u2014 you are not authorized to perform this action.", "error");
+                return false;
+              }
+              // Scope must match ALL target projects
+              if (targetProjectIds.length === 0) return false;
+              const isAuthorized = targetProjectIds.every(id => scopes.includes(id));
+              if (!isAuthorized) {
+                showToast("Access denied \u2014 you are not authorized to perform this action.", "error");
+                return false;
+              }
+              return true;
+            }
+
+            // Any other role (STAFF)
+            showToast("Access denied \u2014 you are not authorized to perform this action.", "error");
+            return false;
+          }
 
           function switchPromapTab(tabId) {
             document.querySelectorAll('.promap-tab-content').forEach(el => el.style.display = 'none');
@@ -3615,6 +3671,14 @@ select[multiple] option:selected {
           }
 
           function openAddAsgModal() {
+            if (!checkPromapAuth('add_assignment', [])) {
+               // We pass empty array for modal open, but real check is on save.
+               // However, we want to at least check if they have 'add_assignment' perm.
+               const role = window.currentUser?.promapRole;
+               if (role !== 'ADMIN' && role !== 'IGP' && role !== 'PROJECT_INCHARGE' && role !== 'SP' && role !== 'DSP') {
+                  return showToast("Access denied \u2014 you are not authorized to perform this action.", "error");
+               }
+            }
             document.querySelectorAll('.modal-overlay').forEach(el => el.style.display = 'none');
             document.getElementById('editAsgId').value = 'NEW_ASSIGNMENT';
             document.getElementById('editAsgPersonnelContainer').style.display = 'flex';
@@ -3630,7 +3694,7 @@ select[multiple] option:selected {
 
             const prjSelect = document.getElementById('editAsgProject');
             prjSelect.innerHTML = '<option value="">-- Select Project --</option>';
-            promapData.projects.forEach(p => {
+            getAuthorizedProjects().forEach(p => {
               const opt = document.createElement('option');
               opt.value = p.projectId;
               opt.textContent = p.projectName;
@@ -3657,16 +3721,18 @@ select[multiple] option:selected {
           }
 
           function openEditAsgModal(docId) {
-            document.querySelectorAll('.modal-overlay').forEach(el => el.style.display = 'none');
             const a = promapData.assignments.find(x => x._docId === docId);
             if(!a) return;
+            if (!checkPromapAuth('edit_assignment', [a.projectId])) return;
+            
+            document.querySelectorAll('.modal-overlay').forEach(el => el.style.display = 'none');
             document.getElementById('editAsgId').value = docId;
             document.getElementById('editAsgPersonnelContainer').style.display = 'none';
             
             // Populate project dropdown
             const prjSelect = document.getElementById('editAsgProject');
             prjSelect.innerHTML = '<option value="">-- Select Project --</option>';
-            promapData.projects.forEach(p => {
+            getAuthorizedProjects().forEach(p => {
               const opt = document.createElement('option');
               opt.value = p.projectId;
               opt.textContent = p.projectName;
@@ -3706,6 +3772,8 @@ select[multiple] option:selected {
             
             const newProjectId = document.getElementById('editAsgProject').value;
             if(!newProjectId) return showToast('Project is required', 'error');
+
+            if (!checkPromapAuth(isNew ? 'add_assignment' : 'edit_assignment', [newProjectId])) return;
 
             const reason = document.getElementById('editAsgReason').value.trim();
             if(!reason && !isNew) return showToast('Reason for correction is required for the audit trail', 'error');
@@ -3748,11 +3816,12 @@ select[multiple] option:selected {
               // MOCK DATA SAFETY FOR TESTING
               const mockDocId = 'MOCK_' + Date.now();
               const newAsg = { _docId: mockDocId, personnelId, ...data, auditLog: [{
-                   changedBy: window.currentUser?.name || window.currentUser?.phone || 'Unknown',
+                   userEmail: window.currentUser?.email || 'Unknown',
                    timestamp: new Date().toISOString(),
-                   oldValues: {},
-                   newValues: data,
-                   reason: reason || 'Initial assignment creation'
+                   action: 'Created',
+                   reason: reason || 'Initial assignment creation',
+                   previousValue: '',
+                   newValue: data.verificationStatus || 'Pending Verification'
                 }] 
               };
               promapData.assignments.push(newAsg);
@@ -3784,6 +3853,26 @@ select[multiple] option:selected {
                  return showToast(`Allocation Error: Cannot exceed 100%. Current: ${currentTotal}%, New Total would be: ${currentTotal + diff}%`, 'error');
               }
 
+              const oldStatus = asgRecord.verificationStatus || 'Pending Verification';
+              const newStatus = data.verificationStatus;
+              
+              // Transition Enforcement for Verification Status
+              if (oldStatus !== newStatus) {
+                 const role = window.currentUser?.promapRole;
+                 if (role !== 'ADMIN' && role !== 'IGP') {
+                    const validTransitions = {
+                       'Pending Verification': ['Correction Required', 'Verified'],
+                       'Correction Required': ['Corrected'],
+                       'Corrected': ['Correction Required', 'Verified'],
+                       'Verified': ['Correction Required', 'Approved'],
+                       'Approved': [] // Only ADMIN can demote from Approved
+                    };
+                    if (!validTransitions[oldStatus] || !validTransitions[oldStatus].includes(newStatus)) {
+                       return showToast(`Invalid status transition from '${oldStatus}' to '${newStatus}'.`, 'error');
+                    }
+                 }
+              }
+
               const oldValues = {};
               const newValues = {};
               Object.keys(data).forEach(k => {
@@ -3795,16 +3884,21 @@ select[multiple] option:selected {
 
               if (Object.keys(newValues).length === 0) return showToast('No changes detected', 'info');
 
-              const auditRecord = {
-                 changedBy: window.currentUser?.name || window.currentUser?.phone || 'Unknown',
-                 timestamp: new Date().toISOString(),
-                 oldValues,
-                 newValues,
-                 reason: reason || 'Updated via UI'
-              };
+              let actionName = 'Updated';
+              if (oldStatus !== newStatus) actionName = newStatus;
 
-              const existingAuditLog = Array.isArray(asgRecord.auditLog) ? asgRecord.auditLog : [];
-              data.auditLog = [...existingAuditLog, auditRecord];
+              const auditRecord = {
+                 userEmail: window.currentUser?.email || 'Unknown',
+                 timestamp: new Date().toISOString(),
+                 action: actionName,
+                 reason: reason || 'Updated via UI',
+                 previousValue: oldStatus !== newStatus ? oldStatus : JSON.stringify(oldValues),
+                 newValue: oldStatus !== newStatus ? newStatus : JSON.stringify(newValues)
+              };
+              
+              Object.assign(asgRecord, data);
+              if(!asgRecord.auditLog) asgRecord.auditLog = [];
+              asgRecord.auditLog.push(auditRecord);
 
               // Local Recalculation
               if (pRecord) {
@@ -3830,6 +3924,12 @@ select[multiple] option:selected {
           let smDryRunData = null;
 
           function openSystemMaintenanceModal() {
+            document.getElementById('adminSettingsUser').textContent = window.currentUser?.email || 'Unknown';
+            document.getElementById('adminSettingsRole').textContent = window.currentUser?.promapRole || 'None';
+            const scopes = JSON.parse(localStorage.getItem('promapScopes') || '[]');
+            const scopeText = scopes.length ? scopes.join(', ') : 'Statewide (All Projects)';
+            document.getElementById('adminSettingsScope').textContent = scopeText;
+            
             document.getElementById('promapSystemMaintenanceModal').style.display = 'flex';
             document.getElementById('smProgressContainer').style.display = 'none';
             document.getElementById('smConfirmBox').style.display = 'none';
@@ -3838,6 +3938,7 @@ select[multiple] option:selected {
           }
 
           async function runBackfillDryRun() {
+            if (!checkPromapAuth('admin_backfill')) return;
             const btn = document.querySelector('#promapSystemMaintenanceModal .btn-secondary');
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Analyzing...';
             btn.disabled = true;
@@ -3937,7 +4038,9 @@ select[multiple] option:selected {
           }
 
           async function executeBackfillSync() {
+            if (!checkPromapAuth('admin_backfill')) return;
             if(!smDryRunData || smDryRunData.length === 0) return alert('No updates required.');
+            if (!confirm("DANGEROUS OPERATION: This will apply the computed values to the personnel data. Are you sure?")) return;
             
             const btn = document.querySelector('#smConfirmBox button');
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Executing...';
@@ -4004,6 +4107,7 @@ select[multiple] option:selected {
           let assignmentSeedData = [];
 
           async function runAssignmentSeedDryRun() {
+            if (!checkPromapAuth('seed_import')) return;
             const fileInput = document.getElementById('promapSeedExcelInput');
             if (!fileInput.files.length) return alert('Please select the Excel file first.');
             const file = fileInput.files[0];
@@ -4277,6 +4381,8 @@ select[multiple] option:selected {
           }
 
           async function executeAssignmentSeedImport() {
+            if (!checkPromapAuth('seed_import')) return;
+            if (!confirm("DANGEROUS OPERATION: You are about to execute the Assignment Seed Import. This will modify assignments. Are you sure?")) return;
             const btn = document.getElementById('btnExecuteSeed');
             const statusDiv = document.getElementById('seed-exec-status');
             btn.disabled = true;
