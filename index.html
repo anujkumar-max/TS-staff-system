@@ -22,6 +22,8 @@
 <script type="module">
   import { initializeApp, getApps }
     from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut }
+    from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
   import {
     getFirestore, collection, addDoc, updateDoc, deleteDoc,
     onSnapshot, query, orderBy, doc, getDoc, getDocs,
@@ -41,9 +43,13 @@
              ? initializeApp(firebaseConfig)
              : getApps()[0];
   const db   = getFirestore(app);
+  const auth = getAuth(app);
 
   // Expose to global scope for non-module scripts
   window.db             = db;
+  window.firebaseAuth   = auth;
+  window.fsAuthSignIn   = signInWithEmailAndPassword;
+  window.fsAuthSignOut  = signOut;
   window.fsCollection   = collection;
   window.fsAddDoc       = addDoc;
   window.fsUpdateDoc    = updateDoc;
@@ -1741,6 +1747,34 @@ select[multiple] option:selected {
             </p>
           </div>
 
+          <div class="card" id="authMigrationCard" style="margin-bottom:20px; border-left:4px solid var(--navy); display:none;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <h2 style="font-family:'Rajdhani',sans-serif; margin-bottom:10px;">
+                <i class="fa-solid fa-shield-halved" style="color:var(--navy)"></i> Auth Migration Status
+              </h2>
+              <button onclick="checkAuthMigrationStatus()" class="btn-secondary" style="font-size:12px; padding:4px 10px;">
+                <i class="fa-solid fa-arrows-rotate"></i> Refresh
+              </button>
+            </div>
+            <p style="font-size:13px; color:var(--text3); margin-bottom:15px;">
+              Legacy plaintext authentication is currently active as a fallback. Run <code>secure_migration.js</code> to migrate accounts to Firebase Auth.
+            </p>
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:15px; margin-bottom:15px;">
+              <div style="background:#f1f5f9; padding:12px; border-radius:8px; text-align:center;">
+                <div style="font-size:24px; font-weight:bold; color:var(--text1);" id="migStatLegacy">-</div>
+                <div style="font-size:11px; color:var(--text3); font-weight:600; text-transform:uppercase;">Legacy Staff Records</div>
+              </div>
+              <div style="background:#f0fdf4; padding:12px; border-radius:8px; text-align:center; border:1px solid #bbf7d0;">
+                <div style="font-size:24px; font-weight:bold; color:var(--success);" id="migStatFirebase">-</div>
+                <div style="font-size:11px; color:var(--success); font-weight:600; text-transform:uppercase;">Migrated to Firebase</div>
+              </div>
+              <div style="background:#fff7ed; padding:12px; border-radius:8px; text-align:center; border:1px solid #fed7aa;">
+                <div style="font-size:24px; font-weight:bold; color:#c2410c;" id="migStatPending">-</div>
+                <div style="font-size:11px; color:#ea580c; font-weight:600; text-transform:uppercase;">Pending Migration</div>
+              </div>
+            </div>
+          </div>
+
           <!-- DATA IMPORT MODULE (ADMIN ONLY) -->
           <div class="card" id="promap-import-card">
             <h2 style="font-family:'Rajdhani',sans-serif; margin-bottom:10px;"><i class="fa-solid fa-file-import" style="color:var(--success)"></i> Master Data Import</h2>
@@ -1896,6 +1930,37 @@ select[multiple] option:selected {
             
             resetAnalyzeBtn();
           }
+
+          // --- AUTH MIGRATION STATUS ---
+          async function checkAuthMigrationStatus() {
+            if (localStorage.getItem('userRole') !== 'admin') return;
+            const card = document.getElementById('authMigrationCard');
+            if (card) card.style.display = 'block';
+            
+            try {
+              // 1. Count legacy staff
+              const staffSnap = await window.fsGetDocs(window.fsCollection(window.db, 'staff'));
+              let legacyCount = 0;
+              staffSnap.forEach(doc => {
+                 const data = doc.data();
+                 if (data.Phone || data.phone) legacyCount++;
+              });
+              
+              // 2. Count migrated promap_users
+              const promapUsersSnap = await window.fsGetDocs(window.fsCollection(window.db, 'promap_users'));
+              let migratedCount = promapUsersSnap.size;
+              
+              const pendingCount = Math.max(0, legacyCount - migratedCount);
+              
+              document.getElementById('migStatLegacy').innerText = legacyCount;
+              document.getElementById('migStatFirebase').innerText = migratedCount;
+              document.getElementById('migStatPending').innerText = pendingCount;
+              
+            } catch (err) {
+              console.error("Failed to check migration status:", err);
+            }
+          }
+          window.checkAuthMigrationStatus = checkAuthMigrationStatus;
 
           async function executePromapImport() {
             if(!parsedPromapData) return;
@@ -4095,6 +4160,9 @@ function showScreen(name) {
     loadStaffFromSheet();
   }
   if (name === 'admin') renderAdminCredentials();
+  if (name === 'promap' && window.checkAuthMigrationStatus) {
+    checkAuthMigrationStatus();
+  }
 
   setTimeout(() => hidePageLoader(), 400);
 }
@@ -4476,60 +4544,127 @@ async function doLogin() {
   }
   if (errDiv) errDiv.style.display = 'none';
 
+  // AUTH_MIGRATION_STATUS Controls the dual-login mechanism
+  // Modes: NOT_MIGRATED, MIGRATED, VERIFIED, DISABLED
+  const AUTH_MIGRATION_STATUS = 'NOT_MIGRATED'; 
+
+  let authSuccessful = false;
+  let staffData = null;
+  let staffDocId = null;
+  let promapUserData = null;
+
   try {
-    const staffRef = fsCollection(db, 'staff');
-    let q        = fsQuery(staffRef, fsWhere('Phone', '==', phone));
-    let snap     = await fsGetDocs(q);
+    // STEP 1: Always try Firebase Auth first
+    try {
+      const email = phone + '@appolice.local';
+      const userCredential = await window.fsAuthSignIn(window.firebaseAuth, email, password);
+      
+      // Fetch promap_users profile
+      const userDocSnap = await window.fsGetDoc(window.fsDoc(window.db, 'promap_users', userCredential.user.uid));
+      if (!userDocSnap.exists()) {
+        throw new Error('Identity profile missing for migrated user. Contact admin.');
+      }
+      promapUserData = userDocSnap.data();
 
-    if (snap.empty) {
-      q    = fsQuery(staffRef, fsWhere('phone', '==', phone));
-      snap = await fsGetDocs(q);
+      // We still fetch the legacy staff record for UI compatibility (name, rank)
+      const staffRef = window.fsCollection(window.db, 'staff');
+      let q = window.fsQuery(staffRef, window.fsWhere('Phone', '==', phone));
+      let snap = await window.fsGetDocs(q);
+      if (snap.empty) {
+        q = window.fsQuery(staffRef, window.fsWhere('phone', '==', phone));
+        snap = await window.fsGetDocs(q);
+      }
+      if (!snap.empty) {
+        staffData = snap.docs[0].data();
+        staffDocId = snap.docs[0].id;
+      } else {
+        // Fallback dummy staff data if the staff record was actually deleted post-migration
+        staffData = { Full_Name: userCredential.user.displayName, role: promapUserData.role === 'ADMIN' ? 'admin' : 'staff' };
+        staffDocId = 'MIGRATED_' + userCredential.user.uid;
+      }
+      
+      authSuccessful = true;
+      console.log('✅ Logged in via secure Firebase Auth');
+    } catch (fbErr) {
+      // If Firebase Auth fails, check if we are allowed to fallback
+      if (AUTH_MIGRATION_STATUS === 'DISABLED') {
+         throw new Error('Invalid credentials or account suspended.');
+      }
+      
+      if (fbErr.code === 'auth/user-not-found' || fbErr.code === 'auth/invalid-credential') {
+         console.warn('⚠️ Firebase Auth failed, falling back to legacy login due to migration status.');
+         // STEP 2: Legacy Fallback
+         const staffRef = window.fsCollection(window.db, 'staff');
+         let q = window.fsQuery(staffRef, window.fsWhere('Phone', '==', phone));
+         let snap = await window.fsGetDocs(q);
+         if (snap.empty) {
+           q = window.fsQuery(staffRef, window.fsWhere('phone', '==', phone));
+           snap = await window.fsGetDocs(q);
+         }
+         
+         if (snap.empty) throw new Error('Phone number not registered. Contact admin.');
+         
+         const sDoc = snap.docs[0];
+         const sData = sDoc.data();
+         const storedPass = String(sData.password ?? '').trim();
+         
+         if (storedPass !== password) {
+           throw new Error('Incorrect password. Please try again.');
+         }
+         
+         staffData = sData;
+         staffDocId = sDoc.id;
+         authSuccessful = true;
+         console.log('✅ Logged in via Legacy Auth');
+      } else {
+         throw fbErr;
+      }
     }
 
-    if (snap.empty) {
-      throw new Error('Phone number not registered. Contact admin.');
-    }
-
-    const staffDoc  = snap.docs[0];
-    const staffData = staffDoc.data();
-    
-    // Convert BOTH sides to String to avoid type mismatch (number 1248 vs string "1248")
-    const storedPass  = String(staffData.password  ?? '').trim();
-    const enteredPass = password;
-
-    if (storedPass !== enteredPass) {
-      throw new Error('Incorrect password. Please try again.');
-    }
+    if (!authSuccessful) throw new Error('Authentication failed.');
 
     // Save session
     localStorage.setItem('userName',   staffData.Full_Name || '');
     localStorage.setItem('userRank',   staffData.Rank      || '');
-    localStorage.setItem('userITTitle', getITTitle(staffData.Rank, staffData.Phone));
-    localStorage.setItem('userRole',   staffData.role      || 'staff');
-    localStorage.setItem('userDocId',  staffDoc.id);
+    localStorage.setItem('userITTitle', getITTitle(staffData.Rank, phone));
+    
+    // Set Promap Role safely
+    let assignedRole = promapUserData ? promapUserData.role : 'STAFF_PENDING_REVIEW';
+    if (!promapUserData && staffData.role === 'admin') assignedRole = 'ADMIN';
+
+    // Map backwards compatibility role
+    let legacyRole = 'staff';
+    if (assignedRole === 'ADMIN') legacyRole = 'admin';
+    if (assignedRole === 'IGP' || assignedRole === 'SP') legacyRole = 'officer';
+
+    localStorage.setItem('userRole', legacyRole);
+    localStorage.setItem('promapRole', assignedRole);
+    localStorage.setItem('promapScopes', JSON.stringify(promapUserData ? promapUserData.projectScopes : []));
+    
+    localStorage.setItem('userDocId',  staffDocId);
     localStorage.setItem('userPhone',  phone);
-    window.currentUser = { ...staffData, id: staffDoc.id };
+    window.currentUser = { ...staffData, id: staffDocId, promapRole: assignedRole };
 
     // Update sidebar user info
     const sidebarName = document.getElementById('sidebarName');
     if (sidebarName) sidebarName.textContent = staffData.Full_Name || 'Staff';
     const sidebarRank = document.getElementById('sidebarRank');
-    if (sidebarRank) sidebarRank.textContent = staffData.role === 'admin' ? 'Admin' : (getITTitle(staffData.Rank, staffData.Phone) || '—');
+    if (sidebarRank) sidebarRank.textContent = legacyRole === 'admin' ? 'Admin' : (getITTitle(staffData.Rank, phone) || '—');
     const sidebarAvatar = document.getElementById('sidebarAvatar');
     if (sidebarAvatar) sidebarAvatar.textContent = (staffData.Full_Name || 'S').charAt(0).toUpperCase();
 
     // Show admin nav if admin
     const staffMgmtNavItem = document.getElementById('staffMgmtNavItem');
     if (staffMgmtNavItem) {
-      staffMgmtNavItem.style.display = (staffData.role === 'admin' || staffData.role === 'officer') ? 'flex' : 'none';
+      staffMgmtNavItem.style.display = (legacyRole === 'admin' || legacyRole === 'officer') ? 'flex' : 'none';
     }
     const dqNav = document.getElementById('dataQualityNavItem');
     if (dqNav) {
-      dqNav.style.display = staffData.role === 'admin' ? 'flex' : 'none';
+      dqNav.style.display = legacyRole === 'admin' ? 'flex' : 'none';
     }
     const adminBadge = document.getElementById('adminBadge');
     if (adminBadge) {
-      adminBadge.style.display = (staffData.role === 'admin' || staffData.role === 'officer') ? 'inline-flex' : 'none';
+      adminBadge.style.display = (legacyRole === 'admin' || legacyRole === 'officer') ? 'inline-flex' : 'none';
     }
 
     showSplashLoader(staffData.Full_Name || 'Officer');
@@ -4538,9 +4673,9 @@ async function doLogin() {
       document.getElementById('appShell').style.display='block';
       loadAllData();
       showScreen('dashboard');
-      const phone   = staffData.Phone || '';
-      const itT     = getITTitle(staffData.Rank, phone);
-      const isAdmin = itT === 'Admin';
+      const phoneStr = staffData.Phone || phone || '';
+      const itT     = getITTitle(staffData.Rank, phoneStr);
+      const isAdmin = legacyRole === 'admin';
 
       showToast(
         '✅ Welcome, ' +
