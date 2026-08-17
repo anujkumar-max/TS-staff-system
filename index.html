@@ -649,6 +649,89 @@ select[multiple] option:selected {
   margin-top: 0;
 }
 
+/* ============================================================
+   PRO-MAP DASHBOARD
+   ============================================================ */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+.stat-card {
+  background: var(--bg3);
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+.stat-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--navy);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+.stat-card-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--text2);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  margin-bottom: 5px;
+}
+.stat-card-value {
+  font-size: 26px;
+  font-family: 'Rajdhani', sans-serif;
+  color: var(--navy);
+  font-weight: 700;
+}
+.stat-card-sub {
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 5px;
+}
+.analytics-panel {
+  background: var(--bg);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  padding: 15px;
+  margin-bottom: 20px;
+}
+.analytics-panel h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 14px;
+  color: var(--navy);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+.analytics-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.analytics-table th, .analytics-table td {
+  padding: 8px 10px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+.analytics-table th {
+  font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase;
+  font-size: 10px;
+  background: var(--bg2);
+}
+.analytics-table tr:hover td {
+  background: var(--bg2);
+  cursor: pointer;
+}
+
+
 .form-actions { display: flex; gap: 10px; margin-top: 16px; }
 .btn-primary {
   padding: 10px 20px; background: var(--navy); color: #fff;
@@ -1773,6 +1856,7 @@ select[multiple] option:selected {
           
           <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:20px;">
             <div class="promap-tabs" style="display:flex; gap:10px;">
+              <button class="btn-secondary" id="pmTab-dashboard" onclick="switchPromapTab('dashboard')">Dashboard</button>
               <button class="btn-secondary" id="pmTab-personnel" onclick="switchPromapTab('personnel')" style="background:var(--navy); color:white;">Personnel Master</button>
               <button class="btn-secondary" id="pmTab-projects" onclick="switchPromapTab('projects')">Project Master</button>
               <button class="btn-secondary" id="pmTab-assignments" onclick="switchPromapTab('assignments')">Deployment & Assignments</button>
@@ -1782,6 +1866,91 @@ select[multiple] option:selected {
                 <i class="fa-solid fa-wrench"></i> System Maintenance
               </button>
             </div>
+          </div>
+
+          <!-- TAB CONTENT: DASHBOARD -->
+          <div id="promap-content-dashboard" class="promap-tab-content" style="display:none;">
+            
+            <!-- Dashboard Filters -->
+            <div class="card" style="margin-bottom:20px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 style="margin:0; font-size:16px; color:var(--navy);">Dashboard Analytics</h3>
+                <button class="btn-secondary" onclick="resetDashboardFilters()" style="font-size:11px; padding:4px 8px;">Reset Filters</button>
+              </div>
+              <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px;">
+                <select class="form-input" id="dashFilterProject" onchange="renderPromapDashboard()"><option value="">All Projects</option></select>
+                <select class="form-input" id="dashFilterIncharge" onchange="renderPromapDashboard()"><option value="">All Incharges</option></select>
+                <select class="form-input" id="dashFilterPersonnel" onchange="renderPromapDashboard()"><option value="">All Personnel</option></select>
+                <select class="form-input" id="dashFilterRank" onchange="renderPromapDashboard()"><option value="">All Ranks</option></select>
+                <select class="form-input" id="dashFilterVerif" onchange="renderPromapDashboard()">
+                  <option value="">All Verif. Status</option>
+                  <option value="Pending Verification">Pending Verification</option>
+                  <option value="Correction Required">Correction Required</option>
+                  <option value="Corrected">Corrected</option>
+                  <option value="Verified">Verified</option>
+                  <option value="Approved">Approved</option>
+                </select>
+                <select class="form-input" id="dashFilterAlloc" onchange="renderPromapDashboard()">
+                  <option value="">All Allocations</option>
+                  <option value="0">0% (Unallocated)</option>
+                  <option value="1-25">1-25%</option>
+                  <option value="26-50">26-50%</option>
+                  <option value="51-75">51-75%</option>
+                  <option value="76-99">76-99%</option>
+                  <option value="100">100% (Fully Allocated)</option>
+                  <option value="OVER">Over 100%</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Dashboard Summary Grid -->
+            <div id="dashboardSummaryGrid" class="dashboard-grid">
+               <!-- Populated via JS -->
+            </div>
+
+            <!-- Two-Column Analytics -->
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:20px;">
+              <div class="analytics-panel">
+                 <h3><i class="fa-solid fa-list-check"></i> Project Distribution</h3>
+                 <div style="overflow-x:auto;">
+                   <table class="analytics-table" id="dashProjectTable">
+                     <thead><tr><th>Project Name</th><th>Personnel</th><th>Avg Alloc</th><th>Verif Progress</th></tr></thead>
+                     <tbody id="dashProjectBody"></tbody>
+                   </table>
+                 </div>
+              </div>
+
+              <div class="analytics-panel">
+                 <h3><i class="fa-solid fa-chart-pie"></i> Verification Breakdown</h3>
+                 <div id="dashVerifBreakdown" style="display:flex; flex-direction:column; gap:10px;"></div>
+                 
+                 <h3 style="margin-top:20px;"><i class="fa-solid fa-layer-group"></i> Deployment Status</h3>
+                 <div id="dashDeploymentBreakdown" style="display:flex; flex-direction:column; gap:10px;"></div>
+              </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:20px;">
+               <div class="analytics-panel">
+                 <h3><i class="fa-solid fa-triangle-exclamation"></i> Over-Allocated Personnel (>100%)</h3>
+                 <div style="overflow-x:auto;">
+                   <table class="analytics-table" id="dashOverAllocTable">
+                     <thead><tr><th>Name / Gen No</th><th>Total %</th><th>Projects</th></tr></thead>
+                     <tbody id="dashOverAllocBody"></tbody>
+                   </table>
+                 </div>
+               </div>
+               
+               <div class="analytics-panel">
+                 <h3><i class="fa-solid fa-battery-half"></i> Available Capacity (<100%)</h3>
+                 <div style="overflow-x:auto;">
+                   <table class="analytics-table" id="dashAvailAllocTable">
+                     <thead><tr><th>Name / Gen No</th><th>Total %</th><th>Capacity</th></tr></thead>
+                     <tbody id="dashAvailAllocBody"></tbody>
+                   </table>
+                 </div>
+               </div>
+            </div>
+
           </div>
 
           <!-- TAB CONTENT: PERSONNEL -->
@@ -2292,6 +2461,7 @@ select[multiple] option:selected {
                 }
               }
 
+              if(activeTab === 'dashboard') renderPromapDashboard();
               if(activeTab === 'personnel') renderPromapPersonnel();
               if(activeTab === 'projects') renderPromapProjects();
               if(activeTab === 'assignments') renderPromapAssignments();
@@ -2318,6 +2488,294 @@ select[multiple] option:selected {
               return promapData.assignments.filter(a => scopes.includes(a.projectId));
             }
             return []; // Staff sees no assignments in master view
+          }
+
+          // ==========================================
+          // PART 5 - DASHBOARD LOGIC
+          // ==========================================
+          function resetDashboardFilters() {
+             document.getElementById('dashFilterProject').value = '';
+             document.getElementById('dashFilterIncharge').value = '';
+             document.getElementById('dashFilterPersonnel').value = '';
+             document.getElementById('dashFilterRank').value = '';
+             document.getElementById('dashFilterVerif').value = '';
+             document.getElementById('dashFilterAlloc').value = '';
+             renderPromapDashboard();
+          }
+
+          function drillDownToAssignments(verifStatus, allocStatus = '') {
+             switchPromapTab('assignments');
+             document.getElementById('promapAssignmentSearch').value = '';
+             document.getElementById('promapAsgFilterProject').value = '';
+             document.getElementById('promapAsgFilterVerif').value = verifStatus;
+             // Alloc status is not explicitly a filter in assignment tab yet, but could be added or ignored
+             renderPromapAssignments();
+          }
+
+          function drillDownToProject(projectId) {
+             openProjDetailModal(promapData.projects.find(p => p.projectId === projectId)?._docId);
+          }
+
+          function renderPromapDashboard() {
+             // 1. Gather Authorized Data
+             const authProjects = getAuthorizedProjects();
+             const authAssignments = getAuthorizedAssignments();
+             // For personnel, only include those who have assignments in the authorized scope, OR if ADMIN, all personnel.
+             const role = window.currentUser?.promapRole;
+             let authPersonnel = [];
+             if (role === 'ADMIN' || role === 'IGP') {
+                authPersonnel = promapData.personnel;
+             } else {
+                const assignedPIds = new Set(authAssignments.map(a => a.personnelId));
+                authPersonnel = promapData.personnel.filter(p => assignedPIds.has(p.personnelId));
+             }
+
+             // 2. Populate Dropdowns (only if empty to preserve selection)
+             const projSelect = document.getElementById('dashFilterProject');
+             if(projSelect.options.length <= 1) {
+                authProjects.forEach(p => {
+                   projSelect.insertAdjacentHTML('beforeend', `<option value="${p.projectId}">${p.projectName}</option>`);
+                });
+             }
+             const pSelect = document.getElementById('dashFilterPersonnel');
+             if(pSelect.options.length <= 1) {
+                authPersonnel.forEach(p => {
+                   pSelect.insertAdjacentHTML('beforeend', `<option value="${p.personnelId}">${p.name} (${p.generalNo||'-'})</option>`);
+                });
+             }
+
+             // 3. Apply Filters
+             const fProj = document.getElementById('dashFilterProject').value;
+             const fInc = document.getElementById('dashFilterIncharge').value.toLowerCase();
+             const fPers = document.getElementById('dashFilterPersonnel').value;
+             const fRank = document.getElementById('dashFilterRank').value.toLowerCase();
+             const fVerif = document.getElementById('dashFilterVerif').value;
+             const fAlloc = document.getElementById('dashFilterAlloc').value;
+
+             let filteredAsg = authAssignments.filter(a => {
+                if (fProj && a.projectId !== fProj) return false;
+                if (fPers && a.personnelId !== fPers) return false;
+                if (fVerif && a.verificationStatus !== fVerif) return false;
+                
+                const pers = authPersonnel.find(p => p.personnelId === a.personnelId);
+                if (fRank && (!pers || !(pers.rank||'').toLowerCase().includes(fRank))) return false;
+                
+                const proj = authProjects.find(p => p.projectId === a.projectId);
+                if (fInc && (!proj || !(proj.projectIncharge||'').toLowerCase().includes(fInc))) return false;
+                
+                return true;
+             });
+
+             // If allocation filter is applied, we might need to filter personnel based on their TOTAL allocation.
+             // But assignment is per-assignment. We'll filter assignments where the personnel's total alloc fits the bucket.
+             let filteredPersonnelIds = new Set(authPersonnel.map(p => p.personnelId));
+             
+             if (fAlloc) {
+                filteredPersonnelIds = new Set(authPersonnel.filter(p => {
+                   const t = Number(p.totalAllocation) || 0;
+                   if (fAlloc === '0') return t === 0;
+                   if (fAlloc === '1-25') return t >= 1 && t <= 25;
+                   if (fAlloc === '26-50') return t >= 26 && t <= 50;
+                   if (fAlloc === '51-75') return t >= 51 && t <= 75;
+                   if (fAlloc === '76-99') return t >= 76 && t <= 99;
+                   if (fAlloc === '100') return t === 100;
+                   if (fAlloc === 'OVER') return t > 100;
+                   return true;
+                }).map(p => p.personnelId));
+
+                filteredAsg = filteredAsg.filter(a => filteredPersonnelIds.has(a.personnelId));
+             }
+
+             // 4. Compute Metrics based on filtered data
+             // Only count projects that have at least one filtered assignment, or all if no strict assignment filters
+             let activeProjSet = new Set(filteredAsg.map(a => a.projectId));
+             if (!fProj && !fInc && !fPers && !fRank && !fVerif && !fAlloc) {
+                activeProjSet = new Set(authProjects.map(p => p.projectId));
+             }
+             const totalProjects = activeProjSet.size;
+
+             let activePersSet = new Set(filteredAsg.map(a => a.personnelId));
+             if (!fProj && !fInc && !fPers && !fRank && !fVerif && !fAlloc) {
+                activePersSet = new Set(authPersonnel.map(p => p.personnelId));
+             }
+             const totalPersonnel = activePersSet.size;
+             
+             const totalAsg = filteredAsg.length;
+
+             let verifBuckets = { 'Pending Verification':0, 'Correction Required':0, 'Corrected':0, 'Verified':0, 'Approved':0 };
+             let totalAllocPoints = 0;
+
+             filteredAsg.forEach(a => {
+                const vs = a.verificationStatus || 'Pending Verification';
+                if (verifBuckets[vs] !== undefined) verifBuckets[vs]++;
+                else verifBuckets['Pending Verification']++;
+                totalAllocPoints += (Number(a.allocationPercentage) || 0);
+             });
+
+             // Personnel Allocation Distribution
+             let allocBuckets = { '0':0, '1-25':0, '26-50':0, '51-75':0, '76-99':0, '100':0, 'OVER':0 };
+             let overAllocatedPers = [];
+             let availablePers = [];
+
+             Array.from(activePersSet).forEach(pId => {
+                const p = authPersonnel.find(x => x.personnelId === pId);
+                if (!p) return;
+                const t = Number(p.totalAllocation) || 0;
+                
+                if (t === 0) allocBuckets['0']++;
+                else if (t <= 25) allocBuckets['1-25']++;
+                else if (t <= 50) allocBuckets['26-50']++;
+                else if (t <= 75) allocBuckets['51-75']++;
+                else if (t <= 99) allocBuckets['76-99']++;
+                else if (t === 100) allocBuckets['100']++;
+                else allocBuckets['OVER']++;
+
+                if (t > 100) overAllocatedPers.push(p);
+                if (t < 100) availablePers.push(p);
+             });
+
+             // 5. Render Summary Cards
+             const grid = document.getElementById('dashboardSummaryGrid');
+             grid.innerHTML = `
+               <div class="stat-card" onclick="switchPromapTab('personnel')">
+                 <div class="stat-card-title">Total Personnel</div>
+                 <div class="stat-card-value">${totalPersonnel}</div>
+                 <div class="stat-card-sub">In selected scope</div>
+               </div>
+               <div class="stat-card" onclick="switchPromapTab('projects')">
+                 <div class="stat-card-title">Total Projects</div>
+                 <div class="stat-card-value">${totalProjects}</div>
+                 <div class="stat-card-sub">In selected scope</div>
+               </div>
+               <div class="stat-card" onclick="switchPromapTab('assignments')">
+                 <div class="stat-card-title">Active Assignments</div>
+                 <div class="stat-card-value">${totalAsg}</div>
+                 <div class="stat-card-sub">Total records</div>
+               </div>
+               <div class="stat-card">
+                 <div class="stat-card-title">Avg Allocation</div>
+                 <div class="stat-card-value">${totalPersonnel ? Math.round(totalAllocPoints / totalPersonnel) : 0}%</div>
+                 <div class="stat-card-sub">Across personnel</div>
+               </div>
+               <div class="stat-card" style="border-left:4px solid var(--orange);" onclick="drillDownToAssignments('Pending Verification')">
+                 <div class="stat-card-title">Pending Verification</div>
+                 <div class="stat-card-value">${verifBuckets['Pending Verification']}</div>
+                 <div class="stat-card-sub">Assignments</div>
+               </div>
+               <div class="stat-card" style="border-left:4px solid var(--danger);" onclick="drillDownToAssignments('Correction Required')">
+                 <div class="stat-card-title">Correction Required</div>
+                 <div class="stat-card-value">${verifBuckets['Correction Required']}</div>
+                 <div class="stat-card-sub">Assignments</div>
+               </div>
+               <div class="stat-card" style="border-left:4px solid var(--success);" onclick="drillDownToAssignments('Verified')">
+                 <div class="stat-card-title">Verified & Approved</div>
+                 <div class="stat-card-value">${verifBuckets['Verified'] + verifBuckets['Approved']}</div>
+                 <div class="stat-card-sub">Assignments</div>
+               </div>
+             `;
+
+             // 6. Render Verification Breakdown
+             const verifHtml = Object.keys(verifBuckets).map(k => {
+                const count = verifBuckets[k];
+                const pct = totalAsg ? Math.round((count / totalAsg) * 100) : 0;
+                let color = 'var(--navy)';
+                if (k === 'Pending Verification') color = 'var(--orange)';
+                if (k === 'Correction Required') color = 'var(--danger)';
+                if (k === 'Verified' || k === 'Approved') color = 'var(--success)';
+                
+                return `
+                  <div style="display:flex; justify-content:space-between; font-size:13px; align-items:center; cursor:pointer;" onclick="drillDownToAssignments('${k}')">
+                    <span>${k}</span>
+                    <div style="display:flex; align-items:center; gap:10px; width:50%;">
+                       <div style="flex-grow:1; background:var(--bg3); height:8px; border-radius:4px; overflow:hidden;">
+                         <div style="width:${pct}%; background:${color}; height:100%;"></div>
+                       </div>
+                       <strong style="width:30px; text-align:right;">${count}</strong>
+                    </div>
+                  </div>
+                `;
+             }).join('');
+             document.getElementById('dashVerifBreakdown').innerHTML = verifHtml || '<div style="font-size:12px;">No assignments</div>';
+
+             // Deployment Breakdown (Deriving from Personnel Master Categories, though assignments could also hold it)
+             let depBuckets = { 'Project-Deployed':0, 'Awaiting Deployment':0, 'Officer Attachment':0, 'External Attachment':0, 'Administrative':0 };
+             Array.from(activePersSet).forEach(pId => {
+                const p = authPersonnel.find(x => x.personnelId === pId);
+                if (!p) return;
+                const cat = p.deploymentCategory || 'Project-Deployed';
+                if (depBuckets[cat] !== undefined) depBuckets[cat]++;
+                else depBuckets[cat] = 1;
+             });
+             const depHtml = Object.keys(depBuckets).map(k => {
+                const count = depBuckets[k];
+                if (count === 0) return '';
+                return `
+                  <div style="display:flex; justify-content:space-between; font-size:13px; padding:4px 0; border-bottom:1px solid var(--border);">
+                    <span>${k}</span>
+                    <strong>${count}</strong>
+                  </div>
+                `;
+             }).join('');
+             document.getElementById('dashDeploymentBreakdown').innerHTML = depHtml || '<div style="font-size:12px;">No personnel data</div>';
+
+             // 7. Render Project Distribution Table
+             let projStats = [];
+             Array.from(activeProjSet).forEach(pId => {
+                const p = authProjects.find(x => x.projectId === pId);
+                const asgs = filteredAsg.filter(a => a.projectId === pId);
+                if (!p && asgs.length===0) return;
+                
+                let totAlloc = 0;
+                let verified = 0;
+                asgs.forEach(a => {
+                   totAlloc += (Number(a.allocationPercentage)||0);
+                   if (a.verificationStatus === 'Verified' || a.verificationStatus === 'Approved') verified++;
+                });
+                
+                projStats.push({
+                   id: pId,
+                   name: p ? p.projectName : pId,
+                   count: asgs.length,
+                   avg: asgs.length ? Math.round(totAlloc / asgs.length) : 0,
+                   verifPct: asgs.length ? Math.round((verified / asgs.length) * 100) : 0
+                });
+             });
+             
+             projStats.sort((a,b) => b.count - a.count); // sort by personnel count
+
+             document.getElementById('dashProjectBody').innerHTML = projStats.map(ps => `
+                <tr onclick="drillDownToProject('${ps.id}')">
+                  <td>${ps.name}</td>
+                  <td>${ps.count}</td>
+                  <td>${ps.avg}%</td>
+                  <td>
+                    <div style="display:flex; align-items:center; gap:5px;">
+                      <div style="width:40px; background:var(--bg3); height:6px; border-radius:3px; overflow:hidden;">
+                        <div style="width:${ps.verifPct}%; background:var(--success); height:100%;"></div>
+                      </div>
+                      <span style="font-size:10px;">${ps.verifPct}%</span>
+                    </div>
+                  </td>
+                </tr>
+             `).join('') || '<tr><td colspan="4" style="text-align:center;">No project data</td></tr>';
+
+             // 8. Render Exception Tables
+             document.getElementById('dashOverAllocBody').innerHTML = overAllocatedPers.map(p => `
+                <tr>
+                  <td>${p.name}<br><span style="font-size:10px; color:var(--text3);">${p.generalNo||'-'}</span></td>
+                  <td style="color:var(--danger); font-weight:bold;">${p.totalAllocation}%</td>
+                  <td>${(p.activeProjectIds || []).length}</td>
+                </tr>
+             `).join('') || '<tr><td colspan="3" style="text-align:center; color:var(--text3);">No over-allocated personnel</td></tr>';
+
+             document.getElementById('dashAvailAllocBody').innerHTML = availablePers.map(p => `
+                <tr>
+                  <td>${p.name}<br><span style="font-size:10px; color:var(--text3);">${p.generalNo||'-'}</span></td>
+                  <td>${p.totalAllocation || 0}%</td>
+                  <td style="color:var(--success); font-weight:bold;">${100 - (Number(p.totalAllocation)||0)}%</td>
+                </tr>
+             `).join('') || '<tr><td colspan="3" style="text-align:center; color:var(--text3);">No available personnel</td></tr>';
+
           }
 
           function renderPromapPersonnel() {
