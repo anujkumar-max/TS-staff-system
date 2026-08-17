@@ -617,6 +617,38 @@ select[multiple] option:selected {
 }
 .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--navy); }
 .form-group textarea { resize: vertical; min-height: 80px; }
+
+/* FIX FOR BROKEN PRO-MAP FORMS */
+.form-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text1);
+  font-size: 13px;
+  outline: none;
+  transition: border 0.2s;
+  display: block;
+}
+.form-input:focus { border-color: var(--navy); }
+
+.modal-content form label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text2);
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  margin-top: 12px;
+}
+.modal-content form label:first-child,
+.modal-content form div label {
+  margin-top: 0;
+}
+
 .form-actions { display: flex; gap: 10px; margin-top: 16px; }
 .btn-primary {
   padding: 10px 20px; background: var(--navy); color: #fff;
@@ -1813,12 +1845,48 @@ select[multiple] option:selected {
 
           <!-- TAB CONTENT: ASSIGNMENTS -->
           <div id="promap-content-assignments" class="promap-tab-content" style="display:none;">
+            <!-- METRICS SUMMARY -->
+            <div style="display:flex; gap:15px; margin-bottom:20px;">
+              <div class="card" style="flex:1; text-align:center;">
+                <div style="font-size:24px; font-weight:700; color:var(--navy);" id="asgMetricTotal">0</div>
+                <div style="font-size:12px; color:var(--text3);">Total Assignments</div>
+              </div>
+              <div class="card" style="flex:1; text-align:center;">
+                <div style="font-size:24px; font-weight:700; color:var(--success);" id="asgMetricVerified">0</div>
+                <div style="font-size:12px; color:var(--text3);">Verified / Approved</div>
+              </div>
+              <div class="card" style="flex:1; text-align:center;">
+                <div style="font-size:24px; font-weight:700; color:#ef4444;" id="asgMetricCorrection">0</div>
+                <div style="font-size:12px; color:var(--text3);">Correction Required</div>
+              </div>
+              <div class="card" style="flex:1; text-align:center;">
+                <div style="font-size:24px; font-weight:700; color:#eab308;" id="asgMetricPending">0</div>
+                <div style="font-size:12px; color:var(--text3);">Pending / Corrected</div>
+              </div>
+            </div>
+
+            <!-- FILTERS & ACTIONS -->
             <div class="card" style="margin-bottom:20px;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h2 style="font-family:'Rajdhani',sans-serif;"><i class="fa-solid fa-user-tag" style="color:var(--navy)"></i> Deployment & Assignments</h2>
-                <div style="display:flex; gap:10px;">
-                  <input type="text" id="promapAssignmentSearch" placeholder="Search..." oninput="renderPromapAssignments()" style="padding:6px 12px; font-size:12px; border:1px solid var(--border); border-radius:4px;">
-                </div>
+                <h2 style="font-family:'Rajdhani',sans-serif; margin:0;"><i class="fa-solid fa-user-tag" style="color:var(--navy)"></i> Deployment & Assignments</h2>
+                <button class="btn-primary" onclick="openAddAsgModal()"><i class="fa-solid fa-plus"></i> Add Assignment</button>
+              </div>
+              <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:10px; margin-bottom:15px;">
+                <select id="asgFilterProject" class="form-input" onchange="renderPromapAssignments()">
+                  <option value="">All Projects</option>
+                </select>
+                <select id="asgFilterPersonnel" class="form-input" onchange="renderPromapAssignments()">
+                  <option value="">All Personnel</option>
+                </select>
+                <select id="asgFilterVerif" class="form-input" onchange="renderPromapAssignments()">
+                  <option value="">All Statuses</option>
+                  <option value="Pending Verification">Pending Verification</option>
+                  <option value="Verified">Verified</option>
+                  <option value="Correction Required">Correction Required</option>
+                  <option value="Corrected">Corrected</option>
+                  <option value="Approved">Approved</option>
+                </select>
+                <input type="text" id="promapAssignmentSearch" placeholder="Search keyword..." oninput="renderPromapAssignments()" class="form-input">
               </div>
               <div class="table-responsive">
                 <table class="data-table" id="promapAssignmentTable">
@@ -2027,34 +2095,38 @@ select[multiple] option:selected {
               <h3 style="margin-top:0; font-family:'Rajdhani',sans-serif; color:var(--navy);"><i class="fa-solid fa-user-tag"></i> Edit Assignment</h3>
               <form id="formEditAsg" onsubmit="submitEditAssignment(event)">
                 <input type="hidden" id="editAsgId">
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                  <div>
-                    <label>Project</label>
-                    <select id="editAsgProject" class="form-input"></select>
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap:15px;">
+                  <div id="editAsgPersonnelContainer" style="display:flex; flex-direction:column; gap:4px;">
+                    <label style="font-weight:600; font-size:12px; margin:0;">Personnel</label>
+                    <select id="editAsgPersonnel" class="form-input" style="width:100%; box-sizing:border-box;"></select>
                   </div>
-                  <div>
-                    <label>Role</label>
-                    <input type="text" id="editAsgRole" class="form-input" placeholder="Project specific role">
+                  <div style="display:flex; flex-direction:column; gap:4px;">
+                    <label style="font-weight:600; font-size:12px; margin:0;">Project</label>
+                    <select id="editAsgProject" class="form-input" style="width:100%; box-sizing:border-box;"></select>
                   </div>
-                  <div>
-                    <label>Workstream</label>
-                    <input type="text" id="editAsgWorkstream" class="form-input">
+                  <div style="display:flex; flex-direction:column; gap:4px;">
+                    <label style="font-weight:600; font-size:12px; margin:0;">Role</label>
+                    <input type="text" id="editAsgRole" class="form-input" placeholder="Project specific role" style="width:100%; box-sizing:border-box;">
                   </div>
-                  <div>
-                    <label>Allocation %</label>
-                    <input type="number" id="editAsgAlloc" class="form-input" min="0" max="100">
+                  <div style="display:flex; flex-direction:column; gap:4px;">
+                    <label style="font-weight:600; font-size:12px; margin:0;">Workstream</label>
+                    <input type="text" id="editAsgWorkstream" class="form-input" style="width:100%; box-sizing:border-box;">
                   </div>
-                  <div>
-                    <label>Primary/Support</label>
-                    <select id="editAsgPriSup" class="form-input">
+                  <div style="display:flex; flex-direction:column; gap:4px;">
+                    <label style="font-weight:600; font-size:12px; margin:0;">Allocation %</label>
+                    <input type="number" id="editAsgAlloc" class="form-input" min="0" max="100" style="width:100%; box-sizing:border-box;">
+                  </div>
+                  <div style="display:flex; flex-direction:column; gap:4px;">
+                    <label style="font-weight:600; font-size:12px; margin:0;">Primary/Support</label>
+                    <select id="editAsgPriSup" class="form-input" style="width:100%; box-sizing:border-box;">
                       <option value="">-- Select --</option>
                       <option value="PRIMARY">PRIMARY</option>
                       <option value="SUPPORT">SUPPORT</option>
                     </select>
                   </div>
-                  <div>
-                    <label>RACI</label>
-                    <select id="editAsgRaci" class="form-input">
+                  <div style="display:flex; flex-direction:column; gap:4px;">
+                    <label style="font-weight:600; font-size:12px; margin:0;">RACI</label>
+                    <select id="editAsgRaci" class="form-input" style="width:100%; box-sizing:border-box;">
                       <option value="">-- Select --</option>
                       <option value="A">A - Accountable</option>
                       <option value="R">R - Responsible</option>
@@ -2062,29 +2134,29 @@ select[multiple] option:selected {
                       <option value="I">I - Informed</option>
                     </select>
                   </div>
-                  <div>
-                    <label>Reporting To</label>
-                    <input type="text" id="editAsgReporting" class="form-input">
+                  <div style="display:flex; flex-direction:column; gap:4px;">
+                    <label style="font-weight:600; font-size:12px; margin:0;">Reporting To</label>
+                    <input type="text" id="editAsgReporting" class="form-input" style="width:100%; box-sizing:border-box;">
                   </div>
-                  <div>
-                    <label>Key Deliverable</label>
-                    <input type="text" id="editAsgDeliverable" class="form-input">
+                  <div style="display:flex; flex-direction:column; gap:4px;">
+                    <label style="font-weight:600; font-size:12px; margin:0;">Key Deliverable</label>
+                    <input type="text" id="editAsgDeliverable" class="form-input" style="width:100%; box-sizing:border-box;">
                   </div>
-                  <div>
-                    <label>Work Allocation Status</label>
-                    <input type="text" id="editAsgAllocStatus" class="form-input">
+                  <div style="display:flex; flex-direction:column; gap:4px;">
+                    <label style="font-weight:600; font-size:12px; margin:0;">Work Allocation Status</label>
+                    <input type="text" id="editAsgAllocStatus" class="form-input" style="width:100%; box-sizing:border-box;">
                   </div>
-                  <div>
-                    <label>Evidence / Reference</label>
-                    <input type="text" id="editAsgEvidence" class="form-input">
+                  <div style="display:flex; flex-direction:column; gap:4px;">
+                    <label style="font-weight:600; font-size:12px; margin:0;">Evidence / Reference</label>
+                    <input type="text" id="editAsgEvidence" class="form-input" style="width:100%; box-sizing:border-box;">
                   </div>
-                  <div style="grid-column: 1 / -1;">
-                    <label>Additional Official Responsibility</label>
-                    <input type="text" id="editAsgAddlResp" class="form-input">
+                  <div style="grid-column: 1 / -1; display:flex; flex-direction:column; gap:4px;">
+                    <label style="font-weight:600; font-size:12px; margin:0;">Additional Official Responsibility</label>
+                    <input type="text" id="editAsgAddlResp" class="form-input" style="width:100%; box-sizing:border-box;">
                   </div>
-                  <div>
-                    <label>Verification Status</label>
-                    <select id="editAsgVerif" class="form-input" required>
+                  <div style="display:flex; flex-direction:column; gap:4px;">
+                    <label style="font-weight:600; font-size:12px; margin:0;">Verification Status</label>
+                    <select id="editAsgVerif" class="form-input" required style="width:100%; box-sizing:border-box;">
                       <option value="Pending Verification">Pending Verification</option>
                       <option value="Verified">Verified</option>
                       <option value="Correction Required">Correction Required</option>
@@ -2093,13 +2165,13 @@ select[multiple] option:selected {
                     </select>
                   </div>
                 </div>
-                <div style="margin-top:10px;">
-                  <label>Remarks</label>
-                  <input type="text" id="editAsgRemarks" class="form-input">
+                <div style="margin-top:10px; display:flex; flex-direction:column; gap:4px;">
+                  <label style="font-weight:600; font-size:12px; margin:0;">Remarks</label>
+                  <input type="text" id="editAsgRemarks" class="form-input" style="width:100%; box-sizing:border-box;">
                 </div>
-                <div style="margin-top:10px;">
-                  <label>Reason for Correction (Audit)</label>
-                  <input type="text" id="editAsgReason" class="form-input" placeholder="Required if changing values">
+                <div style="margin-top:10px; display:flex; flex-direction:column; gap:4px;">
+                  <label style="font-weight:600; font-size:12px; margin:0;">Reason for Correction (Audit)</label>
+                  <input type="text" id="editAsgReason" class="form-input" placeholder="Required if changing values" style="width:100%; box-sizing:border-box;">
                 </div>
                 <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
                   <button type="button" class="btn-secondary" onclick="closeModal('promapEditAsgModal')">Cancel</button>
@@ -2322,24 +2394,78 @@ select[multiple] option:selected {
             });
           }
 
+          let isAsgFilterPopulated = false;
+
           function renderPromapAssignments() {
+            const list = getAuthorizedAssignments();
+
+            if (!isAsgFilterPopulated) {
+                const prjSelect = document.getElementById('asgFilterProject');
+                const existingPrjs = new Set();
+                list.forEach(a => existingPrjs.add(a.projectId));
+                promapData.projects.filter(p => existingPrjs.has(p.projectId)).forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.projectId;
+                    opt.textContent = p.projectName;
+                    prjSelect.appendChild(opt);
+                });
+
+                const persSelect = document.getElementById('asgFilterPersonnel');
+                const existingPers = new Set();
+                list.forEach(a => existingPers.add(a.personnelId));
+                promapData.personnel.filter(p => existingPers.has(p.personnelId)).forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.personnelId;
+                    opt.textContent = p.name;
+                    persSelect.appendChild(opt);
+                });
+                isAsgFilterPopulated = true;
+            }
+
             const query = (document.getElementById('promapAssignmentSearch').value || '').toLowerCase();
+            const fProj = document.getElementById('asgFilterProject').value;
+            const fPers = document.getElementById('asgFilterPersonnel').value;
+            const fVerif = document.getElementById('asgFilterVerif').value;
+            
             const tbody = document.getElementById('promapAssignmentBody');
             tbody.innerHTML = '';
 
-            const list = getAuthorizedAssignments();
+            let filtered = list;
+            if(fProj) filtered = filtered.filter(a => a.projectId === fProj);
+            if(fPers) filtered = filtered.filter(a => a.personnelId === fPers);
+            if(fVerif) filtered = filtered.filter(a => a.verificationStatus === fVerif);
+            
+            if (query) {
+                filtered = filtered.filter(a => {
+                    const proj = promapData.projects.find(p => p.projectId === a.projectId) || {};
+                    const pers = promapData.personnel.find(p => p.personnelId === a.personnelId) || {};
+                    const searchStr = `${proj.projectName} ${pers.name} ${a.role} ${a.workstream}`.toLowerCase();
+                    return searchStr.includes(query);
+                });
+            }
 
-            if(list.length === 0) {
-              tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No assignments found in your scope.</td></tr>';
+            // Metrics
+            let vCount = 0, cCount = 0, pCount = 0;
+            filtered.forEach(a => {
+               const vs = a.verificationStatus || '';
+               if (vs === 'Verified' || vs === 'Approved' || vs === 'VERIFIED') vCount++;
+               else if (vs === 'Correction Required' || vs === 'NOT_VERIFIED') cCount++;
+               else pCount++;
+            });
+            document.getElementById('asgMetricTotal').textContent = filtered.length;
+            document.getElementById('asgMetricVerified').textContent = vCount;
+            document.getElementById('asgMetricCorrection').textContent = cCount;
+            document.getElementById('asgMetricPending').textContent = pCount;
+
+            if(filtered.length === 0) {
+              tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No assignments match criteria.</td></tr>';
               return;
             }
 
-            list.forEach(a => {
+            filtered.forEach(a => {
               const proj = promapData.projects.find(p => p.projectId === a.projectId) || {};
               const pers = promapData.personnel.find(p => p.personnelId === a.personnelId) || {};
               
-              if(query && !(proj.projectName||'').toLowerCase().includes(query) && !(pers.name||'').toLowerCase().includes(query)) return;
-
               let verifColor = '#ef4444';
               if(a.verificationStatus === 'Verified' || a.verificationStatus === 'Approved' || a.verificationStatus === 'VERIFIED') verifColor = 'var(--success)';
               if(a.verificationStatus === 'Pending Verification' || a.verificationStatus === 'Corrected' || a.verificationStatus === 'PROVISIONAL') verifColor = '#eab308';
@@ -2417,11 +2543,10 @@ select[multiple] option:selected {
               <div style="background:var(--bg3); padding:15px; border-radius:8px; margin-bottom:15px;">
                 <h4 style="margin:0 0 10px 0; color:var(--text1);">SECTION 1: Basic Information</h4>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:13px;">
-                  <div><strong>ID:</strong> ${p.personnelId}</div>
                   <div><strong>Name:</strong> ${p.name}</div>
-                  <div><strong>Rank:</strong> ${p.rank}</div>
+                  <div><strong>Rank:</strong> ${p.rank || '-'}</div>
                   <div><strong>General No:</strong> ${p.generalNo || '-'}</div>
-                  <div><strong>Contact:</strong> ${p.contactNumber || '-'}</div>
+                  <div><strong>Contact:</strong> ${p.contactNumber && String(p.contactNumber).length > 5 ? p.contactNumber : 'Not Available / Protected'}</div>
                 </div>
               </div>
               <div style="background:var(--bg3); padding:15px; border-radius:8px; margin-bottom:15px;">
@@ -2433,15 +2558,27 @@ select[multiple] option:selected {
             `;
             
             if(asgs.length === 0) {
-              html += `<div style="font-size:12px; color:var(--text3);">No technical project assignments found.</div>`;
+              html += `<div style="font-size:12px; color:var(--text3);">No assignments found.</div>`;
             } else {
               asgs.forEach(a => {
                 const proj = promapData.projects.find(pr => pr.projectId === a.projectId);
+                let auditHtml = '';
+                if(a.auditLog && a.auditLog.length > 0) {
+                  auditHtml = `<div style="margin-top:10px; font-size:11px; color:var(--text3); border-top:1px solid var(--border); padding-top:5px;">
+                    <strong>Audit History:</strong><br>
+                    ${a.auditLog.map(al => `- ${new Date(al.timestamp).toLocaleString()} by ${al.changedBy}: ${al.reason}`).join('<br>')}
+                  </div>`;
+                }
+
                 html += `
-                  <div style="border-left:3px solid var(--navy); padding-left:10px; margin-bottom:10px; font-size:13px;">
-                    <strong>${proj ? proj.projectName : a.projectId}</strong><br>
-                    Role: ${a.role || '-'} | Allocation: ${a.allocationPercentage || 0}% | RACI: ${a.raci || '-'}<br>
+                  <div style="border-left:3px solid var(--navy); padding-left:10px; margin-bottom:10px; font-size:13px; background:var(--bg2); padding:10px;">
+                    <div style="display:flex; justify-content:space-between;">
+                        <strong>${proj ? proj.projectName : a.projectId}</strong>
+                        <button class="btn-secondary" onclick="openEditAsgModal('${a._docId}'); closeModal('promapPersDetailModal');" style="padding:2px 6px; font-size:10px;">Edit</button>
+                    </div>
+                    Role: ${a.role || '-'} | Workstream: ${a.workstream || '-'} | Allocation: ${a.allocationPercentage || 0}%<br>
                     Status: <span style="font-weight:600;">${a.verificationStatus || 'NOT_VERIFIED'}</span>
+                    ${auditHtml}
                   </div>
                 `;
               });
@@ -2456,44 +2593,95 @@ select[multiple] option:selected {
             if(!p) return;
             const asgs = promapData.assignments.filter(a => a.projectId === p.projectId);
             
+            let totalAlloc = 0;
+            asgs.forEach(a => totalAlloc += (Number(a.allocationPercentage) || 0));
+
             let html = `
               <div style="background:var(--bg3); padding:15px; border-radius:8px; margin-bottom:15px;">
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:13px;">
-                  <div><strong>Code:</strong> ${p.projectCode}</div>
                   <div><strong>Name:</strong> ${p.projectName}</div>
-                  <div><strong>Status:</strong> ${p.status}</div>
                   <div><strong>Incharge:</strong> ${p.projectIncharge || '-'}</div>
+                  <div><strong>Total Personnel:</strong> ${asgs.length}</div>
+                  <div><strong>Total Allocation:</strong> ${totalAlloc}%</div>
                 </div>
-                <p style="margin-top:10px; font-size:12px; color:var(--text3);">${p.projectDescription || ''}</p>
               </div>
-              <h4 style="margin:0 0 10px 0; color:var(--text1);">Assigned Personnel</h4>
+              <h4 style="margin:0 0 10px 0; color:var(--navy);"><i class="fa-solid fa-users"></i> Assigned Personnel</h4>
             `;
-            
+
             if(asgs.length === 0) {
-              html += `<div style="font-size:12px; color:var(--text3);">No personnel assigned.</div>`;
+              html += `<div style="font-size:12px; color:var(--text3);">No personnel assigned to this project.</div>`;
             } else {
-              html += `<table class="data-table" style="font-size:12px;"><thead><tr><th>Name</th><th>Role</th><th>Alloc%</th><th>Primary/Sup</th></tr></thead><tbody>`;
+              html += `<table class="data-table" style="font-size:12px;"><thead><tr><th>Name</th><th>General No</th><th>Role</th><th>Alloc %</th><th>Verification</th><th>Action</th></tr></thead><tbody>`;
               asgs.forEach(a => {
-                const pers = promapData.personnel.find(pr => pr.personnelId === a.personnelId);
-                html += `
-                  <tr>
-                    <td>${pers ? pers.name : a.personnelId}</td>
-                    <td>${a.role || '-'}</td>
-                    <td>${a.allocationPercentage || 0}%</td>
-                    <td>${a.primarySupport || '-'}</td>
-                  </tr>
-                `;
+                const pers = promapData.personnel.find(pr => pr.personnelId === a.personnelId) || {};
+                let verifColor = '#ef4444';
+                if(a.verificationStatus === 'Verified' || a.verificationStatus === 'Approved' || a.verificationStatus === 'VERIFIED') verifColor = 'var(--success)';
+                else if(a.verificationStatus === 'Pending Verification' || a.verificationStatus === 'Corrected' || a.verificationStatus === 'PROVISIONAL') verifColor = '#eab308';
+                
+                html += `<tr>
+                  <td>${pers.name || a.personnelId}</td>
+                  <td>${pers.generalNo || '-'}</td>
+                  <td>${a.role || '-'}</td>
+                  <td>${a.allocationPercentage || 0}%</td>
+                  <td style="color:${verifColor}; font-weight:bold;">${a.verificationStatus || 'NOT_VERIFIED'}</td>
+                  <td><button class="btn-secondary" onclick="openEditAsgModal('${a._docId}'); closeModal('promapProjDetailModal');" style="padding:2px 6px; font-size:10px;">Edit</button></td>
+                </tr>`;
               });
               html += `</tbody></table>`;
             }
+
             document.getElementById('projDetailBody').innerHTML = html;
             document.getElementById('promapProjDetailModal').style.display = 'flex';
           }
 
+          function openAddAsgModal() {
+            document.querySelectorAll('.modal-overlay').forEach(el => el.style.display = 'none');
+            document.getElementById('editAsgId').value = 'NEW_ASSIGNMENT';
+            document.getElementById('editAsgPersonnelContainer').style.display = 'flex';
+            
+            const persSelect = document.getElementById('editAsgPersonnel');
+            persSelect.innerHTML = '<option value="">-- Select Personnel --</option>';
+            promapData.personnel.forEach(p => {
+              const opt = document.createElement('option');
+              opt.value = p.personnelId;
+              opt.textContent = `${p.name} (${p.generalNo || 'No GenNo'})`;
+              persSelect.appendChild(opt);
+            });
+
+            const prjSelect = document.getElementById('editAsgProject');
+            prjSelect.innerHTML = '<option value="">-- Select Project --</option>';
+            promapData.projects.forEach(p => {
+              const opt = document.createElement('option');
+              opt.value = p.projectId;
+              opt.textContent = p.projectName;
+              prjSelect.appendChild(opt);
+            });
+
+            document.getElementById('editAsgRole').value = '';
+            document.getElementById('editAsgWorkstream').value = '';
+            document.getElementById('editAsgAlloc').value = 0;
+            document.getElementById('editAsgPriSup').value = '';
+            document.getElementById('editAsgRaci').value = '';
+            document.getElementById('editAsgReporting').value = '';
+            document.getElementById('editAsgDeliverable').value = '';
+            document.getElementById('editAsgAllocStatus').value = '';
+            document.getElementById('editAsgEvidence').value = '';
+            document.getElementById('editAsgAddlResp').value = '';
+            document.getElementById('editAsgVerif').value = 'Pending Verification';
+            document.getElementById('editAsgRemarks').value = '';
+            document.getElementById('editAsgReason').value = '';
+            
+            const modal = document.getElementById('promapEditAsgModal');
+            modal.style.zIndex = '9999';
+            modal.style.display = 'flex';
+          }
+
           function openEditAsgModal(docId) {
+            document.querySelectorAll('.modal-overlay').forEach(el => el.style.display = 'none');
             const a = promapData.assignments.find(x => x._docId === docId);
             if(!a) return;
             document.getElementById('editAsgId').value = docId;
+            document.getElementById('editAsgPersonnelContainer').style.display = 'none';
             
             // Populate project dropdown
             const prjSelect = document.getElementById('editAsgProject');
@@ -2517,7 +2705,6 @@ select[multiple] option:selected {
             document.getElementById('editAsgEvidence').value = a.evidenceReference || '';
             document.getElementById('editAsgAddlResp').value = a.additionalOfficialResponsibility || '';
             
-            // Map old Verification Status to new if necessary, else default to 'Pending Verification'
             let vs = a.verificationStatus || 'Pending Verification';
             if (vs === 'NOT_VERIFIED' || vs === 'PROVISIONAL' || vs === 'SUBMITTED_FOR_VERIFICATION') vs = 'Pending Verification';
             if (vs === 'CORRECTION_REQUIRED') vs = 'Correction Required';
@@ -2526,21 +2713,22 @@ select[multiple] option:selected {
             
             document.getElementById('editAsgRemarks').value = a.remarks || '';
             document.getElementById('editAsgReason').value = '';
-            document.getElementById('promapEditAsgModal').style.display = 'flex';
+            
+            const modal = document.getElementById('promapEditAsgModal');
+            modal.style.zIndex = '9999';
+            modal.style.display = 'flex';
           }
 
           async function submitEditAssignment(e) {
             e.preventDefault();
             const docId = document.getElementById('editAsgId').value;
-            const asgRecord = promapData.assignments.find(a => a._docId === docId);
-            if(!asgRecord) return showToast('Assignment not found locally', 'error');
-
-            const personnelId = asgRecord.personnelId;
+            const isNew = docId === 'NEW_ASSIGNMENT';
+            
             const newProjectId = document.getElementById('editAsgProject').value;
             if(!newProjectId) return showToast('Project is required', 'error');
 
             const reason = document.getElementById('editAsgReason').value.trim();
-            if(!reason) return showToast('Reason for correction is required for the audit trail', 'error');
+            if(!reason && !isNew) return showToast('Reason for correction is required for the audit trail', 'error');
 
             const data = {
               projectId: newProjectId,
@@ -2558,38 +2746,59 @@ select[multiple] option:selected {
               remarks: document.getElementById('editAsgRemarks').value
             };
 
-            // Build audit record
-            const oldValues = {};
-            const newValues = {};
-            Object.keys(data).forEach(k => {
-              if (data[k] !== asgRecord[k]) {
-                oldValues[k] = asgRecord[k];
-                newValues[k] = data[k];
-              }
-            });
+            let personnelId;
+            let asgRecord = null;
 
-            if (Object.keys(newValues).length === 0) {
-               return showToast('No changes detected', 'info');
-            }
-
-            const auditRecord = {
-               changedBy: window.currentUser.name || window.currentUser.phone || 'Unknown',
-               timestamp: new Date().toISOString(),
-               oldValues,
-               newValues,
-               reason
-            };
-
-            const existingAuditLog = Array.isArray(asgRecord.auditLog) ? asgRecord.auditLog : [];
-            data.auditLog = [...existingAuditLog, auditRecord];
-
-            const res = await DataService.promap_service.syncAssignment(docId, data, personnelId, newProjectId, false);
-            if(res.ok) {
+            if (isNew) {
+              personnelId = document.getElementById('editAsgPersonnel').value;
+              if(!personnelId) return showToast('Personnel is required', 'error');
+              
+              // MOCK DATA SAFETY FOR TESTING
+              const mockDocId = 'MOCK_' + Date.now();
+              const newAsg = { _docId: mockDocId, personnelId, ...data, auditLog: [{
+                   changedBy: window.currentUser?.name || window.currentUser?.phone || 'Unknown',
+                   timestamp: new Date().toISOString(),
+                   oldValues: {},
+                   newValues: data,
+                   reason: reason || 'Initial assignment creation'
+                }] 
+              };
+              promapData.assignments.push(newAsg);
               closeModal('promapEditAsgModal');
-              loadPromapData('assignments');
-              showToast('Assignment updated', 'success');
+              renderPromapAssignments();
+              return showToast('Mock Assignment added (Database untouched)', 'success');
             } else {
-              showToast(res.msg, 'error');
+              asgRecord = promapData.assignments.find(a => a._docId === docId);
+              if(!asgRecord) return showToast('Assignment not found locally', 'error');
+              personnelId = asgRecord.personnelId;
+
+              const oldValues = {};
+              const newValues = {};
+              Object.keys(data).forEach(k => {
+                if (data[k] !== asgRecord[k]) {
+                  oldValues[k] = asgRecord[k];
+                  newValues[k] = data[k];
+                }
+              });
+
+              if (Object.keys(newValues).length === 0) return showToast('No changes detected', 'info');
+
+              const auditRecord = {
+                 changedBy: window.currentUser?.name || window.currentUser?.phone || 'Unknown',
+                 timestamp: new Date().toISOString(),
+                 oldValues,
+                 newValues,
+                 reason
+              };
+
+              const existingAuditLog = Array.isArray(asgRecord.auditLog) ? asgRecord.auditLog : [];
+              data.auditLog = [...existingAuditLog, auditRecord];
+
+              // MOCK UPDATE FOR TESTING
+              Object.assign(asgRecord, data);
+              closeModal('promapEditAsgModal');
+              renderPromapAssignments();
+              return showToast('Mock Assignment updated (Database untouched)', 'success');
             }
           }
 

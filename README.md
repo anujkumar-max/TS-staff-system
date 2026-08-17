@@ -24,7 +24,8 @@ Installable on Android as a home screen app. Works offline after first load.
 ## Tech Stack
 
 - Single-file HTML/CSS/JS PWA
-- Google Sheets as backend via Apps Script relay
+- Firebase Firestore as the active application data backend
+- Legacy Google Sheets helper functions remain in the codebase but are no longer used for staff loading
 - Font Awesome 6.5 icons
 - Inter + Rajdhani fonts
 - Dark / Light mode
@@ -32,6 +33,10 @@ Installable on Android as a home screen app. Works offline after first load.
 ## Deployment
 
 Hosted on GitHub Pages: https://anujkumar-max.github.io/TS-staff-system/
+
+## Stabilization notes
+
+See [docs/PHASE_1_BASELINE.md](docs/PHASE_1_BASELINE.md) for the Phase 1 baseline and verification checklist. See [docs/FIREBASE_CONSOLE_ACTIONS.md](docs/FIREBASE_CONSOLE_ACTIONS.md) for the Firestore permission issue that must be resolved in the Firebase console.
 
 ---
 
