@@ -650,6 +650,18 @@ select[multiple] option:selected {
 }
 
 /* ============================================================
+   PRINT CSS
+   ============================================================ */
+@media print {
+  body { background: white; color: black; }
+  .sidebar, .promap-tabs, .hide-on-print, .btn-primary, .btn-secondary, .btn-success, .btn-heart { display: none !important; }
+  .main-content { margin-left: 0; padding: 0; }
+  .print-card { border: none; box-shadow: none; padding: 0; }
+  .data-table th, .data-table td { border-color: #ddd; color: black; }
+  .data-table th { background: #f5f5f5; color: black; -webkit-print-color-adjust: exact; }
+}
+
+/* ============================================================
    PRO-MAP DASHBOARD
    ============================================================ */
 .dashboard-grid {
@@ -1857,6 +1869,7 @@ select[multiple] option:selected {
           <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:20px;">
             <div class="promap-tabs" style="display:flex; gap:10px;">
               <button class="btn-secondary" id="pmTab-dashboard" onclick="switchPromapTab('dashboard')">Dashboard</button>
+              <button class="btn-secondary" id="pmTab-reports" onclick="switchPromapTab('reports')">Reports</button>
               <button class="btn-secondary" id="pmTab-personnel" onclick="switchPromapTab('personnel')" style="background:var(--navy); color:white;">Personnel Master</button>
               <button class="btn-secondary" id="pmTab-projects" onclick="switchPromapTab('projects')">Project Master</button>
               <button class="btn-secondary" id="pmTab-assignments" onclick="switchPromapTab('assignments')">Deployment & Assignments</button>
@@ -1865,6 +1878,83 @@ select[multiple] option:selected {
               <button id="btnSystemMaintenance" class="btn-secondary" style="display:none; border-color:var(--orange); color:var(--orange);" onclick="openSystemMaintenanceModal()">
                 <i class="fa-solid fa-wrench"></i> System Maintenance
               </button>
+            </div>
+          </div>
+
+          <!-- TAB CONTENT: REPORTS -->
+          <div id="promap-content-reports" class="promap-tab-content" style="display:none;">
+            <div class="card" style="margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+              <div style="display:flex; align-items:center; gap:15px; flex-grow:1;">
+                <h3 style="margin:0; font-size:16px; color:var(--navy);"><i class="fa-solid fa-file-invoice"></i> Reports Engine</h3>
+                <select id="reportTypeSelector" class="form-input" style="max-width:300px; font-weight:600;" onchange="renderPromapReports()">
+                  <option value="personnel">1. Personnel Report</option>
+                  <option value="project">2. Project Report</option>
+                  <option value="assignment">3. Assignment Report</option>
+                  <option value="allocation">4. Allocation Report</option>
+                  <option value="verification">5. Verification Report</option>
+                  <option value="deployment">6. Deployment Status Report</option>
+                  <option value="project_manpower">7. Project-wise Manpower Report</option>
+                  <option value="personnel_assignment">8. Personnel-wise Assignment Report</option>
+                  <option value="exception">9. Exception / Correction Report</option>
+                  <option value="audit">10. Audit Report</option>
+                </select>
+              </div>
+              <div style="display:flex; gap:10px;" class="hide-on-print">
+                 <button class="btn-secondary" onclick="window.print()"><i class="fa-solid fa-print"></i> Print</button>
+                 <button class="btn-secondary" onclick="exportReportCSV()"><i class="fa-solid fa-file-csv"></i> CSV</button>
+                 <button class="btn-success" onclick="exportReportExcel()" style="background:var(--success); color:white; border:none; padding:8px 16px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer;"><i class="fa-solid fa-file-excel"></i> Excel</button>
+              </div>
+            </div>
+
+            <div class="card hide-on-print" style="margin-bottom:20px; background:var(--bg2);">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:12px; font-weight:600; text-transform:uppercase; color:var(--text2);">Report Filters</span>
+                <button class="btn-secondary" onclick="resetReportFilters()" style="font-size:11px; padding:4px 8px;">Reset Filters</button>
+              </div>
+              <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px;">
+                <select class="form-input" id="repFilterProject" onchange="renderPromapReports()"><option value="">All Projects</option></select>
+                <select class="form-input" id="repFilterIncharge" onchange="renderPromapReports()"><option value="">All Incharges</option></select>
+                <select class="form-input" id="repFilterPersonnel" onchange="renderPromapReports()"><option value="">All Personnel</option></select>
+                <select class="form-input" id="repFilterRank" onchange="renderPromapReports()"><option value="">All Ranks</option></select>
+                <select class="form-input" id="repFilterVerif" onchange="renderPromapReports()">
+                  <option value="">All Verif. Status</option>
+                  <option value="Pending Verification">Pending Verification</option>
+                  <option value="Correction Required">Correction Required</option>
+                  <option value="Corrected">Corrected</option>
+                  <option value="Verified">Verified</option>
+                  <option value="Approved">Approved</option>
+                </select>
+                <select class="form-input" id="repFilterAlloc" onchange="renderPromapReports()">
+                  <option value="">All Allocations</option>
+                  <option value="0">0% (Unallocated)</option>
+                  <option value="1-25">1-25%</option>
+                  <option value="26-50">26-50%</option>
+                  <option value="51-75">51-75%</option>
+                  <option value="76-99">76-99%</option>
+                  <option value="100">100% (Fully Allocated)</option>
+                  <option value="OVER">Over 100%</option>
+                </select>
+                <select class="form-input" id="repFilterDeployment" onchange="renderPromapReports()">
+                  <option value="">All Deployments</option>
+                  <option value="Project-Deployed">Project-Deployed</option>
+                  <option value="Awaiting Deployment">Awaiting Deployment</option>
+                  <option value="Officer Attachment">Officer Attachment</option>
+                  <option value="External Attachment">External Attachment</option>
+                  <option value="Administrative">Administrative</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="card print-card">
+               <div id="promapReportSummary" style="margin-bottom:15px; font-size:13px; color:var(--text2); display:flex; gap:20px; flex-wrap:wrap;">
+                 <!-- Populated via JS -->
+               </div>
+               <div style="overflow-x:auto;">
+                 <table class="data-table" id="promapReportTable">
+                   <thead id="promapReportHead"></thead>
+                   <tbody id="promapReportBody"></tbody>
+                 </table>
+               </div>
             </div>
           </div>
 
@@ -2462,6 +2552,7 @@ select[multiple] option:selected {
               }
 
               if(activeTab === 'dashboard') renderPromapDashboard();
+              if(activeTab === 'reports') renderPromapReports();
               if(activeTab === 'personnel') renderPromapPersonnel();
               if(activeTab === 'projects') renderPromapProjects();
               if(activeTab === 'assignments') renderPromapAssignments();
@@ -2776,6 +2867,437 @@ select[multiple] option:selected {
                 </tr>
              `).join('') || '<tr><td colspan="3" style="text-align:center; color:var(--text3);">No available personnel</td></tr>';
 
+          }
+
+          // ==========================================
+          // PART 6 - REPORTS LOGIC
+          // ==========================================
+          let currentReportHeaders = [];
+          let currentReportRows = [];
+
+          function resetReportFilters() {
+             document.getElementById('repFilterProject').value = '';
+             document.getElementById('repFilterIncharge').value = '';
+             document.getElementById('repFilterPersonnel').value = '';
+             document.getElementById('repFilterRank').value = '';
+             document.getElementById('repFilterVerif').value = '';
+             document.getElementById('repFilterAlloc').value = '';
+             document.getElementById('repFilterDeployment').value = '';
+             renderPromapReports();
+          }
+
+          function renderPromapReports() {
+             const type = document.getElementById('reportTypeSelector').value;
+             
+             // 1. Gather Authorized Data
+             const authProjects = getAuthorizedProjects();
+             const authAssignments = getAuthorizedAssignments();
+             
+             const role = window.currentUser?.promapRole;
+             let authPersonnel = [];
+             if (role === 'ADMIN' || role === 'IGP') {
+                authPersonnel = promapData.personnel;
+             } else {
+                const assignedPIds = new Set(authAssignments.map(a => a.personnelId));
+                authPersonnel = promapData.personnel.filter(p => assignedPIds.has(p.personnelId));
+             }
+
+             // 2. Populate Dropdowns (only if empty to preserve selection)
+             const projSelect = document.getElementById('repFilterProject');
+             if(projSelect.options.length <= 1) {
+                authProjects.forEach(p => projSelect.insertAdjacentHTML('beforeend', `<option value="${p.projectId}">${p.projectName}</option>`));
+             }
+             const pSelect = document.getElementById('repFilterPersonnel');
+             if(pSelect.options.length <= 1) {
+                authPersonnel.forEach(p => pSelect.insertAdjacentHTML('beforeend', `<option value="${p.personnelId}">${p.name} (${p.generalNo||'-'})</option>`));
+             }
+
+             // 3. Read Filters
+             const fProj = document.getElementById('repFilterProject').value;
+             const fInc = document.getElementById('repFilterIncharge').value.toLowerCase();
+             const fPers = document.getElementById('repFilterPersonnel').value;
+             const fRank = document.getElementById('repFilterRank').value.toLowerCase();
+             const fVerif = document.getElementById('repFilterVerif').value;
+             const fAlloc = document.getElementById('repFilterAlloc').value;
+             const fDep = document.getElementById('repFilterDeployment').value;
+
+             // 4. Base filtering helper for assignments
+             const getFilteredAssignments = () => {
+                 return authAssignments.filter(a => {
+                    if (fProj && a.projectId !== fProj) return false;
+                    if (fPers && a.personnelId !== fPers) return false;
+                    if (fVerif && a.verificationStatus !== fVerif) return false;
+                    
+                    const pers = authPersonnel.find(p => p.personnelId === a.personnelId);
+                    if (fRank && (!pers || !(pers.rank||'').toLowerCase().includes(fRank))) return false;
+                    if (fDep && (!pers || pers.deploymentCategory !== fDep)) return false;
+                    
+                    if (fAlloc) {
+                       if (!pers) return false;
+                       const t = Number(pers.totalAllocation) || 0;
+                       if (fAlloc === '0' && t !== 0) return false;
+                       if (fAlloc === '1-25' && (t < 1 || t > 25)) return false;
+                       if (fAlloc === '26-50' && (t < 26 || t > 50)) return false;
+                       if (fAlloc === '51-75' && (t < 51 || t > 75)) return false;
+                       if (fAlloc === '76-99' && (t < 76 || t > 99)) return false;
+                       if (fAlloc === '100' && t !== 100) return false;
+                       if (fAlloc === 'OVER' && t <= 100) return false;
+                    }
+                    
+                    const proj = authProjects.find(p => p.projectId === a.projectId);
+                    if (fInc && (!proj || !(proj.projectIncharge||'').toLowerCase().includes(fInc))) return false;
+                    
+                    return true;
+                 });
+             };
+
+             // Base filtering helper for personnel
+             const getFilteredPersonnel = () => {
+                 return authPersonnel.filter(p => {
+                    if (fPers && p.personnelId !== fPers) return false;
+                    if (fRank && !(p.rank||'').toLowerCase().includes(fRank)) return false;
+                    if (fDep && p.deploymentCategory !== fDep) return false;
+                    
+                    if (fAlloc) {
+                       const t = Number(p.totalAllocation) || 0;
+                       if (fAlloc === '0' && t !== 0) return false;
+                       if (fAlloc === '1-25' && (t < 1 || t > 25)) return false;
+                       if (fAlloc === '26-50' && (t < 26 || t > 50)) return false;
+                       if (fAlloc === '51-75' && (t < 51 || t > 75)) return false;
+                       if (fAlloc === '76-99' && (t < 76 || t > 99)) return false;
+                       if (fAlloc === '100' && t !== 100) return false;
+                       if (fAlloc === 'OVER' && t <= 100) return false;
+                    }
+
+                    // For Project, Incharge, Verif Status -> these require checking their assignments
+                    if (fProj || fInc || fVerif) {
+                       const pAsg = authAssignments.filter(a => a.personnelId === p.personnelId);
+                       if (pAsg.length === 0) return false; // if filtering by project traits, they must have assignments
+                       
+                       let match = pAsg.some(a => {
+                          if (fProj && a.projectId !== fProj) return false;
+                          if (fVerif && a.verificationStatus !== fVerif) return false;
+                          const proj = authProjects.find(pr => pr.projectId === a.projectId);
+                          if (fInc && (!proj || !(proj.projectIncharge||'').toLowerCase().includes(fInc))) return false;
+                          return true;
+                       });
+                       if (!match) return false;
+                    }
+                    
+                    return true;
+                 });
+             };
+
+             // Base filtering helper for projects
+             const getFilteredProjects = () => {
+                 return authProjects.filter(p => {
+                    if (fProj && p.projectId !== fProj) return false;
+                    if (fInc && !(p.projectIncharge||'').toLowerCase().includes(fInc)) return false;
+                    
+                    // For Personnel, Rank, Verif Status -> check assignments
+                    if (fPers || fRank || fVerif || fDep || fAlloc) {
+                       const pAsg = authAssignments.filter(a => a.projectId === p.projectId);
+                       if (pAsg.length === 0) return false;
+                       
+                       let match = pAsg.some(a => {
+                          if (fPers && a.personnelId !== fPers) return false;
+                          if (fVerif && a.verificationStatus !== fVerif) return false;
+                          const pers = authPersonnel.find(pr => pr.personnelId === a.personnelId);
+                          if (fRank && (!pers || !(pers.rank||'').toLowerCase().includes(fRank))) return false;
+                          if (fDep && (!pers || pers.deploymentCategory !== fDep)) return false;
+                          if (fAlloc) {
+                             if (!pers) return false;
+                             const t = Number(pers.totalAllocation) || 0;
+                             if (fAlloc === '0' && t !== 0) return false;
+                             if (fAlloc === '1-25' && (t < 1 || t > 25)) return false;
+                             if (fAlloc === '26-50' && (t < 26 || t > 50)) return false;
+                             if (fAlloc === '51-75' && (t < 51 || t > 75)) return false;
+                             if (fAlloc === '76-99' && (t < 76 || t > 99)) return false;
+                             if (fAlloc === '100' && t !== 100) return false;
+                             if (fAlloc === 'OVER' && t <= 100) return false;
+                          }
+                          return true;
+                       });
+                       if (!match) return false;
+                    }
+                    return true;
+                 });
+             };
+
+             let headers = [];
+             let rows = [];
+             let summaryHtml = '';
+
+             // 5. Generate Report based on Type
+             switch(type) {
+                case 'personnel': {
+                   headers = ['Name', 'General Number', 'Rank', 'Mobile', 'Status', 'Deployment', 'Projects', 'Total Alloc %'];
+                   const fp = getFilteredPersonnel();
+                   rows = fp.map(p => [
+                      p.name || '',
+                      p.generalNo || '',
+                      p.rank || '',
+                      p.officialMobile || '',
+                      p.isActive ? 'Active' : 'Inactive',
+                      p.deploymentCategory || 'Project-Deployed',
+                      (p.activeProjectIds || []).length,
+                      p.totalAllocation || 0
+                   ]);
+                   summaryHtml = `<span><strong>Total Personnel:</strong> ${fp.length}</span>`;
+                   break;
+                }
+                case 'project': {
+                   headers = ['Project Name', 'Incharge', 'Description', 'Personnel Count', 'Primary', 'Support', 'Total Alloc %'];
+                   const fproj = getFilteredProjects();
+                   rows = fproj.map(p => {
+                      const pAsgs = authAssignments.filter(a => a.projectId === p.projectId);
+                      const primary = pAsgs.filter(a => a.primaryOrSupport === 'Primary').length;
+                      const support = pAsgs.filter(a => a.primaryOrSupport === 'Support').length;
+                      const totalA = pAsgs.reduce((sum, a) => sum + (Number(a.allocationPercentage)||0), 0);
+                      return [
+                         p.projectName || '',
+                         p.projectIncharge || '',
+                         p.description || '',
+                         pAsgs.length,
+                         primary,
+                         support,
+                         totalA
+                      ];
+                   });
+                   summaryHtml = `<span><strong>Total Projects:</strong> ${fproj.length}</span>`;
+                   break;
+                }
+                case 'assignment': {
+                   headers = ['Personnel', 'Gen No', 'Rank', 'Project', 'Incharge', 'Role', 'Primary/Support', 'Alloc %', 'Verif Status', 'Created At'];
+                   const fasg = getFilteredAssignments();
+                   rows = fasg.map(a => {
+                      const p = authPersonnel.find(x => x.personnelId === a.personnelId) || {};
+                      const pr = authProjects.find(x => x.projectId === a.projectId) || {};
+                      return [
+                         p.name || '',
+                         p.generalNo || '',
+                         p.rank || '',
+                         pr.projectName || '',
+                         pr.projectIncharge || '',
+                         a.role || '',
+                         a.primaryOrSupport || '',
+                         a.allocationPercentage || 0,
+                         a.verificationStatus || 'Pending Verification',
+                         a.createdAt ? new Date(a.createdAt).toLocaleDateString() : ''
+                      ];
+                   });
+                   summaryHtml = `<span><strong>Total Assignments:</strong> ${fasg.length}</span>`;
+                   break;
+                }
+                case 'allocation': {
+                   headers = ['Personnel', 'Gen No', 'Rank', 'Deployment', 'Total Alloc %', 'Available Capacity', 'Over-Allocated'];
+                   const fpa = getFilteredPersonnel();
+                   rows = fpa.map(p => {
+                      const t = Number(p.totalAllocation) || 0;
+                      return [
+                         p.name || '',
+                         p.generalNo || '',
+                         p.rank || '',
+                         p.deploymentCategory || 'Project-Deployed',
+                         t,
+                         t < 100 ? (100 - t) + '%' : '0%',
+                         t > 100 ? 'YES' : 'NO'
+                      ];
+                   });
+                   const overCount = rows.filter(r => r[6] === 'YES').length;
+                   summaryHtml = `<span><strong>Total Personnel:</strong> ${fpa.length}</span> <span style="color:var(--danger)"><strong>Over-Allocated:</strong> ${overCount}</span>`;
+                   break;
+                }
+                case 'verification': {
+                   headers = ['Project', 'Personnel', 'Gen No', 'Verif Status', 'Correction Reason', 'Last Action', 'Remarks'];
+                   const fasgv = getFilteredAssignments();
+                   rows = fasgv.map(a => {
+                      const p = authPersonnel.find(x => x.personnelId === a.personnelId) || {};
+                      const pr = authProjects.find(x => x.projectId === a.projectId) || {};
+                      let lastAction = '';
+                      if (a.auditLog && a.auditLog.length > 0) {
+                         lastAction = a.auditLog[a.auditLog.length-1].action || '';
+                      }
+                      return [
+                         pr.projectName || '',
+                         p.name || '',
+                         p.generalNo || '',
+                         a.verificationStatus || 'Pending Verification',
+                         a.correctionReason || '',
+                         lastAction,
+                         a.remarks || ''
+                      ];
+                   });
+                   summaryHtml = `<span><strong>Assignments:</strong> ${fasgv.length}</span>`;
+                   break;
+                }
+                case 'deployment': {
+                   headers = ['Deployment Category', 'Personnel', 'Gen No', 'Rank', 'Status'];
+                   const fpd = getFilteredPersonnel();
+                   rows = fpd.map(p => [
+                      p.deploymentCategory || 'Project-Deployed',
+                      p.name || '',
+                      p.generalNo || '',
+                      p.rank || '',
+                      p.isActive ? 'Active' : 'Inactive'
+                   ]);
+                   summaryHtml = `<span><strong>Total Personnel:</strong> ${fpd.length}</span>`;
+                   break;
+                }
+                case 'project_manpower': {
+                   headers = ['Project', 'Incharge', 'Total Personnel', 'Primary', 'Support', 'Total Alloc %', 'Pending Verif', 'Verified/Approved'];
+                   const fprojm = getFilteredProjects();
+                   rows = fprojm.map(p => {
+                      const pAsgs = getFilteredAssignments().filter(a => a.projectId === p.projectId);
+                      let vOk = 0, vPend = 0, totA = 0, prim = 0, supp = 0;
+                      pAsgs.forEach(a => {
+                         totA += (Number(a.allocationPercentage)||0);
+                         if(a.primaryOrSupport==='Primary') prim++; else supp++;
+                         if(a.verificationStatus==='Verified' || a.verificationStatus==='Approved') vOk++;
+                         else vPend++;
+                      });
+                      return [
+                         p.projectName || '',
+                         p.projectIncharge || '',
+                         pAsgs.length,
+                         prim,
+                         supp,
+                         totA,
+                         vPend,
+                         vOk
+                      ];
+                   });
+                   summaryHtml = `<span><strong>Total Projects:</strong> ${fprojm.length}</span>`;
+                   break;
+                }
+                case 'personnel_assignment': {
+                   headers = ['Personnel', 'Gen No', 'Rank', 'Project', 'Role', 'Alloc %', 'Verif Status'];
+                   const fasgpa = getFilteredAssignments();
+                   rows = fasgpa.map(a => {
+                      const p = authPersonnel.find(x => x.personnelId === a.personnelId) || {};
+                      const pr = authProjects.find(x => x.projectId === a.projectId) || {};
+                      return [
+                         p.name || '',
+                         p.generalNo || '',
+                         p.rank || '',
+                         pr.projectName || '',
+                         a.role || '',
+                         a.allocationPercentage || 0,
+                         a.verificationStatus || 'Pending Verification'
+                      ];
+                   });
+                   summaryHtml = `<span><strong>Total Records:</strong> ${fasgpa.length}</span>`;
+                   break;
+                }
+                case 'exception': {
+                   headers = ['Exception Type', 'Details', 'Personnel / Project', 'Severity'];
+                   
+                   // Over allocated
+                   getFilteredPersonnel().filter(p => (Number(p.totalAllocation)||0) > 100).forEach(p => {
+                      rows.push(['Over-Allocated', `Total: ${p.totalAllocation}%`, `${p.name} (${p.generalNo||'-'})`, 'HIGH']);
+                   });
+
+                   // Correction Required
+                   getFilteredAssignments().filter(a => a.verificationStatus === 'Correction Required').forEach(a => {
+                      const p = authPersonnel.find(x => x.personnelId === a.personnelId) || {};
+                      const pr = authProjects.find(x => x.projectId === a.projectId) || {};
+                      rows.push(['Correction Required', `Reason: ${a.correctionReason||'N/A'}`, `${p.name} -> ${pr.projectName}`, 'HIGH']);
+                   });
+
+                   // Missing data (No Gen No)
+                   getFilteredPersonnel().filter(p => !p.generalNo).forEach(p => {
+                      rows.push(['Missing Master Data', `No General Number`, `${p.name}`, 'MEDIUM']);
+                   });
+
+                   summaryHtml = `<span><strong style="color:var(--danger)">Total Exceptions:</strong> ${rows.length}</span>`;
+                   break;
+                }
+                case 'audit': {
+                   headers = ['Timestamp', 'User', 'Action', 'Project', 'Personnel', 'Reason / Remarks'];
+                   const fasga = getFilteredAssignments();
+                   fasga.forEach(a => {
+                      const pr = authProjects.find(x => x.projectId === a.projectId) || {};
+                      const p = authPersonnel.find(x => x.personnelId === a.personnelId) || {};
+                      if (a.auditLog && Array.isArray(a.auditLog)) {
+                         a.auditLog.forEach(log => {
+                            rows.push([
+                               log.timestamp ? new Date(log.timestamp).toLocaleString() : '',
+                               log.userEmail || '',
+                               log.action || '',
+                               pr.projectName || '',
+                               p.name || '',
+                               log.reason || log.remarks || ''
+                            ]);
+                         });
+                      }
+                   });
+                   // Sort by timestamp desc
+                   rows.sort((a,b) => new Date(b[0]) - new Date(a[0]));
+                   summaryHtml = `<span><strong>Total Audit Events:</strong> ${rows.length}</span>`;
+                   break;
+                }
+             }
+
+             // Render Table
+             currentReportHeaders = headers;
+             currentReportRows = rows;
+
+             document.getElementById('promapReportSummary').innerHTML = summaryHtml;
+
+             if (rows.length === 0) {
+                document.getElementById('promapReportHead').innerHTML = `<tr><th>Notice</th></tr>`;
+                document.getElementById('promapReportBody').innerHTML = `<tr><td style="text-align:center; padding:30px;">No records available for the selected filters.</td></tr>`;
+             } else {
+                document.getElementById('promapReportHead').innerHTML = `<tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
+                document.getElementById('promapReportBody').innerHTML = rows.map(row => `
+                   <tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>
+                `).join('');
+             }
+          }
+
+          function exportReportExcel() {
+             if (!currentReportHeaders.length || !currentReportRows.length) {
+                alert("No data to export.");
+                return;
+             }
+             const ws = XLSX.utils.aoa_to_sheet([currentReportHeaders, ...currentReportRows]);
+             const wb = XLSX.utils.book_new();
+             XLSX.utils.book_append_sheet(wb, ws, "Report Data");
+             
+             const sel = document.getElementById('reportTypeSelector');
+             const rName = sel.options[sel.selectedIndex].text.replace(/[^a-zA-Z0-9]/g, '_');
+             XLSX.writeFile(wb, `PROMAP_${rName}_${new Date().toISOString().slice(0,10)}.xlsx`);
+          }
+
+          function exportReportCSV() {
+             if (!currentReportHeaders.length || !currentReportRows.length) {
+                alert("No data to export.");
+                return;
+             }
+             let csvContent = "data:text/csv;charset=utf-8,";
+             
+             // Escape helper
+             const escapeCSV = (str) => {
+                 if (str === null || str === undefined) return '""';
+                 const s = String(str).replace(/"/g, '""');
+                 return `"${s}"`;
+             };
+
+             csvContent += currentReportHeaders.map(escapeCSV).join(",") + "\r\n";
+             currentReportRows.forEach(row => {
+                 csvContent += row.map(escapeCSV).join(",") + "\r\n";
+             });
+
+             const sel = document.getElementById('reportTypeSelector');
+             const rName = sel.options[sel.selectedIndex].text.replace(/[^a-zA-Z0-9]/g, '_');
+             
+             const encodedUri = encodeURI(csvContent);
+             const link = document.createElement("a");
+             link.setAttribute("href", encodedUri);
+             link.setAttribute("download", `PROMAP_${rName}_${new Date().toISOString().slice(0,10)}.csv`);
+             document.body.appendChild(link);
+             link.click();
+             document.body.removeChild(link);
           }
 
           function renderPromapPersonnel() {
