@@ -1860,21 +1860,25 @@ select[multiple] option:selected {
                 <h3 style="font-family:'Rajdhani',sans-serif; margin-bottom:12px; color:var(--navy);">Dry-Run Report (0 Writes)</h3>
                 
                 <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:16px; font-weight:600;">
-                  <div>Total Rows: <span id="sdr-total" style="color:var(--text1)">0</span></div>
-                  <div>Matched Personnel: <span id="sdr-matched-p" style="color:var(--success)">0</span></div>
+                  <div>Source Rows: <span id="sdr-total" style="color:var(--text1)">0</span></div>
+                  <div>Assignment Candidates: <span id="sdr-candidates" style="color:var(--text1)">0</span></div>
+                  <div>Gen. Number Matches: <span id="sdr-matched-p-gen" style="color:var(--success)">0</span></div>
+                  
+                  <div>Name-Only Matches: <span id="sdr-name-matches" style="color:var(--orange)">0</span></div>
                   <div>Unmatched Personnel: <span id="sdr-unmatched-p" style="color:var(--danger)">0</span></div>
+                  <div>Technical Projects: <span id="sdr-known-prj" style="color:var(--success)">0</span></div>
                   
-                  <div>Projects Identified: <span id="sdr-projects" style="color:var(--text1)">0</span></div>
-                  <div>Unknown Projects: <span id="sdr-unknown-prj" style="color:var(--danger)">0</span></div>
-                  <div>Special Categories: <span id="sdr-special" style="color:var(--orange)">0</span></div>
-                  
+                  <div>Deployment Categories: <span id="sdr-special" style="color:var(--text3)">0</span></div>
+                  <div>Admin / Unclassified: <span id="sdr-admin" style="color:var(--orange)">0</span></div>
                   <div>Existing Assignments: <span id="sdr-existing" style="color:var(--text1)">0</span></div>
-                  <div>New Assignments to Create: <span id="sdr-new" style="color:var(--success)">0</span></div>
+                  
+                  <div>New Assignments: <span id="sdr-new" style="color:var(--success)">0</span></div>
                   <div>Duplicates Skipped: <span id="sdr-dupes" style="color:var(--text3)">0</span></div>
-
+                  <div>Errors / Conflicts: <span id="sdr-errors" style="color:var(--danger)">0</span></div>
+                  
+                  <div style="color:var(--orange)">Review Required: <span id="sdr-review">0</span></div>
                   <div style="color:var(--orange)">Missing Allocation: <span id="sdr-missing-alloc">0</span></div>
                   <div style="color:var(--orange)">Missing Role: <span id="sdr-missing-role">0</span></div>
-                  <div style="color:var(--danger)">Errors / Conflicts: <span id="sdr-errors">0</span></div>
                 </div>
 
                 <div style="max-height:300px; overflow-y:auto; border:1px solid var(--border); border-radius:4px; margin-bottom:15px;">
@@ -2723,13 +2727,26 @@ select[multiple] option:selected {
               const existingAssignments = [];
               asgSnap.forEach(d => existingAssignments.push({ id: d.id, ...d.data() }));
 
-              const SPECIAL_CATEGORIES = [
+              const DEPLOYMENT_CATEGORIES = [
+                  "Personnel Awaiting Deployment",
+                  "PCS&S - Personnel Awaiting Deployment",
                   "PCS&S – Personnel Awaiting Deployment",
+                  "PCS&S - Officer Attachments",
                   "PCS&S – Officer Attachments",
+                  "PCS&S - External Attachments",
                   "PCS&S – External Attachments"
               ];
+              const ADMIN_CATEGORIES = [
+                  "PCS&S ADMIN",
+                  "PCS&S store Duties",
+                  "Driver",
+                  "Attched to DGP Office",
+                  "Attched to Guntur",
+                  "Peshi",
+                  "Shakthi"
+              ];
 
-              let stats = { total: rows.length, matchedP: 0, unmatchedP: 0, projects: 0, unknownPrj: 0, special: 0, existing: 0, new: 0, dupes: 0, missingAlloc: 0, missingRole: 0, errors: 0 };
+              let stats = { total: rows.length, candidates: 0, matchedPGen: 0, matchedPName: 0, unmatchedP: 0, knownPrj: 0, admin: 0, special: 0, existing: 0, new: 0, dupes: 0, missingAlloc: 0, missingRole: 0, errors: 0, review: 0 };
               
               assignmentSeedData = [];
               let html = '';
@@ -2737,167 +2754,184 @@ select[multiple] option:selected {
               // Process rows
               rows.forEach(r => {
                 const pName = String(r['Person Name']).trim();
-                const genNo = String(r['General No']).trim();
+                const genNoRaw = r['General No'] !== undefined ? r['General No'] : r['General Number'];
+                const genNo = String(genNoRaw || '').trim();
+                
                 let projName = String(r['Project']).trim();
                 if(projName === 'CrIMAC') projName = 'CRIMAC';
+                const proj = projName; // Use exact source value
                 
                 let allocRaw = String(r['Allocation %']).replace('%','').trim();
                 let role = String(r['Exact Role / Responsibilities']).trim();
                 let workstream = String(r['Workstream']).trim();
                 
-                // Composite splits
-                let splitProjects = [projName];
-                if(projName === "eSakshya,eSummons") splitProjects = ["eSakshya", "eSummons"];
-                if(projName === "APOLIS, Drones & Meeseva") splitProjects = ["APOLIS", "Drones", "Meeseva"];
-                if(projName === "CCTV, eOffice") splitProjects = ["CCTV", "eOffice"];
+                if(!proj) return;
+                
+                let action = 'CREATE';
+                let reason = 'Ready to create';
+                let pId = null;
 
-                splitProjects.forEach(proj => {
-                  if(!proj) return;
-                  
-                  let action = 'CREATE';
-                  let reason = 'Ready to create';
-                  let pId = null;
+                // 1. Match Personnel (Primary: General Number)
+                let matchedPers = null;
+                let matchedBy = null;
+                if (genNo) {
+                  matchedPers = existingPersonnel.find(p => String(p.generalNo).trim() === genNo);
+                  if (matchedPers) matchedBy = 'genNo';
+                }
+                if (!matchedPers) {
+                  matchedPers = existingPersonnel.find(p => p.name.toLowerCase() === pName.toLowerCase());
+                  if (matchedPers) matchedBy = 'name';
+                }
 
-                  // 1. Match Personnel (Primary: General Number)
-                  let matchedPers = null;
-                  if (genNo) {
-                    matchedPers = existingPersonnel.find(p => p.generalNo === genNo);
+                if (matchedPers) {
+                  pId = matchedPers.id;
+                  if (matchedBy === 'name') {
+                    action = 'REVIEW — NAME MATCH ONLY';
+                    reason = 'Matched by name only (General Number mismatched or missing)';
                   }
-                  if (matchedPers) {
-                    pId = matchedPers.id;
+                } else {
+                  action = 'REVIEW — UNMATCHED PERSONNEL';
+                  reason = 'Could not safely match to existing personnel';
+                }
+
+                // 2. Classify Project / Deployment Category
+                let prjId = null;
+                let isDeployment = DEPLOYMENT_CATEGORIES.some(c => proj.toLowerCase().includes(c.toLowerCase()) || c.toLowerCase().includes(proj.toLowerCase()));
+                let isAdmin = ADMIN_CATEGORIES.some(c => proj.toLowerCase() === c.toLowerCase());
+                
+                if (isDeployment) {
+                  action = 'NOT A PROJECT ASSIGNMENT';
+                  reason = 'Special deployment category';
+                } else if (isAdmin) {
+                  action = 'REVIEW — UNCLASSIFIED ADMIN';
+                  reason = 'Administrative / Unclassified assignment';
+                } else {
+                  // 3. Match Technical Project
+                  const matchedPrj = existingProjects.find(pr => pr.projectName === proj);
+                  if (matchedPrj) {
+                    prjId = matchedPrj.id;
                   } else {
-                    // Fallback to Name match
-                    matchedPers = existingPersonnel.find(p => p.name.toLowerCase() === pName.toLowerCase());
-                    if (matchedPers) {
-                      pId = matchedPers.id;
-                      action = 'REVIEW — NAME MATCH ONLY';
-                      reason = 'Matched by name only (General Number mismatched or missing)';
-                    } else {
-                      action = 'REVIEW — UNMATCHED PERSONNEL';
-                      reason = 'Could not safely match to existing personnel';
+                    if (action === 'CREATE' || action.startsWith('REVIEW — NAME MATCH ONLY')) {
+                      action = 'REVIEW — UNKNOWN PROJECT';
+                      reason = 'Project not found in promap_projects';
                     }
                   }
+                }
 
-                  // 2. Filter Special Categories
-                  if (SPECIAL_CATEGORIES.includes(proj)) {
-                    action = 'NOT A PROJECT ASSIGNMENT';
-                    reason = 'Special deployment category';
-                  } else {
-                    // 3. Match Project
-                    const matchedPrj = existingProjects.find(pr => pr.projectName === proj);
-                    let prjId = null;
-                    if (matchedPrj) {
-                      prjId = matchedPrj.id;
-                    } else {
-                      if (action === 'CREATE' || action.startsWith('REVIEW — NAME MATCH ONLY')) {
-                        action = 'REVIEW — UNKNOWN PROJECT';
-                        reason = 'Project not found in promap_projects';
-                      }
-                    }
-
-                    // 4. Missing Data Checks
-                    if (action === 'CREATE' || action.startsWith('REVIEW')) {
-                      if (!allocRaw) {
-                        if(action === 'CREATE') action = 'REVIEW — MISSING ALLOCATION';
-                        reason = 'Allocation is missing/blank';
-                      }
-                      if (!role || !workstream) {
-                        reason += (reason === 'Ready to create' ? 'Missing Role/Workstream' : ' / Missing Role');
-                      }
-                    }
-
-                    // 5. Existing & Conflict Checks
-                    if (pId && prjId && !action.includes('UNKNOWN') && !action.includes('UNMATCHED')) {
-                      const existingLinks = existingAssignments.filter(a => a.personnelId === pId && a.projectId === prjId);
-                      if (existingLinks.length >= 2) {
-                        action = 'DATA CONFLICT — MULTIPLE EXISTING ASSIGNMENTS';
-                        reason = 'Multiple identical assignments already exist';
-                      } else if (existingLinks.length === 1) {
-                        action = 'SKIP — EXISTING';
-                        reason = 'Assignment already exists';
-                      }
-                    }
-
-                    // 6. Local Import Duplicate Check (Preventing duplicate row in the exact same import)
-                    if (pId && prjId && (action === 'CREATE' || action.startsWith('REVIEW'))) {
-                      const localDupe = assignmentSeedData.find(a => a.pId === pId && a.prjId === prjId);
-                      if (localDupe) {
-                        action = 'SKIP — DUPLICATE';
-                        reason = 'Duplicate row in the Excel sheet';
-                      }
-                    }
-
-                    const record = {
-                      pId, prjId, action, reason,
-                      personnelKey: pName,
-                      genNo: genNo,
-                      projectName: proj,
-                      allocationPercentage: allocRaw ? parseFloat(allocRaw) : '',
-                      role: role,
-                      workstream: workstream,
-                      primarySupport: String(r['Primary / Support']).trim(),
-                      verificationStatus: String(r['Verification Status'] || 'To Verify').trim()
-                    };
-                    
-                    // Add to processing array if actionable
-                    if (action === 'CREATE') {
-                      assignmentSeedData.push(record);
-                    }
-
-                    // Stats logic
-                    if (action === 'NOT A PROJECT ASSIGNMENT') stats.special++;
-                    else if (action === 'REVIEW — UNMATCHED PERSONNEL') stats.unmatchedP++;
-                    else if (action === 'REVIEW — UNKNOWN PROJECT') stats.unknownPrj++;
-                    else if (action === 'SKIP — EXISTING') stats.existing++;
-                    else if (action === 'SKIP — DUPLICATE') stats.dupes++;
-                    else if (action.includes('CONFLICT')) stats.errors++;
-                    else if (action === 'REVIEW — MISSING ALLOCATION') stats.missingAlloc++;
-                    else if (action === 'CREATE') stats.new++;
-                    else if (action.startsWith('REVIEW')) stats.errors++; // Catch any other review states
-                    
-                    if (pId && !action.includes('UNMATCHED')) stats.matchedP++;
-                    if (prjId && !action.includes('UNKNOWN') && action !== 'NOT A PROJECT ASSIGNMENT') stats.projects++;
-                    if (!role && action === 'CREATE') stats.missingRole++;
-
-                    // Build UI Row
-                    let rowColor = '';
-                    if (action === 'CREATE') rowColor = 'background:rgba(40,167,69,0.1)';
-                    else if (action.includes('SKIP')) rowColor = 'color:var(--text3)';
-                    else if (action.includes('CONFLICT') || action.includes('UNMATCHED')) rowColor = 'background:rgba(220,53,69,0.1); color:var(--danger)';
-                    else if (action.includes('REVIEW')) rowColor = 'background:rgba(255,193,7,0.1); color:var(--orange)';
-                    
-                    html += `<tr style="${rowColor}">
-                      <td>${pName}</td>
-                      <td>${genNo}</td>
-                      <td>${proj}</td>
-                      <td>${SPECIAL_CATEGORIES.includes(proj) ? 'Deployment Category' : 'Project'}</td>
-                      <td>${role || '-'}</td>
-                      <td>${allocRaw || '-'}</td>
-                      <td><strong>${action}</strong></td>
-                      <td>${reason}</td>
-                    </tr>`;
+                // 4. Missing Data Checks
+                if (action === 'CREATE' || action.startsWith('REVIEW')) {
+                  if (!allocRaw) {
+                    if(action === 'CREATE') action = 'REVIEW — MISSING ALLOCATION';
+                    reason = 'Allocation is missing/blank';
                   }
-                });
+                  if (!role || !workstream) {
+                    reason += (reason === 'Ready to create' ? 'Missing Role/Workstream' : ' / Missing Role');
+                  }
+                }
+
+                // 5. Existing & Conflict Checks
+                if (pId && prjId && !action.includes('UNKNOWN') && !action.includes('UNMATCHED')) {
+                  const existingLinks = existingAssignments.filter(a => a.personnelId === pId && a.projectId === prjId);
+                  if (existingLinks.length >= 2) {
+                    action = 'DATA CONFLICT — MULTIPLE EXISTING ASSIGNMENTS';
+                    reason = 'Multiple identical assignments already exist';
+                  } else if (existingLinks.length === 1) {
+                    action = 'SKIP — EXISTING';
+                    reason = 'Assignment already exists';
+                  }
+                }
+
+                // 6. Local Import Duplicate Check (Preventing duplicate row in the exact same import)
+                if (pId && prjId && (action === 'CREATE' || action.startsWith('REVIEW'))) {
+                  const localDupe = assignmentSeedData.find(a => a.pId === pId && a.prjId === prjId);
+                  if (localDupe) {
+                    action = 'SKIP — DUPLICATE';
+                    reason = 'Duplicate row in the Excel sheet';
+                  }
+                }
+
+                const record = {
+                  pId, prjId, action, reason,
+                  sourceData: r,
+                  personnelKey: pName,
+                  genNo: genNo,
+                  projectName: proj,
+                  allocationPercentage: allocRaw ? parseFloat(allocRaw) : '',
+                  role: role,
+                  workstream: workstream,
+                  primarySupport: String(r['Primary / Support'] || '').trim(),
+                  verificationStatus: String(r['Verification Status'] || 'To Verify').trim()
+                };
+                
+                // Add to processing array if actionable
+                if (action === 'CREATE') {
+                  assignmentSeedData.push(record);
+                }
+
+                // Stats logic
+                stats.candidates++;
+                
+                if (action === 'NOT A PROJECT ASSIGNMENT') stats.special++;
+                else if (action === 'REVIEW — UNCLASSIFIED ADMIN') stats.admin++;
+                else if (action === 'REVIEW — UNMATCHED PERSONNEL') stats.unmatchedP++;
+                else if (action === 'SKIP — EXISTING') stats.existing++;
+                else if (action === 'SKIP — DUPLICATE') stats.dupes++;
+                else if (action === 'CREATE') stats.new++;
+                else if (action.includes('CONFLICT') || action.includes('ERROR')) stats.errors++;
+                
+                if (action.startsWith('REVIEW')) stats.review++;
+                if (action === 'REVIEW — MISSING ALLOCATION') stats.missingAlloc++;
+                if (!role && action === 'CREATE') stats.missingRole++;
+
+                if (pId) {
+                  if (matchedBy === 'genNo') stats.matchedPGen++;
+                  if (matchedBy === 'name') stats.matchedPName++;
+                }
+                if (prjId) stats.knownPrj++;
+
+                // Build UI Row
+                let rowColor = '';
+                if (action === 'CREATE') rowColor = 'background:rgba(40,167,69,0.1)';
+                else if (action.includes('SKIP')) rowColor = 'color:var(--text3)';
+                else if (action.includes('CONFLICT') || action.includes('ERROR') || action.includes('UNMATCHED')) rowColor = 'background:rgba(220,53,69,0.1); color:var(--danger)';
+                else if (action.includes('REVIEW')) rowColor = 'background:rgba(255,193,7,0.1); color:var(--orange)';
+                
+                html += `<tr style="${rowColor}">
+                  <td>${pName}</td>
+                  <td>${genNo}</td>
+                  <td>${proj}</td>
+                  <td>${isDeployment ? 'Deployment Category' : isAdmin ? 'Admin' : 'Project'}</td>
+                  <td>${role || '-'}</td>
+                  <td>${allocRaw || '-'}</td>
+                  <td><strong>${action}</strong></td>
+                  <td>${reason}</td>
+                </tr>`;
               });
 
               // Populate Stats
               document.getElementById('sdr-total').innerText = stats.total;
-              document.getElementById('sdr-matched-p').innerText = stats.matchedP;
+              document.getElementById('sdr-candidates').innerText = stats.candidates;
+              document.getElementById('sdr-matched-p-gen').innerText = stats.matchedPGen;
+              document.getElementById('sdr-name-matches').innerText = stats.matchedPName;
               document.getElementById('sdr-unmatched-p').innerText = stats.unmatchedP;
-              document.getElementById('sdr-projects').innerText = stats.projects;
-              document.getElementById('sdr-unknown-prj').innerText = stats.unknownPrj;
+              
+              document.getElementById('sdr-known-prj').innerText = stats.knownPrj;
               document.getElementById('sdr-special').innerText = stats.special;
+              document.getElementById('sdr-admin').innerText = stats.admin;
+              
               document.getElementById('sdr-existing').innerText = stats.existing;
               document.getElementById('sdr-new').innerText = stats.new;
               document.getElementById('sdr-dupes').innerText = stats.dupes;
+              
+              document.getElementById('sdr-errors').innerText = stats.errors;
+              document.getElementById('sdr-review').innerText = stats.review;
               document.getElementById('sdr-missing-alloc').innerText = stats.missingAlloc;
               document.getElementById('sdr-missing-role').innerText = stats.missingRole;
-              document.getElementById('sdr-errors').innerText = stats.errors;
               
               document.getElementById('sdr-preview-body').innerHTML = html;
               document.getElementById('seed-report-container').style.display = 'block';
               
-              if (stats.new > 0 && stats.errors === 0 && stats.unmatchedP === 0 && stats.unknownPrj === 0) {
+              if (stats.new > 0 && stats.errors === 0 && stats.review === 0 && stats.unmatchedP === 0) {
                  document.getElementById('btnExecuteSeed').style.display = 'inline-block';
                  document.getElementById('seed-exec-status').innerText = "Ready to Execute";
               } else {
