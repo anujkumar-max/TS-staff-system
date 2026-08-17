@@ -2748,11 +2748,23 @@ select[multiple] option:selected {
 
             let personnelId;
             let asgRecord = null;
+            let pRecord = null;
 
             if (isNew) {
               personnelId = document.getElementById('editAsgPersonnel').value;
               if(!personnelId) return showToast('Personnel is required', 'error');
               
+              // DUPLICATE CHECK
+              const duplicate = promapData.assignments.find(a => (a.personnelId === personnelId || a.personnelId === personnelId) && a.projectId === data.projectId);
+              if (duplicate) return showToast('Duplicate Assignment: This personnel is already assigned to this project.', 'error');
+              
+              // ALLOCATION CHECK
+              pRecord = promapData.personnel.find(p => p.personnelId === personnelId || p._docId === personnelId);
+              let currentTotal = Number(pRecord?.totalAllocation) || 0;
+              if (currentTotal + data.allocationPercentage > 100) {
+                 return showToast(`Allocation Error: Cannot exceed 100%. Current: ${currentTotal}%, This: ${data.allocationPercentage}%`, 'error');
+              }
+
               // MOCK DATA SAFETY FOR TESTING
               const mockDocId = 'MOCK_' + Date.now();
               const newAsg = { _docId: mockDocId, personnelId, ...data, auditLog: [{
@@ -2764,13 +2776,33 @@ select[multiple] option:selected {
                 }] 
               };
               promapData.assignments.push(newAsg);
+              
+              // Local Recalculation
+              if (pRecord) {
+                 pRecord.totalAllocation = currentTotal + data.allocationPercentage;
+                 if (!pRecord.activeProjectIds) pRecord.activeProjectIds = [];
+                 if (!pRecord.activeProjectIds.includes(data.projectId)) {
+                    pRecord.activeProjectIds.push(data.projectId);
+                 }
+              }
+
               closeModal('promapEditAsgModal');
               renderPromapAssignments();
+              if (typeof window.renderPromapPersonnel === 'function') window.renderPromapPersonnel();
               return showToast('Mock Assignment added (Database untouched)', 'success');
             } else {
               asgRecord = promapData.assignments.find(a => a._docId === docId);
               if(!asgRecord) return showToast('Assignment not found locally', 'error');
               personnelId = asgRecord.personnelId;
+
+              const oldAlloc = Number(asgRecord.allocationPercentage) || 0;
+              const diff = data.allocationPercentage - oldAlloc;
+              pRecord = promapData.personnel.find(p => p.personnelId === personnelId || p._docId === personnelId);
+              let currentTotal = Number(pRecord?.totalAllocation) || 0;
+              
+              if (currentTotal + diff > 100) {
+                 return showToast(`Allocation Error: Cannot exceed 100%. Current: ${currentTotal}%, New Total would be: ${currentTotal + diff}%`, 'error');
+              }
 
               const oldValues = {};
               const newValues = {};
@@ -2788,16 +2820,28 @@ select[multiple] option:selected {
                  timestamp: new Date().toISOString(),
                  oldValues,
                  newValues,
-                 reason
+                 reason: reason || 'Updated via UI'
               };
 
               const existingAuditLog = Array.isArray(asgRecord.auditLog) ? asgRecord.auditLog : [];
               data.auditLog = [...existingAuditLog, auditRecord];
 
+              // Local Recalculation
+              if (pRecord) {
+                 pRecord.totalAllocation = currentTotal + diff;
+                 if (newValues.projectId) {
+                    if (!pRecord.activeProjectIds) pRecord.activeProjectIds = [];
+                    if (!pRecord.activeProjectIds.includes(data.projectId)) {
+                       pRecord.activeProjectIds.push(data.projectId);
+                    }
+                 }
+              }
+
               // MOCK UPDATE FOR TESTING
               Object.assign(asgRecord, data);
               closeModal('promapEditAsgModal');
               renderPromapAssignments();
+              if (typeof window.renderPromapPersonnel === 'function') window.renderPromapPersonnel();
               return showToast('Mock Assignment updated (Database untouched)', 'success');
             }
           }
@@ -3029,10 +3073,15 @@ select[multiple] option:selected {
                   "Shakthi"
               ];
 
-              let stats = { total: rows.length, candidates: 0, matchedPGen: 0, matchedPName: 0, unmatchedP: 0, knownPrj: 0, admin: 0, special: 0, existing: 0, new: 0, dupes: 0, missingAlloc: 0, missingRole: 0, errors: 0, review: 0 };
+              let stats = { total: rows.length, candidates: 0, matchedPGen: 0, matchedPName: 0, unmatchedP: 0, knownPrj: 0, admin: 0, special: 0, existing: 0, new: 0, dupes: 0, missingAlloc: 0, missingRole: 0, errors: 0, review: 0, overAllocated: 0 };
               
               assignmentSeedData = [];
               let html = '';
+
+              const personnelAllocations = {};
+              existingPersonnel.forEach(p => {
+                 personnelAllocations[p.id] = Number(p.totalAllocation) || 0;
+              });
 
               // Process rows
               rows.forEach(r => {
@@ -3136,6 +3185,18 @@ select[multiple] option:selected {
                   }
                 }
 
+                // 7. Allocation > 100% Check
+                if (pId && action === 'CREATE') {
+                  const allocVal = parseFloat(allocRaw) || 0;
+                  const currentTotal = personnelAllocations[pId] || 0;
+                  if (currentTotal + allocVal > 100) {
+                    action = 'REVIEW — OVER-ALLOCATED';
+                    reason = `Exceeds 100% allocation (Current: ${currentTotal}%, This: ${allocVal}%)`;
+                  } else {
+                    personnelAllocations[pId] = currentTotal + allocVal;
+                  }
+                }
+
                 const record = {
                   pId, prjId, action, reason,
                   sourceData: r,
@@ -3167,6 +3228,7 @@ select[multiple] option:selected {
                 
                 if (action.startsWith('REVIEW')) stats.review++;
                 if (action === 'REVIEW — MISSING ALLOCATION') stats.missingAlloc++;
+                if (action === 'REVIEW — OVER-ALLOCATED') stats.overAllocated++;
                 if (!role && action === 'CREATE') stats.missingRole++;
 
                 if (pId) {
@@ -3241,32 +3303,61 @@ select[multiple] option:selected {
             btn.innerText = "Executing...";
 
             try {
-              let batches = window.chunkArray(assignmentSeedData, 100);
               let successCount = 0;
               
-              for (let i = 0; i < batches.length; i++) {
-                statusDiv.innerText = `Writing batch ${i + 1} of ${batches.length}...`;
-                const batch = window.fsWriteBatch(window.db);
+              // MOCK EXECUTION FOR PART 4.3 LOCAL TESTING
+              // ZERO FIRESTORE WRITES
+              assignmentSeedData.forEach(record => {
+                const mockId = 'local-mock-' + Date.now() + Math.floor(Math.random() * 1000) + successCount;
+                const allocVal = record.allocationPercentage === '' ? 0 : parseFloat(record.allocationPercentage);
                 
-                batches[i].forEach(record => {
-                  const newRef = window.fsDoc(window.fsCollection(window.db, 'promap_assignments'));
-                  batch.set(newRef, {
-                    assignmentId: 'TS-A-' + Date.now() + Math.floor(Math.random() * 1000),
-                    personnelId: record.pId,
-                    projectId: record.prjId,
-                    allocationPercentage: record.allocationPercentage === '' ? '' : parseFloat(record.allocationPercentage),
-                    role: record.role,
-                    workstream: record.workstream,
-                    primarySupport: record.primarySupport,
-                    status: 'Active',
-                    verificationStatus: record.verificationStatus,
-                    _createdAt: window.fsTimestamp()
-                  });
-                  successCount++;
-                });
+                const newAsg = {
+                  _docId: mockId,
+                  assignmentId: 'TS-A-MOCK-' + Math.floor(Math.random() * 10000),
+                  personnelId: record.pId,
+                  projectId: record.prjId,
+                  allocationPercentage: allocVal,
+                  role: record.role,
+                  workstream: record.workstream,
+                  primarySupport: record.primarySupport,
+                  status: 'Active',
+                  verificationStatus: record.verificationStatus,
+                  _createdAt: new Date(),
+                  auditHistory: [
+                    {
+                      changedBy: 'System Import',
+                      timestamp: new Date().toISOString(),
+                      oldValues: {},
+                      newValues: { status: 'Created via Seed Import — LOCAL MOCK' },
+                      reason: 'Initial Import'
+                    }
+                  ]
+                };
                 
-                await batch.commit();
-              }
+                // Push to local assignment array
+                if (!window.promapData.assignments) window.promapData.assignments = [];
+                window.promapData.assignments.push(newAsg);
+                
+                // Recalculate personnel locally
+                if (window.promapData.personnel) {
+                  const pMatch = window.promapData.personnel.find(p => p._docId === record.pId);
+                  if (pMatch) {
+                     pMatch.totalAllocation = (Number(pMatch.totalAllocation) || 0) + allocVal;
+                     if (!pMatch.activeProjectIds) pMatch.activeProjectIds = [];
+                     if (!pMatch.activeProjectIds.includes(record.prjId)) {
+                        pMatch.activeProjectIds.push(record.prjId);
+                     }
+                  }
+                }
+                
+                successCount++;
+              });
+              
+              // Refresh UI
+              if (typeof window.renderPromapPersonnel === 'function') window.renderPromapPersonnel();
+              if (typeof window.renderPromapProjects === 'function') window.renderPromapProjects();
+              if (typeof window.renderPromapAssignments === 'function') window.renderPromapAssignments();
+              if (typeof window.renderPromapDashboard === 'function') window.renderPromapDashboard();
               
               statusDiv.style.color = "var(--success)";
               statusDiv.innerText = `✅ Successfully created ${successCount} assignments. Please Run Dry-Run again to verify.`;
