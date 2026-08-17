@@ -2029,6 +2029,10 @@ select[multiple] option:selected {
                 <input type="hidden" id="editAsgId">
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
                   <div>
+                    <label>Project</label>
+                    <select id="editAsgProject" class="form-input"></select>
+                  </div>
+                  <div>
                     <label>Role</label>
                     <input type="text" id="editAsgRole" class="form-input" placeholder="Project specific role">
                   </div>
@@ -2067,19 +2071,35 @@ select[multiple] option:selected {
                     <input type="text" id="editAsgDeliverable" class="form-input">
                   </div>
                   <div>
+                    <label>Work Allocation Status</label>
+                    <input type="text" id="editAsgAllocStatus" class="form-input">
+                  </div>
+                  <div>
+                    <label>Evidence / Reference</label>
+                    <input type="text" id="editAsgEvidence" class="form-input">
+                  </div>
+                  <div style="grid-column: 1 / -1;">
+                    <label>Additional Official Responsibility</label>
+                    <input type="text" id="editAsgAddlResp" class="form-input">
+                  </div>
+                  <div>
                     <label>Verification Status</label>
                     <select id="editAsgVerif" class="form-input" required>
-                      <option value="NOT_VERIFIED">NOT_VERIFIED</option>
-                      <option value="PROVISIONAL">PROVISIONAL</option>
-                      <option value="SUBMITTED_FOR_VERIFICATION">SUBMITTED_FOR_VERIFICATION</option>
-                      <option value="VERIFIED">VERIFIED</option>
-                      <option value="CORRECTION_REQUIRED">CORRECTION_REQUIRED</option>
+                      <option value="Pending Verification">Pending Verification</option>
+                      <option value="Verified">Verified</option>
+                      <option value="Correction Required">Correction Required</option>
+                      <option value="Corrected">Corrected</option>
+                      <option value="Approved">Approved</option>
                     </select>
                   </div>
                 </div>
                 <div style="margin-top:10px;">
                   <label>Remarks</label>
                   <input type="text" id="editAsgRemarks" class="form-input">
+                </div>
+                <div style="margin-top:10px;">
+                  <label>Reason for Correction (Audit)</label>
+                  <input type="text" id="editAsgReason" class="form-input" placeholder="Required if changing values">
                 </div>
                 <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
                   <button type="button" class="btn-secondary" onclick="closeModal('promapEditAsgModal')">Cancel</button>
@@ -2321,8 +2341,9 @@ select[multiple] option:selected {
               if(query && !(proj.projectName||'').toLowerCase().includes(query) && !(pers.name||'').toLowerCase().includes(query)) return;
 
               let verifColor = '#ef4444';
-              if(a.verificationStatus === 'VERIFIED') verifColor = 'var(--success)';
-              if(a.verificationStatus === 'PROVISIONAL') verifColor = '#eab308';
+              if(a.verificationStatus === 'Verified' || a.verificationStatus === 'Approved' || a.verificationStatus === 'VERIFIED') verifColor = 'var(--success)';
+              if(a.verificationStatus === 'Pending Verification' || a.verificationStatus === 'Corrected' || a.verificationStatus === 'PROVISIONAL') verifColor = '#eab308';
+              if(a.verificationStatus === 'Correction Required' || a.verificationStatus === 'NOT_VERIFIED') verifColor = '#ef4444';
 
               let allocColor = a.allocationPercentage > 100 ? '#ef4444' : 'inherit';
 
@@ -2473,6 +2494,18 @@ select[multiple] option:selected {
             const a = promapData.assignments.find(x => x._docId === docId);
             if(!a) return;
             document.getElementById('editAsgId').value = docId;
+            
+            // Populate project dropdown
+            const prjSelect = document.getElementById('editAsgProject');
+            prjSelect.innerHTML = '<option value="">-- Select Project --</option>';
+            promapData.projects.forEach(p => {
+              const opt = document.createElement('option');
+              opt.value = p.projectId;
+              opt.textContent = p.projectName;
+              if (p.projectId === a.projectId) opt.selected = true;
+              prjSelect.appendChild(opt);
+            });
+
             document.getElementById('editAsgRole').value = a.role || '';
             document.getElementById('editAsgWorkstream').value = a.workstream || '';
             document.getElementById('editAsgAlloc').value = a.allocationPercentage || 0;
@@ -2480,25 +2513,37 @@ select[multiple] option:selected {
             document.getElementById('editAsgRaci').value = a.raci || '';
             document.getElementById('editAsgReporting').value = a.reportingTo || '';
             document.getElementById('editAsgDeliverable').value = a.keyDeliverable || '';
-            document.getElementById('editAsgVerif').value = a.verificationStatus || 'NOT_VERIFIED';
+            document.getElementById('editAsgAllocStatus').value = a.workAllocationStatus || '';
+            document.getElementById('editAsgEvidence').value = a.evidenceReference || '';
+            document.getElementById('editAsgAddlResp').value = a.additionalOfficialResponsibility || '';
+            
+            // Map old Verification Status to new if necessary, else default to 'Pending Verification'
+            let vs = a.verificationStatus || 'Pending Verification';
+            if (vs === 'NOT_VERIFIED' || vs === 'PROVISIONAL' || vs === 'SUBMITTED_FOR_VERIFICATION') vs = 'Pending Verification';
+            if (vs === 'CORRECTION_REQUIRED') vs = 'Correction Required';
+            if (vs === 'VERIFIED') vs = 'Verified';
+            document.getElementById('editAsgVerif').value = vs;
+            
             document.getElementById('editAsgRemarks').value = a.remarks || '';
+            document.getElementById('editAsgReason').value = '';
             document.getElementById('promapEditAsgModal').style.display = 'flex';
           }
 
           async function submitEditAssignment(e) {
             e.preventDefault();
             const docId = document.getElementById('editAsgId').value;
-            // Retrieve personnelId from the modal's hidden field (we need to add this if it's missing)
-            // or we can fetch it from the UI. But docId is passed. Let's see if we store personnelId anywhere.
-            // Wait, we need personnelId. The assignment already exists. The transaction will fetch it.
-            // Oh, my syncAssignment signature requires personnelId: syncAssignment(assignmentId, payload, personnelId, projectId, isNew)
-            // Since it's an edit (isNew=false), personnelId and projectId aren't strictly needed for the payload, but `personnelId` IS needed for finding the personnel record!
             const asgRecord = promapData.assignments.find(a => a._docId === docId);
             if(!asgRecord) return showToast('Assignment not found locally', 'error');
 
             const personnelId = asgRecord.personnelId;
+            const newProjectId = document.getElementById('editAsgProject').value;
+            if(!newProjectId) return showToast('Project is required', 'error');
+
+            const reason = document.getElementById('editAsgReason').value.trim();
+            if(!reason) return showToast('Reason for correction is required for the audit trail', 'error');
 
             const data = {
+              projectId: newProjectId,
               role: document.getElementById('editAsgRole').value,
               workstream: document.getElementById('editAsgWorkstream').value,
               allocationPercentage: parseInt(document.getElementById('editAsgAlloc').value) || 0,
@@ -2506,10 +2551,39 @@ select[multiple] option:selected {
               raci: document.getElementById('editAsgRaci').value,
               reportingTo: document.getElementById('editAsgReporting').value,
               keyDeliverable: document.getElementById('editAsgDeliverable').value,
+              workAllocationStatus: document.getElementById('editAsgAllocStatus').value,
+              evidenceReference: document.getElementById('editAsgEvidence').value,
+              additionalOfficialResponsibility: document.getElementById('editAsgAddlResp').value,
               verificationStatus: document.getElementById('editAsgVerif').value,
               remarks: document.getElementById('editAsgRemarks').value
             };
-            const res = await DataService.promap_service.syncAssignment(docId, data, personnelId, null, false);
+
+            // Build audit record
+            const oldValues = {};
+            const newValues = {};
+            Object.keys(data).forEach(k => {
+              if (data[k] !== asgRecord[k]) {
+                oldValues[k] = asgRecord[k];
+                newValues[k] = data[k];
+              }
+            });
+
+            if (Object.keys(newValues).length === 0) {
+               return showToast('No changes detected', 'info');
+            }
+
+            const auditRecord = {
+               changedBy: window.currentUser.name || window.currentUser.phone || 'Unknown',
+               timestamp: new Date().toISOString(),
+               oldValues,
+               newValues,
+               reason
+            };
+
+            const existingAuditLog = Array.isArray(asgRecord.auditLog) ? asgRecord.auditLog : [];
+            data.auditLog = [...existingAuditLog, auditRecord];
+
+            const res = await DataService.promap_service.syncAssignment(docId, data, personnelId, newProjectId, false);
             if(res.ok) {
               closeModal('promapEditAsgModal');
               loadPromapData('assignments');
@@ -2794,12 +2868,15 @@ select[multiple] option:selected {
                   reason = 'Could not safely match to existing personnel';
                 }
 
-                // 2. Classify Project / Deployment Category
                 let prjId = null;
                 let isDeployment = DEPLOYMENT_CATEGORIES.some(c => proj.toLowerCase().includes(c.toLowerCase()) || c.toLowerCase().includes(proj.toLowerCase()));
                 let isAdmin = ADMIN_CATEGORIES.some(c => proj.toLowerCase() === c.toLowerCase());
+                let isComposite = ["CCTV, eOffice", "APOLIS, Drones & Meeseva", "eSakshya,eSummons"].includes(proj);
                 
-                if (isDeployment) {
+                if (isComposite) {
+                  action = 'REVIEW — COMPOSITE PROJECT VALUE';
+                  reason = 'Composite project value requires manual assignment through website';
+                } else if (isDeployment) {
                   action = 'NOT A PROJECT ASSIGNMENT';
                   reason = 'Special deployment category';
                 } else if (isAdmin) {
