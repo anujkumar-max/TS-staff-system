@@ -1839,7 +1839,73 @@ select[multiple] option:selected {
                 </table>
               </div>
             </div>
-          </div>
+
+            <!-- ONE-TIME ASSIGNMENT SEED IMPORT (ADMIN ONLY) -->
+            <div class="card" id="promap-import-card" style="margin-top:20px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h2 style="font-family:'Rajdhani',sans-serif; margin:0;"><i class="fa-solid fa-seedling" style="color:var(--success)"></i> Assignment Seed Import</h2>
+              </div>
+              <p style="font-size:12px; color:var(--text3); margin-bottom:16px;">
+                Upload the PRO-MAP Master Excel file to seed the <code>promap_assignments</code> database. <br>
+                <strong>This is a strict ONE-TIME import that matches existing personnel and projects.</strong>
+              </p>
+              
+              <div style="display:flex; gap:10px; align-items:center; margin-bottom:16px;">
+                <input type="file" id="promapSeedExcelInput" accept=".xlsx, .xls" style="font-size:12px; padding:6px; border:1px solid var(--border); border-radius:4px; background:var(--bg2);">
+                <button class="btn-primary" onclick="runAssignmentSeedDryRun()" id="btnSeedDryRun" style="padding:8px 16px;"><i class="fa-solid fa-vial"></i> Run Dry-Run</button>
+              </div>
+
+              <!-- Seed Dry-Run Report -->
+              <div id="seed-report-container" style="display:none; background:var(--bg3); padding:16px; border-radius:8px; border:1px solid var(--border); font-size:12px; margin-bottom:16px;">
+                <h3 style="font-family:'Rajdhani',sans-serif; margin-bottom:12px; color:var(--navy);">Dry-Run Report (0 Writes)</h3>
+                
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:16px; font-weight:600;">
+                  <div>Total Rows: <span id="sdr-total" style="color:var(--text1)">0</span></div>
+                  <div>Matched Personnel: <span id="sdr-matched-p" style="color:var(--success)">0</span></div>
+                  <div>Unmatched Personnel: <span id="sdr-unmatched-p" style="color:var(--danger)">0</span></div>
+                  
+                  <div>Projects Identified: <span id="sdr-projects" style="color:var(--text1)">0</span></div>
+                  <div>Unknown Projects: <span id="sdr-unknown-prj" style="color:var(--danger)">0</span></div>
+                  <div>Special Categories: <span id="sdr-special" style="color:var(--orange)">0</span></div>
+                  
+                  <div>Existing Assignments: <span id="sdr-existing" style="color:var(--text1)">0</span></div>
+                  <div>New Assignments to Create: <span id="sdr-new" style="color:var(--success)">0</span></div>
+                  <div>Duplicates Skipped: <span id="sdr-dupes" style="color:var(--text3)">0</span></div>
+
+                  <div style="color:var(--orange)">Missing Allocation: <span id="sdr-missing-alloc">0</span></div>
+                  <div style="color:var(--orange)">Missing Role: <span id="sdr-missing-role">0</span></div>
+                  <div style="color:var(--danger)">Errors / Conflicts: <span id="sdr-errors">0</span></div>
+                </div>
+
+                <div style="max-height:300px; overflow-y:auto; border:1px solid var(--border); border-radius:4px; margin-bottom:15px;">
+                  <table class="data-table" style="margin:0;">
+                    <thead style="position:sticky; top:0; z-index:1;">
+                      <tr>
+                        <th>Personnel</th>
+                        <th>Gen No</th>
+                        <th>Project</th>
+                        <th>Category</th>
+                        <th>Role</th>
+                        <th>Alloc</th>
+                        <th>Action</th>
+                        <th>Reason</th>
+                      </tr>
+                    </thead>
+                    <tbody id="sdr-preview-body">
+                      <!-- Injected -->
+                    </tbody>
+                  </table>
+                </div>
+                
+                <div style="display:flex; gap:10px; align-items:center;">
+                  <button class="btn-heart" id="btnExecuteSeed" onclick="executeAssignmentSeedImport()" style="display:none; padding:8px 16px;">Confirm & Execute Seed Import</button>
+                  <button class="btn-secondary" onclick="document.getElementById('seed-report-container').style.display='none'" style="padding:8px 16px;">Cancel</button>
+                  <div id="seed-exec-status" style="margin-left:15px; font-weight:bold; color:var(--text2);"></div>
+                </div>
+              </div>
+            </div>
+
+          </div> <!-- END OF TAB CONTENT: ASSIGNMENTS -->
 
           <div class="card" id="authMigrationCard" style="margin-bottom:20px; border-left:4px solid var(--navy); display:none;">
             <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -1867,35 +1933,6 @@ select[multiple] option:selected {
                 <div style="font-size:11px; color:#ea580c; font-weight:600; text-transform:uppercase;">Pending Migration</div>
               </div>
             </div>
-          </div>
-
-          <!-- DATA IMPORT MODULE (ADMIN ONLY) -->
-          <div class="card" id="promap-import-card">
-            <h2 style="font-family:'Rajdhani',sans-serif; margin-bottom:10px;"><i class="fa-solid fa-file-import" style="color:var(--success)"></i> Master Data Import</h2>
-            <p style="font-size:12px; color:var(--text3); margin-bottom:16px;">
-              Upload the PRO-MAP Master Excel file to seed the database. The system will perform validation and normalisation before importing.
-            </p>
-            
-            <div style="display:flex; gap:10px; align-items:center; margin-bottom:16px;">
-              <input type="file" id="promapExcelInput" accept=".xlsx, .xls" style="font-size:12px; padding:6px;">
-              <button class="btn-primary" onclick="analyzePromapFile()" id="analyzeBtn" style="padding:8px 16px;">Analyze File</button>
-            </div>
-
-            <!-- Validation Report (Hidden initially) -->
-            <div id="promap-validation-report" style="display:none; background:var(--bg3); padding:16px; border-radius:8px; border:1px solid var(--border); font-size:12px;">
-              <h3 style="font-family:'Rajdhani',sans-serif; margin-bottom:12px; color:var(--navy);">Validation Report</h3>
-              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;" id="promap-stats">
-                <!-- Injected via JS -->
-              </div>
-              <div id="promap-warnings" style="color:var(--danger); font-weight:600; margin-bottom:12px;"></div>
-              
-              <div style="display:flex; gap:10px;">
-                <button class="btn-heart" id="confirmImportBtn" onclick="executePromapImport()" style="padding:8px 16px;">Confirm & Import to Database</button>
-                <button class="btn-secondary" onclick="document.getElementById('promap-validation-report').style.display='none'" style="padding:8px 16px;">Cancel</button>
-              </div>
-            </div>
-            
-            <div id="promap-import-status" style="margin-top:16px; font-weight:600; font-size:12px;"></div>
           </div>
 
           <!-- ================= PRO-MAP MODALS ================= -->
@@ -2653,126 +2690,275 @@ select[multiple] option:selected {
             btn.disabled = false;
           }
 
-          function analyzePromapFile() {
-            const fileInput = document.getElementById('promapExcelInput');
-            if (!fileInput.files.length) return alert('Please select a file first.');
-            
+          let assignmentSeedData = [];
+
+          async function runAssignmentSeedDryRun() {
+            const fileInput = document.getElementById('promapSeedExcelInput');
+            if (!fileInput.files.length) return alert('Please select the Excel file first.');
             const file = fileInput.files[0];
-            const reader = new FileReader();
+            const btn = document.getElementById('btnSeedDryRun');
             
-            document.getElementById('analyzeBtn').innerText = "Analyzing...";
-            document.getElementById('analyzeBtn').disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Analyzing...';
+            btn.disabled = true;
 
-            reader.onload = function(e) {
-              try {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
-                // Assuming data is in sheet named PRO_MAP_MASTER or the first sheet
-                const sheetName = workbook.SheetNames.includes('PRO_MAP_MASTER') ? 'PRO_MAP_MASTER' : workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
+            try {
+              const data = new Uint8Array(await file.arrayBuffer());
+              const workbook = XLSX.read(data, {type: 'array'});
+              const sheetName = workbook.SheetNames.includes('PRO_MAP_MASTER') ? 'PRO_MAP_MASTER' : workbook.SheetNames[0];
+              const rawData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {defval: ""});
+              
+              const rows = rawData.filter(r => r['Person Name'] && String(r['Person Name']).trim() !== '');
+
+              // Fetch existing data
+              const pSnap = await window.fsGetDocs(window.fsCollection(window.db, 'promap_personnel'));
+              const prjSnap = await window.fsGetDocs(window.fsCollection(window.db, 'promap_projects'));
+              const asgSnap = await window.fsGetDocs(window.fsCollection(window.db, 'promap_assignments'));
+
+              const existingPersonnel = [];
+              pSnap.forEach(d => existingPersonnel.push({ id: d.id, ...d.data() }));
+
+              const existingProjects = [];
+              prjSnap.forEach(d => existingProjects.push({ id: d.id, ...d.data() }));
+
+              const existingAssignments = [];
+              asgSnap.forEach(d => existingAssignments.push({ id: d.id, ...d.data() }));
+
+              const SPECIAL_CATEGORIES = [
+                  "PCS&S – Personnel Awaiting Deployment",
+                  "PCS&S – Officer Attachments",
+                  "PCS&S – External Attachments"
+              ];
+
+              let stats = { total: rows.length, matchedP: 0, unmatchedP: 0, projects: 0, unknownPrj: 0, special: 0, existing: 0, new: 0, dupes: 0, missingAlloc: 0, missingRole: 0, errors: 0 };
+              
+              assignmentSeedData = [];
+              let html = '';
+
+              // Process rows
+              rows.forEach(r => {
+                const pName = String(r['Person Name']).trim();
+                const genNo = String(r['General No']).trim();
+                let projName = String(r['Project']).trim();
+                if(projName === 'CrIMAC') projName = 'CRIMAC';
                 
-                // Convert to JSON (Header is row 0)
-                const rawData = XLSX.utils.sheet_to_json(worksheet, {defval: ""});
-                processPromapData(rawData);
-              } catch(err) {
-                alert("Error reading file: " + err.message);
-                resetAnalyzeBtn();
-              }
-            };
-            reader.readAsArrayBuffer(file);
-          }
-
-          function resetAnalyzeBtn() {
-            document.getElementById('analyzeBtn').innerText = "Analyze File";
-            document.getElementById('analyzeBtn').disabled = false;
-          }
-
-          function processPromapData(rawData) {
-            // Drop empty rows
-            const rows = rawData.filter(r => r['Person Name'] && String(r['Person Name']).trim() !== '');
-            
-            let personnelMap = new Map();
-            let projectMap = new Map();
-            let assignments = [];
-            
-            const SPECIAL_CATEGORIES = [
-                "PCS&S – Personnel Awaiting Deployment",
-                "PCS&S – Officer Attachments",
-                "PCS&S – External Attachments"
-            ];
-
-            rows.forEach(r => {
-              const pName = String(r['Person Name']).trim();
-              const rank = String(r['Rank'] || '').trim();
-              const genNo = String(r['General No'] || '').trim();
-              let projName = String(r['Project'] || '').trim();
-              
-              // Project Normalisation Rules
-              if(projName === 'CrIMAC') projName = 'CRIMAC';
-              
-              const alloc = parseFloat(String(r['Allocation %']).replace('%','')) || 0;
-              
-              // Map Personnel
-              const pKey = pName.toLowerCase() + "_" + genNo;
-              if(!personnelMap.has(pKey)) {
-                personnelMap.set(pKey, {
-                  name: pName,
-                  rank: rank,
-                  generalNo: genNo,
-                  contactNumber: String(r['Contact Number'] || '').trim()
-                });
-              }
-
-              // Handle Composite Projects
-              let splitProjects = [projName];
-              if(projName === "eSakshya,eSummons") splitProjects = ["eSakshya", "eSummons"];
-              if(projName === "APOLIS, Drones & Meeseva") splitProjects = ["APOLIS", "Drones", "Meeseva"];
-              if(projName === "CCTV, eOffice") splitProjects = ["CCTV", "eOffice"];
-
-              splitProjects.forEach(proj => {
-                if(!proj) return;
+                let allocRaw = String(r['Allocation %']).replace('%','').trim();
+                let role = String(r['Exact Role / Responsibilities']).trim();
+                let workstream = String(r['Workstream']).trim();
                 
-                // Map Project
-                if(!projectMap.has(proj)) {
-                  projectMap.set(proj, {
-                    projectName: proj,
-                    category: SPECIAL_CATEGORIES.includes(proj) ? 'Deployment Category' : 'Technical Project'
-                  });
-                }
+                // Composite splits
+                let splitProjects = [projName];
+                if(projName === "eSakshya,eSummons") splitProjects = ["eSakshya", "eSummons"];
+                if(projName === "APOLIS, Drones & Meeseva") splitProjects = ["APOLIS", "Drones", "Meeseva"];
+                if(projName === "CCTV, eOffice") splitProjects = ["CCTV", "eOffice"];
 
-                // Create Assignment
-                assignments.push({
-                  personnelKey: pKey,
-                  projectName: proj,
-                  allocationPercentage: alloc,
-                  role: String(r['Exact Role / Responsibilities'] || '').trim(),
-                  workstream: String(r['Workstream'] || '').trim(),
-                  primarySupport: String(r['Primary / Support'] || '').trim(),
-                  status: 'Active',
-                  verificationStatus: String(r['Verification Status'] || 'To Verify').trim()
+                splitProjects.forEach(proj => {
+                  if(!proj) return;
+                  
+                  let action = 'CREATE';
+                  let reason = 'Ready to create';
+                  let pId = null;
+
+                  // 1. Match Personnel (Primary: General Number)
+                  let matchedPers = null;
+                  if (genNo) {
+                    matchedPers = existingPersonnel.find(p => p.generalNo === genNo);
+                  }
+                  if (matchedPers) {
+                    pId = matchedPers.id;
+                  } else {
+                    // Fallback to Name match
+                    matchedPers = existingPersonnel.find(p => p.name.toLowerCase() === pName.toLowerCase());
+                    if (matchedPers) {
+                      pId = matchedPers.id;
+                      action = 'REVIEW — NAME MATCH ONLY';
+                      reason = 'Matched by name only (General Number mismatched or missing)';
+                    } else {
+                      action = 'REVIEW — UNMATCHED PERSONNEL';
+                      reason = 'Could not safely match to existing personnel';
+                    }
+                  }
+
+                  // 2. Filter Special Categories
+                  if (SPECIAL_CATEGORIES.includes(proj)) {
+                    action = 'NOT A PROJECT ASSIGNMENT';
+                    reason = 'Special deployment category';
+                  } else {
+                    // 3. Match Project
+                    const matchedPrj = existingProjects.find(pr => pr.projectName === proj);
+                    let prjId = null;
+                    if (matchedPrj) {
+                      prjId = matchedPrj.id;
+                    } else {
+                      if (action === 'CREATE' || action.startsWith('REVIEW — NAME MATCH ONLY')) {
+                        action = 'REVIEW — UNKNOWN PROJECT';
+                        reason = 'Project not found in promap_projects';
+                      }
+                    }
+
+                    // 4. Missing Data Checks
+                    if (action === 'CREATE' || action.startsWith('REVIEW')) {
+                      if (!allocRaw) {
+                        if(action === 'CREATE') action = 'REVIEW — MISSING ALLOCATION';
+                        reason = 'Allocation is missing/blank';
+                      }
+                      if (!role || !workstream) {
+                        reason += (reason === 'Ready to create' ? 'Missing Role/Workstream' : ' / Missing Role');
+                      }
+                    }
+
+                    // 5. Existing & Conflict Checks
+                    if (pId && prjId && !action.includes('UNKNOWN') && !action.includes('UNMATCHED')) {
+                      const existingLinks = existingAssignments.filter(a => a.personnelId === pId && a.projectId === prjId);
+                      if (existingLinks.length >= 2) {
+                        action = 'DATA CONFLICT — MULTIPLE EXISTING ASSIGNMENTS';
+                        reason = 'Multiple identical assignments already exist';
+                      } else if (existingLinks.length === 1) {
+                        action = 'SKIP — EXISTING';
+                        reason = 'Assignment already exists';
+                      }
+                    }
+
+                    // 6. Local Import Duplicate Check (Preventing duplicate row in the exact same import)
+                    if (pId && prjId && (action === 'CREATE' || action.startsWith('REVIEW'))) {
+                      const localDupe = assignmentSeedData.find(a => a.pId === pId && a.prjId === prjId);
+                      if (localDupe) {
+                        action = 'SKIP — DUPLICATE';
+                        reason = 'Duplicate row in the Excel sheet';
+                      }
+                    }
+
+                    const record = {
+                      pId, prjId, action, reason,
+                      personnelKey: pName,
+                      genNo: genNo,
+                      projectName: proj,
+                      allocationPercentage: allocRaw ? parseFloat(allocRaw) : '',
+                      role: role,
+                      workstream: workstream,
+                      primarySupport: String(r['Primary / Support']).trim(),
+                      verificationStatus: String(r['Verification Status'] || 'To Verify').trim()
+                    };
+                    
+                    // Add to processing array if actionable
+                    if (action === 'CREATE') {
+                      assignmentSeedData.push(record);
+                    }
+
+                    // Stats logic
+                    if (action === 'NOT A PROJECT ASSIGNMENT') stats.special++;
+                    else if (action === 'REVIEW — UNMATCHED PERSONNEL') stats.unmatchedP++;
+                    else if (action === 'REVIEW — UNKNOWN PROJECT') stats.unknownPrj++;
+                    else if (action === 'SKIP — EXISTING') stats.existing++;
+                    else if (action === 'SKIP — DUPLICATE') stats.dupes++;
+                    else if (action.includes('CONFLICT')) stats.errors++;
+                    else if (action === 'REVIEW — MISSING ALLOCATION') stats.missingAlloc++;
+                    else if (action === 'CREATE') stats.new++;
+                    else if (action.startsWith('REVIEW')) stats.errors++; // Catch any other review states
+                    
+                    if (pId && !action.includes('UNMATCHED')) stats.matchedP++;
+                    if (prjId && !action.includes('UNKNOWN') && action !== 'NOT A PROJECT ASSIGNMENT') stats.projects++;
+                    if (!role && action === 'CREATE') stats.missingRole++;
+
+                    // Build UI Row
+                    let rowColor = '';
+                    if (action === 'CREATE') rowColor = 'background:rgba(40,167,69,0.1)';
+                    else if (action.includes('SKIP')) rowColor = 'color:var(--text3)';
+                    else if (action.includes('CONFLICT') || action.includes('UNMATCHED')) rowColor = 'background:rgba(220,53,69,0.1); color:var(--danger)';
+                    else if (action.includes('REVIEW')) rowColor = 'background:rgba(255,193,7,0.1); color:var(--orange)';
+                    
+                    html += `<tr style="${rowColor}">
+                      <td>${pName}</td>
+                      <td>${genNo}</td>
+                      <td>${proj}</td>
+                      <td>${SPECIAL_CATEGORIES.includes(proj) ? 'Deployment Category' : 'Project'}</td>
+                      <td>${role || '-'}</td>
+                      <td>${allocRaw || '-'}</td>
+                      <td><strong>${action}</strong></td>
+                      <td>${reason}</td>
+                    </tr>`;
+                  }
                 });
               });
-            });
 
-            parsedPromapData = {
-              personnel: Array.from(personnelMap.values()),
-              projects: Array.from(projectMap.values()),
-              assignments: assignments
-            };
+              // Populate Stats
+              document.getElementById('sdr-total').innerText = stats.total;
+              document.getElementById('sdr-matched-p').innerText = stats.matchedP;
+              document.getElementById('sdr-unmatched-p').innerText = stats.unmatchedP;
+              document.getElementById('sdr-projects').innerText = stats.projects;
+              document.getElementById('sdr-unknown-prj').innerText = stats.unknownPrj;
+              document.getElementById('sdr-special').innerText = stats.special;
+              document.getElementById('sdr-existing').innerText = stats.existing;
+              document.getElementById('sdr-new').innerText = stats.new;
+              document.getElementById('sdr-dupes').innerText = stats.dupes;
+              document.getElementById('sdr-missing-alloc').innerText = stats.missingAlloc;
+              document.getElementById('sdr-missing-role').innerText = stats.missingRole;
+              document.getElementById('sdr-errors').innerText = stats.errors;
+              
+              document.getElementById('sdr-preview-body').innerHTML = html;
+              document.getElementById('seed-report-container').style.display = 'block';
+              
+              if (stats.new > 0 && stats.errors === 0 && stats.unmatchedP === 0 && stats.unknownPrj === 0) {
+                 document.getElementById('btnExecuteSeed').style.display = 'inline-block';
+                 document.getElementById('seed-exec-status').innerText = "Ready to Execute";
+              } else {
+                 document.getElementById('btnExecuteSeed').style.display = 'none';
+                 document.getElementById('seed-exec-status').innerText = stats.new > 0 ? "Resolve errors/reviews before executing" : "Nothing to create";
+              }
 
-            // Show Report
-            document.getElementById('promap-validation-report').style.display = 'block';
-            document.getElementById('promap-stats').innerHTML = `
-              <div><strong>Total Source Rows:</strong> ${rows.length}</div>
-              <div><strong>Unique Personnel:</strong> ${parsedPromapData.personnel.length}</div>
-              <div><strong>Unique Projects:</strong> ${parsedPromapData.projects.length}</div>
-              <div><strong>Total Assignments:</strong> ${parsedPromapData.assignments.length}</div>
-            `;
-            
-            document.getElementById('promap-warnings').innerText = 
-              `Applied Normalisation: CRIMAC merged, eSakshya/eSummons split.`;
-            
-            resetAnalyzeBtn();
+            } catch(err) {
+              alert("Error processing file: " + err.message);
+              console.error(err);
+            } finally {
+              btn.innerHTML = '<i class="fa-solid fa-vial"></i> Run Dry-Run';
+              btn.disabled = false;
+            }
+          }
+
+          async function executeAssignmentSeedImport() {
+            const btn = document.getElementById('btnExecuteSeed');
+            const statusDiv = document.getElementById('seed-exec-status');
+            btn.disabled = true;
+            btn.innerText = "Executing...";
+
+            try {
+              let batches = window.chunkArray(assignmentSeedData, 100);
+              let successCount = 0;
+              
+              for (let i = 0; i < batches.length; i++) {
+                statusDiv.innerText = `Writing batch ${i + 1} of ${batches.length}...`;
+                const batch = window.fsWriteBatch(window.db);
+                
+                batches[i].forEach(record => {
+                  const newRef = window.fsDoc(window.fsCollection(window.db, 'promap_assignments'));
+                  batch.set(newRef, {
+                    assignmentId: 'TS-A-' + Date.now() + Math.floor(Math.random() * 1000),
+                    personnelId: record.pId,
+                    projectId: record.prjId,
+                    allocationPercentage: record.allocationPercentage === '' ? '' : parseFloat(record.allocationPercentage),
+                    role: record.role,
+                    workstream: record.workstream,
+                    primarySupport: record.primarySupport,
+                    status: 'Active',
+                    verificationStatus: record.verificationStatus,
+                    _createdAt: window.fsTimestamp()
+                  });
+                  successCount++;
+                });
+                
+                await batch.commit();
+              }
+              
+              statusDiv.style.color = "var(--success)";
+              statusDiv.innerText = `✅ Successfully created ${successCount} assignments. Please Run Dry-Run again to verify.`;
+              btn.style.display = 'none';
+              assignmentSeedData = [];
+              
+            } catch (err) {
+              statusDiv.style.color = "var(--danger)";
+              statusDiv.innerText = `❌ Error: ${err.message}`;
+              btn.disabled = false;
+              btn.innerText = "Confirm & Execute Seed Import";
+            }
           }
 
           // --- AUTH MIGRATION STATUS ---
@@ -2805,80 +2991,6 @@ select[multiple] option:selected {
             }
           }
           window.checkAuthMigrationStatus = checkAuthMigrationStatus;
-
-          async function executePromapImport() {
-            if(!parsedPromapData) return;
-            const btn = document.getElementById('confirmImportBtn');
-            const statusDiv = document.getElementById('promap-import-status');
-            btn.disabled = true;
-            btn.innerText = "Importing...";
-            
-            try {
-              // We need existing staff to map IDs if possible
-              statusDiv.innerText = "1/4: Fetching existing staff...";
-              const existingStaff = await DataService.staff.getAll();
-              
-              // 1. Create Personnel
-              statusDiv.innerText = "2/4: Creating PRO-MAP Personnel...";
-              const personIdMap = {}; // name_genNo -> TS-P-XXX
-              for(const p of parsedPromapData.personnel) {
-                 // Try to link to existing Staff_ID if names match (basic check)
-                 const matched = existingStaff.find(s => s.Full_Name.toLowerCase() === p.name.toLowerCase());
-                 let pId = matched && matched.Staff_ID ? matched.Staff_ID : 'TS-P-' + Math.floor(Math.random()*900000 + 100000);
-                 
-                 const res = await DataService.promap_personnel.create({
-                   personnelId: pId,
-                   name: p.name,
-                   rank: p.rank,
-                   generalNo: p.generalNo,
-                   contactNumber: p.contactNumber,
-                   isActive: true
-                 });
-                 personIdMap[p.name.toLowerCase() + "_" + p.generalNo] = res.personnelId;
-              }
-
-              // 2. Create Projects
-              statusDiv.innerText = "3/4: Creating PRO-MAP Projects...";
-              const projIdMap = {}; // projectName -> TS-PRJ-XXX
-              for(const prj of parsedPromapData.projects) {
-                const res = await DataService.promap_projects.create({
-                  projectId: 'TS-PRJ-' + Math.floor(Math.random()*9000 + 1000),
-                  projectName: prj.projectName,
-                  category: prj.category,
-                  status: 'Active'
-                });
-                projIdMap[prj.projectName] = res.projectId;
-              }
-
-              // 3. Create Assignments
-              statusDiv.innerText = "4/4: Linking Assignments...";
-              for(const asg of parsedPromapData.assignments) {
-                const pId = personIdMap[asg.personnelKey];
-                const prjId = projIdMap[asg.projectName];
-                if(pId && prjId) {
-                  await DataService.promap_assignments.create({
-                    personnelId: pId,
-                    projectId: prjId,
-                    allocationPercentage: asg.allocationPercentage,
-                    role: asg.role,
-                    workstream: asg.workstream,
-                    primarySupport: asg.primarySupport,
-                    status: asg.status,
-                    verificationStatus: asg.verificationStatus
-                  });
-                }
-              }
-
-              statusDiv.style.color = "var(--success)";
-              statusDiv.innerText = "✅ Import completed successfully! Database seeded.";
-            } catch(e) {
-              console.error(e);
-              statusDiv.style.color = "var(--danger)";
-              statusDiv.innerText = "❌ Import failed: " + e.message;
-            } finally {
-              btn.innerText = "Import Complete";
-            }
-          }
         </script>
 
         <!-- ====== PROJECTS SCREEN ====== -->
