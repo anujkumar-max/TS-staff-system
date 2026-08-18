@@ -2653,9 +2653,10 @@ select[multiple] option:selected {
           function drillDownToAssignments(verifStatus, allocStatus = '') {
              switchPromapTab('assignments');
              document.getElementById('promapAssignmentSearch').value = '';
-             document.getElementById('promapAsgFilterProject').value = '';
-             document.getElementById('promapAsgFilterVerif').value = verifStatus;
-             // Alloc status is not explicitly a filter in assignment tab yet, but could be added or ignored
+             const projFilter = document.getElementById('asgFilterProject');
+             if (projFilter) projFilter.value = '';
+             const verifFilter = document.getElementById('asgFilterVerif');
+             if (verifFilter) verifFilter.value = verifStatus;
              renderPromapAssignments();
           }
 
